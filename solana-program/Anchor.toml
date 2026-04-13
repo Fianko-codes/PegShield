@@ -1,9 +1,15 @@
+[toolchain]
+anchor_version = "0.31.1"
+
 [features]
 seeds = false
 skip-lint = false
 
 [programs.localnet]
-risk_oracle = "REPLACE_WITH_DEPLOYED_PROGRAM_ID"
+risk_oracle = "DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea"
+
+[programs.devnet]
+risk_oracle = "DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea"
 
 [provider]
 cluster = "Devnet"

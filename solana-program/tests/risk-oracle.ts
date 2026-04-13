@@ -1,12 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
 import { assert } from "chai";
 
 describe("risk-oracle", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.RiskOracle as Program;
+  const program: any = anchor.workspace.RiskOracle;
 
   it("initializes a risk state PDA", async () => {
     const lstId = "mSOL";
@@ -24,7 +23,7 @@ describe("risk-oracle", () => {
       })
       .rpc();
 
-    const state = await program.account.riskState.fetch(riskState);
+    const state = await (program.account as any).riskState.fetch(riskState);
     assert.equal(state.lstId, lstId);
   });
 });
