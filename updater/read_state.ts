@@ -46,8 +46,7 @@ async function main(): Promise<void> {
   const idl = JSON.parse(fs.readFileSync(idlPath, "utf-8"));
   const wallet = loadWallet();
   const provider = new anchor.AnchorProvider(connection, wallet, {});
-  const programId = new PublicKey(requiredEnv("PROGRAM_ID"));
-  const program = new anchor.Program(idl, programId, provider);
+  const program = new anchor.Program(idl as anchor.Idl, provider) as any;
 
   const [riskStatePda] = PublicKey.findProgramAddressSync(
     [Buffer.from("risk"), Buffer.from(lstId)],
