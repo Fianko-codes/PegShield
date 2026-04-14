@@ -74,8 +74,11 @@ jobs:
       - name: Run micro tests
         run: python -m unittest tests.test_core_engine -v
 
+      - name: Bootstrap bridge cache
+        run: python bridge/bootstrap_cache.py
+
       - name: Fetch live bridge payload
-        run: python bridge/fetch_pyth.py
+        run: python bridge/fetch_pyth.py --lookback-seconds 5400 --step-seconds 300
 
       - name: Run statistical pipeline
         run: python core-engine/pipeline.py
