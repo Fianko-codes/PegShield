@@ -20,6 +20,10 @@ import {
   Lock,
   AlertTriangle,
   Radio,
+  TimerReset,
+  WalletCards,
+  Database,
+  ArrowUpRight,
 } from 'lucide-react';
 import { cn } from '../types';
 import type { LogEntry, MarketSnapshot, OracleSnapshot, RiskState } from '../types';
@@ -39,6 +43,21 @@ const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
 };
+
+function formatRelativeMinutes(timestampSeconds: number | undefined, nowMs: number): string {
+  if (!timestampSeconds) {
+    return 'unavailable';
+  }
+
+  const deltaMinutes = Math.max(0, Math.round((nowMs - timestampSeconds * 1000) / 60000));
+  if (deltaMinutes === 0) {
+    return 'just now';
+  }
+  if (deltaMinutes === 1) {
+    return '1 min ago';
+  }
+  return `${deltaMinutes} mins ago`;
+}
 
 function TerminalLine({ log }: { log: LogEntry }) {
   const colorClass =
@@ -149,6 +168,8 @@ export default function AppPage({
   >([]);
   const [heartbeat, setHeartbeat] = useState(false);
   const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
+  const [collateralInput, setCollateralInput] = useState('1000');
+  const [clockMs, setClockMs] = useState(() => new Date().getTime());
   const accentColor = globalState.regime_flag === 1 ? '#FF4B4B' : '#14F195';
 
   const baseChartData = useMemo(
@@ -208,6 +229,19 @@ export default function AppPage({
     const liveSeries = liveTail.map(({ time, spread }) => ({ time, spread }));
     return [...baseTail, ...liveSeries].slice(-24);
   }, [baseChartData, liveTail]);
+
+  const collateralValueUsd = useMemo(() => {
+    const parsed = Number(collateralInput);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }, [collateralInput]);
+
+  const fixedBorrowLimitUsd = collateralValueUsd * 0.8;
+  const oracleBorrowLimitUsd = collateralValueUsd * globalState.suggested_ltv;
+  const oracleDeltaUsd = fixedBorrowLimitUsd - oracleBorrowLimitUsd;
+  const oracleFreshness = formatRelativeMinutes(oracleSnapshot?.timestamp, clockMs);
+  const marketFreshness = formatRelativeMinutes(marketSnapshot?.publish_time, clockMs);
+  const oracleStatusTone =
+    globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-solana-green';
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -270,6 +304,14 @@ export default function AppPage({
       window.clearInterval(interval);
     };
   }, [oracleSnapshot]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setClockMs(Date.now());
+    }, 10000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <div className="py-4">
@@ -339,6 +381,9 @@ export default function AppPage({
               >
                 {((marketSnapshot?.spread_pct ?? globalState.spread) * 100).toFixed(3)}%
               </div>
+              <div className="mt-2 text-[10px] uppercase tracking-widest text-zinc-600">
+                Market tick {marketFreshness}
+              </div>
             </div>
 
             <div className="border border-zinc-800 p-4">
@@ -374,6 +419,7 @@ export default function AppPage({
                   }) : 'unavailable'}
                 </div>
                 <div>History: {oracleSnapshot?.history_points ?? 0} points</div>
+                <div>Oracle Freshness: {oracleFreshness}</div>
                 <div className="break-all leading-relaxed">
                   Authority: {oracleSnapshot?.authority ?? 'unavailable'}
                 </div>
@@ -386,6 +432,35 @@ export default function AppPage({
                 <div className="text-xs font-bold uppercase">Dashboard Mode</div>
                 <div className="text-[10px] uppercase text-zinc-500">
                   Live PDA + live market + snapshot fallback
+                </div>
+              </div>
+            </div>
+
+            <div className="border border-zinc-800 p-4">
+              <div className="mb-3 flex items-center gap-2 text-[10px] uppercase text-zinc-500">
+                <TimerReset size={12} /> Update Health
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-widest text-zinc-600">Oracle compute</span>
+                  <span className={cn('text-[10px] font-bold uppercase tracking-widest', oracleStatusTone)}>
+                    {oracleFreshness}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-widest text-zinc-600">Market feed</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+                    {marketFreshness}
+                  </span>
+                </div>
+                <div className="h-1 w-full bg-zinc-900">
+                  <div
+                    className={cn(
+                      'h-full transition-all duration-500',
+                      globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
+                    )}
+                    style={{ width: oracleFreshness === 'just now' ? '100%' : oracleFreshness === '1 min ago' ? '75%' : '45%' }}
+                  />
                 </div>
               </div>
             </div>
@@ -544,6 +619,77 @@ export default function AppPage({
                       style={{ width: `${globalState.suggested_ltv * 100}%` }}
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className="border border-zinc-800 bg-black p-5">
+                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
+                  <WalletCards size={12} /> Protocol Borrow Calculator
+                </div>
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <label className="block">
+                      <span className="mb-2 block text-[10px] uppercase tracking-widest text-zinc-600">
+                        Collateral Value USD
+                      </span>
+                      <input
+                        value={collateralInput}
+                        onChange={(event) => setCollateralInput(event.target.value)}
+                        inputMode="decimal"
+                        className="w-full border border-zinc-700 bg-zinc-950 px-4 py-3 font-mono text-sm text-white outline-none transition-colors focus:border-solana-green"
+                        placeholder="1000"
+                      />
+                    </label>
+                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                      This shows how a lending protocol could translate PegShield’s current oracle target into a
+                      max borrow decision for LST collateral.
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border border-zinc-800 p-3">
+                      <span className="text-[10px] uppercase tracking-widest text-zinc-500">Fixed 80% policy</span>
+                      <span className="font-mono text-sm text-zinc-300">${fixedBorrowLimitUsd.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border border-solana-green/30 bg-solana-green/5 p-3">
+                      <span className="text-[10px] uppercase tracking-widest text-solana-green">PegShield policy</span>
+                      <span className="font-mono text-sm text-solana-green">${oracleBorrowLimitUsd.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border border-zinc-800 p-3">
+                      <span className="text-[10px] uppercase tracking-widest text-zinc-500">Risk delta</span>
+                      <span className="font-mono text-sm text-white">${oracleDeltaUsd.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-zinc-800 bg-black p-5">
+                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
+                  <Database size={12} /> Integration Surface
+                </div>
+                <div className="space-y-3">
+                  <div className="border border-zinc-800 p-3">
+                    <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-600">Program ID</div>
+                    <div className="break-all font-mono text-[11px] text-zinc-300">
+                      {oracleSnapshot?.program_id ?? 'unavailable'}
+                    </div>
+                  </div>
+                  <div className="border border-zinc-800 p-3">
+                    <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-600">Risk State PDA</div>
+                    <div className="break-all font-mono text-[11px] text-zinc-300">
+                      {oracleSnapshot?.risk_state_pda ?? 'unavailable'}
+                    </div>
+                  </div>
+                  <a
+                    href="https://peg-shield.vercel.app/api/oracle-state"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between border border-zinc-800 p-3 transition-colors hover:border-solana-green"
+                  >
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-400">Open live oracle payload</span>
+                    <ArrowUpRight size={14} className="text-solana-green" />
+                  </a>
                 </div>
               </div>
             </div>
