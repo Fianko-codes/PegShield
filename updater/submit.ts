@@ -30,6 +30,23 @@ function resolveRepoPath(targetPath: string): string {
     : path.resolve(REPO_ROOT, targetPath);
 }
 
+function loadIdl(): anchor.Idl {
+  const candidatePaths = [
+    path.resolve(REPO_ROOT, "solana-program", "idl", "risk_oracle.json"),
+    path.resolve(REPO_ROOT, "solana-program", "target", "idl", "risk_oracle.json"),
+  ];
+
+  for (const candidate of candidatePaths) {
+    if (fs.existsSync(candidate)) {
+      return JSON.parse(fs.readFileSync(candidate, "utf-8")) as anchor.Idl;
+    }
+  }
+
+  throw new Error(
+    `Unable to find risk_oracle IDL. Checked: ${candidatePaths.join(", ")}`,
+  );
+}
+
 function loadRiskPayload(jsonPath: string): RiskPayload {
   return JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as RiskPayload;
 }
@@ -48,15 +65,7 @@ async function main(): Promise<void> {
     Keypair.fromSecretKey(Uint8Array.from(rawKeypair)),
   );
   const provider = new anchor.AnchorProvider(connection, wallet, {});
-  const idlPath = path.resolve(
-    __dirname,
-    "..",
-    "solana-program",
-    "target",
-    "idl",
-    "risk_oracle.json",
-  );
-  const idl = JSON.parse(fs.readFileSync(idlPath, "utf-8"));
+  const idl = loadIdl();
   const program = new anchor.Program(idl as anchor.Idl, provider) as any;
 
   const [riskStatePda] = PublicKey.findProgramAddressSync(
