@@ -4,6 +4,10 @@ const MSOL_USD_FEED_ID =
 const SOL_USD_FEED_ID =
   '0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d';
 
+function canonicalFeedId(feedId) {
+  return String(feedId).toLowerCase().replace(/^0x/, '');
+}
+
 function normalizePrice(rawPrice) {
   return Number(rawPrice.price) * 10 ** Number(rawPrice.expo);
 }
@@ -25,8 +29,11 @@ export default async function handler(_req, res) {
       throw new Error('Unexpected Hermes response shape');
     }
 
-    const msolFeed = feeds.find((feed) => feed.id === MSOL_USD_FEED_ID);
-    const solFeed = feeds.find((feed) => feed.id === SOL_USD_FEED_ID);
+    const byFeedId = new Map(
+      feeds.map((feed) => [canonicalFeedId(feed.id), feed]),
+    );
+    const msolFeed = byFeedId.get(canonicalFeedId(MSOL_USD_FEED_ID));
+    const solFeed = byFeedId.get(canonicalFeedId(SOL_USD_FEED_ID));
     if (!msolFeed?.price || !solFeed?.price) {
       throw new Error('Missing price feed payload');
     }
