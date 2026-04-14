@@ -4,25 +4,26 @@ const MSOL_USD_FEED_ID =
 const SOL_USD_FEED_ID =
   '0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d';
 
-function decodePrice(price) {
-  return Number(price.price) * 10 ** Number(price.expo);
+function normalizePrice(rawPrice) {
+  return Number(rawPrice.price) * 10 ** Number(rawPrice.expo);
 }
 
 export default async function handler(_req, res) {
   try {
     const baseUrl = process.env.PYTH_HTTP_URL || DEFAULT_PYTH_HTTP_URL;
-    const url = new URL('/v2/updates/price/latest', baseUrl);
+    const url = new URL('/api/latest_price_feeds', baseUrl);
     url.searchParams.set('ids[]', MSOL_USD_FEED_ID);
-    url.searchParams.set('ids[]', SOL_USD_FEED_ID);
-    url.searchParams.set('parsed', 'true');
+    url.searchParams.append('ids[]', SOL_USD_FEED_ID);
 
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Hermes request failed with ${response.status}`);
     }
 
-    const payload = await response.json();
-    const feeds = payload.parsed ?? [];
+    const feeds = await response.json();
+    if (!Array.isArray(feeds)) {
+      throw new Error('Unexpected Hermes response shape');
+    }
 
     const msolFeed = feeds.find((feed) => feed.id === MSOL_USD_FEED_ID);
     const solFeed = feeds.find((feed) => feed.id === SOL_USD_FEED_ID);
@@ -30,8 +31,8 @@ export default async function handler(_req, res) {
       throw new Error('Missing price feed payload');
     }
 
-    const msolPrice = decodePrice(msolFeed.price);
-    const solPrice = decodePrice(solFeed.price);
+    const msolPrice = normalizePrice(msolFeed.price);
+    const solPrice = normalizePrice(solFeed.price);
     const spreadPct = msolPrice / solPrice - 1;
 
     res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=30');
@@ -52,4 +53,3 @@ export default async function handler(_req, res) {
     });
   }
 }
-
