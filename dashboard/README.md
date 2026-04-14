@@ -1,73 +1,60 @@
-# React + TypeScript + Vite
+# PegShield Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Snapshot-backed frontend plus read-only Vercel API for the PegShield Solana LST risk oracle.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Serves the React dashboard for `PegShield`
+- Exposes `GET /api/oracle-state` to read the live `mSOL` oracle PDA from Solana devnet
+- Exposes `GET /api/simulation` to serve the generated stress replay snapshot
+- Falls back to `public/data/*.json` if the API is unavailable
 
-## React Compiler
+## Local commands
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run sync:data
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Vercel env vars
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Set these in the Vercel project:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea
+ORACLE_LST_ID=mSOL
 ```
+
+`PROGRAM_ID` and `ORACLE_LST_ID` are public. No private key is required for the API because it is read-only.
+
+## Deploy on Vercel
+
+1. Import the repo into Vercel.
+2. Set the project root to `dashboard`.
+3. Add the environment variables above.
+4. Use the default Vercel build command:
+
+```bash
+npm run build
+```
+
+5. Deploy.
+
+## Before each demo deploy
+
+Refresh the snapshot artifacts so the static fallback stays current:
+
+```bash
+npm run sync:data
+npm run build
+```
+
+## Routes
+
+- `/` narrative landing page
+- `/app` live oracle dashboard
+- `/sim` generated stress replay
+- `/api/oracle-state` live PDA reader
+- `/api/simulation` simulation snapshot API
