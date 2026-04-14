@@ -7,7 +7,10 @@ import {
   AlertTriangle, 
   BarChart3, 
   Cpu, 
-  Layers
+  Layers,
+  ShieldCheck,
+  Workflow,
+  Waypoints
 } from 'lucide-react';
 import { cn } from '../types';
 
@@ -135,6 +138,56 @@ export default function Home() {
         </motion.div>
       </section>
 
+      {/* HOW IT WORKS */}
+      <section className="mb-24 md:mb-40">
+        <div className="mb-16 space-y-4 text-center">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-solana-green">How It Works</div>
+          <h2 className="text-3xl font-bold uppercase tracking-tight md:text-5xl">From Price Feed To Lending Decision</h2>
+          <p className="mx-auto max-w-2xl text-[11px] uppercase leading-relaxed tracking-[0.16em] text-zinc-500 md:text-xs">
+            PegShield sits between raw market prices and protocol risk management. It converts LST market behavior
+            into a live on-chain signal that lenders can actually use.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          {[
+            {
+              title: 'Pyth Market Data',
+              icon: Zap,
+              desc: 'Live mSOL and SOL prices arrive from Hermes with recent spread history.',
+            },
+            {
+              title: 'Statistical Engine',
+              icon: Cpu,
+              desc: 'OU calibration, volatility checks, and regime detection produce the risk signal.',
+            },
+            {
+              title: 'On-Chain Oracle',
+              icon: Workflow,
+              desc: 'The updater publishes suggested LTV and regime state to a Solana PDA.',
+            },
+            {
+              title: 'Protocol Action',
+              icon: ShieldCheck,
+              desc: 'Lenders can tighten borrow limits before LST collateral stress turns into bad debt.',
+            },
+          ].map((item, index) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.08 }}
+              className="border border-zinc-900 bg-zinc-950 p-6"
+            >
+              <item.icon className="mb-5 text-solana-green" />
+              <div className="mb-3 text-sm font-bold uppercase tracking-widest">{item.title}</div>
+              <p className="text-[10px] uppercase leading-relaxed tracking-[0.15em] text-zinc-500">{item.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* THE SOLUTION SECTION */}
       <section className="mb-24 md:mb-40">
         <div className="text-center mb-20 space-y-4">
@@ -164,6 +217,106 @@ export default function Home() {
                <p className="text-[10px] text-zinc-500 uppercase tracking-wider leading-relaxed">{item.desc}</p>
              </motion.div>
            ))}
+        </div>
+      </section>
+
+      {/* FOR PROTOCOLS */}
+      <section className="mb-24 md:mb-40">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12">
+          <div className="border border-zinc-900 bg-zinc-950 p-8 md:p-10">
+            <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-solana-green">For Protocols</div>
+            <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight md:text-5xl">
+              One Oracle Read, <br />
+              One Safer Borrow Limit
+            </h2>
+            <p className="mb-8 max-w-2xl text-[11px] uppercase leading-relaxed tracking-[0.16em] text-zinc-500 md:text-xs">
+              A lender does not need to trust a dashboard. It only needs one on-chain state account with the latest
+              suggested LTV, regime flag, and calibration outputs. PegShield is designed as middleware that protocols
+              can read before accepting LST collateral risk.
+            </p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="border border-zinc-800 p-4">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Inputs</div>
+                <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                  mSOL price, SOL price, spread history, OU parameters, regime state
+                </div>
+              </div>
+              <div className="border border-zinc-800 p-4">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Output</div>
+                <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                  Suggested LTV published on Solana devnet for protocol-side collateral policy
+                </div>
+              </div>
+              <div className="border border-zinc-800 p-4">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Benefit</div>
+                <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                  Tighter borrow limits during stress instead of waiting for liquidation gaps
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-solana-green/30 bg-solana-green/5 p-8 md:p-10">
+            <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-solana-green">
+              <Waypoints size={12} /> Live Resources
+            </div>
+            <div className="space-y-4">
+              {[
+                {
+                  label: 'System App',
+                  href: '/app',
+                  external: false,
+                  desc: 'Live dashboard reading current oracle and market state.',
+                },
+                {
+                  label: 'Oracle API',
+                  href: 'https://peg-shield.vercel.app/api/oracle-state',
+                  external: true,
+                  desc: 'Read the current risk PDA payload served by the hosted app.',
+                },
+                {
+                  label: 'Market API',
+                  href: 'https://peg-shield.vercel.app/api/market-state',
+                  external: true,
+                  desc: 'Read live Hermes-backed market state used by the dashboard.',
+                },
+                {
+                  label: 'GitHub Repo',
+                  href: 'https://github.com/Fianko-codes/PegShield',
+                  external: true,
+                  desc: 'Inspect the code, workflows, and on-chain integration path.',
+                },
+              ].map((item) => (
+                item.external ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block border border-solana-green/20 p-4 transition-colors hover:border-solana-green"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-solana-green">{item.label}</span>
+                      <ArrowRight size={14} className="text-solana-green" />
+                    </div>
+                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-300">{item.desc}</div>
+                  </a>
+                ) : (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    className="block border border-solana-green/20 p-4 transition-colors hover:border-solana-green"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-solana-green">{item.label}</span>
+                      <ArrowRight size={14} className="text-solana-green" />
+                    </div>
+                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-300">{item.desc}</div>
+                  </Link>
+                )
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
