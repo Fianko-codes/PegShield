@@ -35,6 +35,24 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
                 Our oracle provides verifiable, low-latency risk signals to lending protocols 
                 to mitigate bad debt during market stress events.
               </p>
+              <div className="mt-5 flex flex-wrap gap-3 text-[10px] font-bold uppercase tracking-[0.08em]">
+                <a
+                  href="https://github.com/Fianko-codes"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-zinc-300 transition-colors hover:text-white"
+                >
+                  Creator Github
+                </a>
+                <a
+                  href="https://github.com/Fianko-codes/PegShield"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-zinc-500 transition-colors hover:text-white"
+                >
+                  Project Repo
+                </a>
+              </div>
             </div>
             
             <div>
