@@ -1,8 +1,10 @@
-# Solana LST Risk Oracle
+# PegShield
 
-Solana-native risk oracle for liquid staking token collateral, starting with `mSOL`.
+[![Oracle Updater](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml/badge.svg)](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml)
 
-This project ingests live Pyth price data, estimates de-peg risk with a statistical model, and publishes a dynamic collateral signal on Solana devnet for other protocols or clients to consume.
+PegShield is a Solana-native risk oracle for liquid staking token collateral, starting with `mSOL`.
+
+It ingests live Pyth price data, estimates LST de-peg risk with a statistical model, and publishes a dynamic collateral signal on Solana devnet that lending protocols and risk tools can consume.
 
 ## What It Does
 
@@ -11,9 +13,10 @@ This project ingests live Pyth price data, estimates de-peg risk with a statisti
 - estimates mean reversion and volatility with an Ornstein-Uhlenbeck model
 - detects regime stress with Z-score and ADF stationarity checks
 - computes a dynamic `suggested_ltv`
-- writes the result on-chain through an Anchor program
+- writes the result on-chain through an Anchor program and PDA
 - reads the risk PDA back from a separate client
-- generates a simulation chart comparing fixed LTV vs dynamic oracle LTV
+- generates a simulation replay comparing fixed LTV vs dynamic oracle LTV
+- exposes a hosted dashboard plus a read-only live API
 
 ## Why This Exists
 
@@ -34,7 +37,7 @@ That distinction matters for Solana lending protocols that accept LSTs as collat
 - one updater authority
 - devnet only
 
-This is an MVP, not a finished production oracle network.
+This is a demo-ready MVP, not a finished production oracle network.
 
 ## Architecture
 
@@ -60,7 +63,7 @@ Pyth Hermes -> bridge -> statistical engine -> updater -> Solana PDA -> consumer
   Generates the stress replay chart and comparison dataset.
 
 - `dashboard/`
-  Optional GUI surface for demos.
+  Hosted demo surface and read-only Vercel API.
 
 ## Repository Layout
 
@@ -152,7 +155,10 @@ From the repo root:
 npm --prefix updater run submit -- /abs/path/to/core-engine/output/latest.json
 npm --prefix updater run read -- mSOL
 .venv/bin/python simulation/stress_test.py
+npm --prefix updater run consumer -- 1000 mSOL
 ```
+
+The consumer demo prints the max borrow allowed under a fixed `80%` policy versus the live oracle LTV for a sample collateral value.
 
 ## GitHub Actions Updater
 
@@ -214,7 +220,14 @@ The strongest demo sequence is:
 2. run the statistical engine
 3. submit the update on devnet
 4. read the PDA back
-5. show the simulation chart
+5. show the consumer borrow-limit comparison
+6. show the simulation replay
+
+## Hosted Demo
+
+- Dashboard: `https://peg-shield.vercel.app/`
+- Live oracle API: `https://peg-shield.vercel.app/api/oracle-state`
+- Live market API: `https://peg-shield.vercel.app/api/market-state`
 
 ## License
 

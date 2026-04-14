@@ -22,8 +22,8 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
       regime === 1 && "border-emergency-red/50"
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <div className="flex items-center gap-8">
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center gap-4 md:gap-8">
             <Link to="/" className="flex items-center gap-2 group">
               <div className={cn(
                 "w-8 h-8 flex items-center justify-center border transition-all duration-500",
@@ -31,7 +31,7 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
               )}>
                 <ShieldCheck size={18} className={regime === 1 ? "text-emergency-red" : "text-solana-green"} />
               </div>
-              <span className="text-xl font-bold tracking-tighter uppercase group-hover:tracking-normal transition-all">
+              <span className="text-lg font-bold tracking-tighter uppercase transition-all group-hover:tracking-normal md:text-xl">
                 PegShield
               </span>
             </Link>
@@ -92,6 +92,7 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
             <button 
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-zinc-400 hover:text-white"
+              aria-label="Toggle navigation"
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
