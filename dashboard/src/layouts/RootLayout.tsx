@@ -12,16 +12,16 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
       regime === 1 && "regime-critical selection:bg-emergency-red"
     )}>
       <Nav riskState={riskState} />
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Outlet />
       </main>
       
       {/* GLOBAL FOOTER */}
-      <footer className="border-t border-zinc-800 bg-black mt-20 py-12">
+      <footer className="mt-20 border-t border-zinc-800 bg-black py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-12">
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-2 mb-6">
+              <div className="mb-6 flex items-center gap-2">
                 <div className={cn(
                   "w-6 h-6 border flex items-center justify-center",
                   regime === 1 ? "border-emergency-red shadow-glow-red" : "border-solana-green shadow-glow-green"
@@ -30,7 +30,7 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
                 </div>
                 <span className="text-lg font-bold uppercase tracking-tighter">PegShield</span>
               </div>
-              <p className="text-zinc-500 text-xs max-w-md leading-relaxed uppercase tracking-wide">
+              <p className="max-w-md text-[11px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500 md:text-xs">
                 Solana-native risk infrastructure for liquid staking tokens. 
                 Our oracle provides verifiable, low-latency risk signals to lending protocols 
                 to mitigate bad debt during market stress events.
@@ -38,8 +38,8 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
             </div>
             
             <div>
-              <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-6">Navigation</h4>
-              <ul className="space-y-4 text-[10px] uppercase tracking-widest font-bold">
+              <h4 className="mb-6 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-300">Navigation</h4>
+              <ul className="space-y-4 text-[10px] font-bold uppercase tracking-[0.1em]">
                 <li><Link to="/" className="text-zinc-500 hover:text-white transition-colors">Narrative</Link></li>
                 <li><Link to="/app" className="text-zinc-500 hover:text-white transition-colors">System App</Link></li>
                 <li><Link to="/sim" className="text-zinc-500 hover:text-white transition-colors">Shock Simulation</Link></li>
@@ -47,19 +47,19 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
             </div>
             
             <div>
-              <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-6">Resources</h4>
-              <ul className="space-y-4 text-[10px] uppercase tracking-widest font-bold">
+              <h4 className="mb-6 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-300">Resources</h4>
+              <ul className="space-y-4 text-[10px] font-bold uppercase tracking-[0.1em]">
                 <li><a href="https://peg-shield.vercel.app/api/oracle-state" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Live Oracle API</a></li>
                 <li><a href="https://github.com/Fianko-codes/PegShield" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Github</a></li>
                 <li><a href="https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Oracle Updater</a></li>
               </ul>
             </div>
           </div>
-          <div className="mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-[10px] text-zinc-700 uppercase tracking-widest">
+          <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-zinc-900 pt-8 md:mt-20 md:flex-row md:items-center">
+            <div className="text-[10px] uppercase tracking-[0.08em] text-zinc-700">
               © 2026 PegShield Labs // Built for Solana
             </div>
-            <div className="flex gap-8 text-[10px] text-zinc-700 uppercase tracking-widest">
+            <div className="flex flex-wrap gap-4 text-[10px] uppercase tracking-[0.08em] text-zinc-700 md:gap-8">
               <span>Devnet-v1.0.4</span>
               <span>All Systems Operational</span>
             </div>

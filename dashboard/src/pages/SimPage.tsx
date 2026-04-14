@@ -97,11 +97,11 @@ export default function SimPage() {
     : 'Awaiting data';
 
   return (
-    <div className="py-12 space-y-12">
-      <header className="space-y-4 text-center max-w-2xl mx-auto">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-solana-green">Simulation Bridge</div>
-        <h1 className="text-5xl font-bold uppercase tracking-tighter">Stress Test <br /> the <span className="text-solana-green">Oracle</span></h1>
-        <p className="text-zinc-500 text-xs uppercase tracking-widest leading-relaxed">
+    <div className="space-y-12 py-8 md:py-12">
+      <header className="mx-auto max-w-2xl space-y-4 text-center">
+        <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">Simulation Bridge</div>
+        <h1 className="text-3xl font-bold uppercase tracking-tighter md:text-5xl">Stress Test <br /> the <span className="text-solana-green">Oracle</span></h1>
+        <p className="text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
           Replay the generated stress path and compare the static 80% policy
           against PegShield&apos;s tighter oracle target during spread instability.
         </p>
@@ -110,10 +110,10 @@ export default function SimPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Controls */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="border border-zinc-800 p-8 space-y-8 bg-black">
+          <div className="space-y-8 border border-zinc-800 bg-black p-5 md:p-8">
             <div className="space-y-2">
               <h3 className="text-sm font-bold uppercase tracking-widest">Simulation Controls</h3>
-              <p className="text-[10px] text-zinc-500 uppercase leading-relaxed">
+              <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
                 Advance the precomputed stress scenario generated from the current oracle baseline.
               </p>
             </div>
@@ -140,19 +140,19 @@ export default function SimPage() {
 
             <div className="pt-6 border-t border-zinc-900 space-y-4">
                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-zinc-500 uppercase">Theta (Reversion)</span>
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-500">Theta (Reversion)</span>
                   <span className={cn("text-xs mono-data font-bold", isCritical ? "text-emergency-red" : "text-solana-green")}>
                     {currentPoint ? currentPoint.theta.toFixed(4) : '0.0000'}
                   </span>
                </div>
                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-zinc-500 uppercase">Spread Regime</span>
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-500">Spread Regime</span>
                   <span className={cn("text-xs font-bold uppercase", isCritical ? "text-emergency-red" : "text-solana-green")}>
                     {isCritical ? 'STRESSED' : 'MONITORING'}
                   </span>
                </div>
                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-zinc-500 uppercase">Oracle Adjustment</span>
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-500">Oracle Adjustment</span>
                   <span className="text-xs mono-data font-bold text-zinc-300">
                     {ltvDeltaText}
                   </span>
@@ -171,7 +171,7 @@ export default function SimPage() {
                  <div className="flex items-center gap-2 text-emergency-red font-bold uppercase text-xs">
                     <AlertTriangle size={16} /> Oracle Intervention
                  </div>
-                 <p className="text-[10px] text-zinc-300 uppercase leading-relaxed">
+                 <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-300">
                     Replay entered a stressed regime. PegShield cut target LTV to {(finalDynamicLtv * 100).toFixed(1)}%.
                     <span className="text-white font-bold ml-1">Exposure above the tighter policy: {exposureGap.toFixed(1)} USD.</span>
                  </p>
@@ -182,11 +182,11 @@ export default function SimPage() {
 
         {/* Visualization */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="border border-zinc-800 p-6 bg-black relative">
-            <div className="absolute top-4 left-6 z-10">
-              <div className="text-[10px] text-zinc-500 uppercase mb-1">Generated Stress Scenario</div>
+          <div className="relative border border-zinc-800 bg-black p-4 sm:p-6">
+            <div className="absolute left-4 top-4 z-10 sm:left-6">
+              <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Generated Stress Scenario</div>
             </div>
-            <div className="h-[300px] w-full mt-8">
+            <div className="mt-8 h-[260px] w-full sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={spreadSeries}>
                   <defs>
@@ -222,12 +222,12 @@ export default function SimPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border border-zinc-800 p-6 bg-black">
-               <div className="text-[10px] text-zinc-500 uppercase mb-4 flex items-center gap-2">
+            <div className="border border-zinc-800 bg-black p-5 sm:p-6">
+               <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
                   <TrendingDown size={12} className="text-emergency-red" /> Static Policy
                </div>
                <div className="text-3xl font-bold mono-data text-zinc-400">{(finalStaticLtv * 100).toFixed(1)}%</div>
-               <div className="mt-4 text-[10px] text-emergency-red font-bold uppercase tracking-wider">
+               <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.08em] text-emergency-red">
                   Exposure gap after shock: {(currentPoint?.bad_debt_no_oracle ?? 0).toFixed(1)} USD
                </div>
             </div>
@@ -235,7 +235,7 @@ export default function SimPage() {
               "p-6 border transition-all duration-500",
               isCritical ? "border-solana-green bg-solana-green/5 shadow-brutal-green" : "border-zinc-800 bg-black"
             )}>
-               <div className="text-[10px] text-zinc-500 uppercase mb-4 flex items-center gap-2">
+               <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
                   <ShieldCheck size={12} className="text-solana-green" /> PegShield Policy
                </div>
                <div className={cn(
@@ -244,7 +244,7 @@ export default function SimPage() {
                )}>
                  {(finalDynamicLtv * 100).toFixed(1)}%
                </div>
-               <div className="mt-4 text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+               <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500">
                   Status: {isCritical ? "TIGHTENED" : "MONITORING"}
                </div>
             </div>
@@ -253,9 +253,9 @@ export default function SimPage() {
       </div>
 
       {/* Narrative Footer */}
-      <section className="bg-zinc-950 border border-zinc-900 p-12 text-center max-w-4xl mx-auto">
-         <h2 className="text-2xl font-bold uppercase tracking-tighter mb-4">What This Replay Shows</h2>
-         <p className="text-xs text-zinc-500 uppercase tracking-widest leading-relaxed mb-8">
+      <section className="mx-auto max-w-4xl border border-zinc-900 bg-zinc-950 p-6 text-center sm:p-12">
+         <h2 className="mb-4 text-2xl font-bold uppercase tracking-tighter">What This Replay Shows</h2>
+         <p className="mb-8 text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
             This view is a generated replay from the current baseline, not a live market dashboard.
             It shows how the oracle target tightens as spread instability rises, so teams can reason about
             policy changes before shipping the feed into a lending integration.
