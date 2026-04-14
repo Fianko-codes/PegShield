@@ -59,6 +59,18 @@ function formatRelativeMinutes(timestampSeconds: number | undefined, nowMs: numb
   return `${deltaMinutes} mins ago`;
 }
 
+function shortenMiddle(value: string | undefined, lead = 8, tail = 6): string {
+  if (!value) {
+    return 'unavailable';
+  }
+
+  if (value.length <= lead + tail + 3) {
+    return value;
+  }
+
+  return `${value.slice(0, lead)}...${value.slice(-tail)}`;
+}
+
 function TerminalLine({ log }: { log: LogEntry }) {
   const colorClass =
     log.type === 'alert'
@@ -70,7 +82,7 @@ function TerminalLine({ log }: { log: LogEntry }) {
   return (
     <div className="mb-2 flex gap-2 font-mono text-[11px] leading-relaxed">
       <span className="shrink-0 text-zinc-600">[{log.timestamp}]</span>
-      <span className={cn('min-w-0 break-words', colorClass)}>{log.message}</span>
+      <span className={cn('min-w-0 break-all', colorClass)}>{log.message}</span>
     </div>
   );
 }
@@ -212,7 +224,7 @@ export default function AppPage({
       {
         id: 'state',
         timestamp,
-        message: `PDA ${oracleSnapshot.risk_state_pda ?? 'unavailable'} on ${oracleSnapshot.network ?? 'devnet'}`,
+        message: `PDA ${shortenMiddle(oracleSnapshot.risk_state_pda)} on ${oracleSnapshot.network ?? 'devnet'}`,
         type: 'info',
       },
       {
@@ -294,14 +306,30 @@ export default function AppPage({
       });
     };
 
+    const syncOnResume = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+
+      setClockMs(Date.now());
+      void loadMarket();
+    };
+
     void loadMarket();
     const interval = window.setInterval(() => {
       void loadMarket();
     }, 30000);
 
+    window.addEventListener('focus', syncOnResume);
+    window.addEventListener('pageshow', syncOnResume);
+    document.addEventListener('visibilitychange', syncOnResume);
+
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+      window.removeEventListener('focus', syncOnResume);
+      window.removeEventListener('pageshow', syncOnResume);
+      document.removeEventListener('visibilitychange', syncOnResume);
     };
   }, [oracleSnapshot]);
 
@@ -344,8 +372,11 @@ export default function AppPage({
                   globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
                 )}
               />
-              <span className="min-w-0 break-all">
-                Canonical State PDA: {oracleSnapshot?.risk_state_pda ?? 'snapshot unavailable'}
+              <span
+                className="min-w-0 break-all"
+                title={oracleSnapshot?.risk_state_pda ?? 'snapshot unavailable'}
+              >
+                Canonical State PDA: {shortenMiddle(oracleSnapshot?.risk_state_pda, 10, 8)}
               </span>
             </div>
           </div>
@@ -367,9 +398,9 @@ export default function AppPage({
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 gap-6 lg:grid-cols-12"
+        className="grid grid-cols-1 gap-6 xl:grid-cols-12"
       >
-        <motion.section variants={itemVariants} className="space-y-6 lg:col-span-3">
+        <motion.section variants={itemVariants} className="space-y-6 xl:col-span-3">
           <div className="space-y-4">
             <div className="relative overflow-hidden border border-zinc-800 p-4">
               <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
@@ -408,8 +439,8 @@ export default function AppPage({
             </div>
 
             <div className="border border-zinc-800 p-4">
-              <div className="mb-3 text-[10px] uppercase tracking-[0.12em] text-zinc-500">Snapshot Metadata</div>
-              <div className="space-y-2 text-[10px] uppercase leading-relaxed tracking-[0.1em] text-zinc-400">
+              <div className="mb-3 text-[10px] uppercase tracking-[0.08em] text-zinc-500">Snapshot Metadata</div>
+              <div className="space-y-2 text-[10px] leading-relaxed tracking-[0.04em] text-zinc-400">
                 <div className="break-words">Oracle Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
                 <div className="break-words">Market Source: {marketSnapshot?.source ?? 'unavailable'}</div>
                 <div className="break-words">Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
@@ -422,8 +453,11 @@ export default function AppPage({
                 </div>
                 <div>History: {oracleSnapshot?.history_points ?? 0} points</div>
                 <div>Oracle Freshness: {oracleFreshness}</div>
-                <div className="break-all leading-relaxed">
-                  Authority: {oracleSnapshot?.authority ?? 'unavailable'}
+                <div
+                  className="break-all font-mono lowercase tracking-normal text-zinc-500"
+                  title={oracleSnapshot?.authority ?? 'unavailable'}
+                >
+                  Authority: {shortenMiddle(oracleSnapshot?.authority, 10, 8)}
                 </div>
               </div>
             </div>
@@ -469,7 +503,7 @@ export default function AppPage({
           </div>
         </motion.section>
 
-        <motion.section variants={itemVariants} className="space-y-6 lg:col-span-6">
+        <motion.section variants={itemVariants} className="space-y-6 xl:col-span-6">
           <div className="space-y-6">
             <div className="relative border border-zinc-800 bg-black p-4 sm:p-6">
               <div className="absolute left-4 right-4 top-4 z-10 sm:left-6 sm:right-auto">
@@ -589,7 +623,7 @@ export default function AppPage({
                 )}
               >
                 <div>
-                  <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
+                  <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
                     <Lock size={12} /> Suggested LTV
                   </div>
                   <div className="flex items-baseline gap-2">
@@ -650,15 +684,15 @@ export default function AppPage({
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between border border-zinc-800 p-3">
+                    <div className="flex items-center justify-between gap-3 border border-zinc-800 p-3">
                       <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Fixed 80% policy</span>
                       <span className="shrink-0 font-mono text-sm text-zinc-300">${fixedBorrowLimitUsd.toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between border border-solana-green/30 bg-solana-green/5 p-3">
+                    <div className="flex items-center justify-between gap-3 border border-solana-green/30 bg-solana-green/5 p-3">
                       <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-solana-green">PegShield policy</span>
                       <span className="shrink-0 font-mono text-sm text-solana-green">${oracleBorrowLimitUsd.toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between border border-zinc-800 p-3">
+                    <div className="flex items-center justify-between gap-3 border border-zinc-800 p-3">
                       <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Risk delta</span>
                       <span className="shrink-0 font-mono text-sm text-white">${oracleDeltaUsd.toFixed(2)}</span>
                     </div>
@@ -698,7 +732,7 @@ export default function AppPage({
           </div>
         </motion.section>
 
-        <motion.section variants={itemVariants} className="lg:col-span-3">
+        <motion.section variants={itemVariants} className="xl:col-span-3">
           <div className="flex h-full flex-col border border-zinc-800 bg-black">
             <div className="border-b border-zinc-800 bg-zinc-900/50 p-3">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
