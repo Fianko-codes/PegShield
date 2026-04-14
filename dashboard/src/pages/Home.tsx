@@ -40,18 +40,18 @@ export default function Home() {
         viewport={{ once: true }}
         className="mb-24 space-y-8 text-center md:mb-40"
       >
-        <motion.div variants={itemVariants} className="flex justify-center mb-10">
-          <div className="px-3 py-1 border border-solana-green/30 bg-solana-green/5 text-[10px] font-bold uppercase tracking-widest text-solana-green">
+        <motion.div variants={itemVariants} className="mb-10 flex justify-center">
+          <div className="border border-solana-green/30 bg-solana-green/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">
             Now Live on Solana Devnet
           </div>
         </motion.div>
         
-        <motion.h1 variants={itemVariants} className="text-4xl md:text-8xl font-bold tracking-tighter uppercase leading-[0.9] sm:text-6xl">
+        <motion.h1 variants={itemVariants} className="text-4xl font-bold uppercase leading-[0.9] tracking-tighter sm:text-6xl md:text-8xl">
           Protect Your <br />
           <span className="text-solana-green">LST Liquidity</span>
         </motion.h1>
         
-        <motion.p variants={itemVariants} className="mx-auto max-w-xl text-[11px] uppercase leading-relaxed tracking-[0.18em] text-zinc-500 md:text-sm">
+        <motion.p variants={itemVariants} className="mx-auto max-w-xl text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-sm">
           The verifiable on-chain risk layer for Solana LSTs. 
           Dynamic LTV adjustments driven by statistical mean-reversion modeling.
         </motion.p>
@@ -59,13 +59,13 @@ export default function Home() {
         <motion.div variants={itemVariants} className="flex flex-col justify-center gap-4 pt-8 md:flex-row md:gap-6 md:pt-10">
           <Link 
             to="/app" 
-            className="px-8 py-4 bg-solana-green text-black font-bold uppercase text-[10px] tracking-[0.2em] shadow-brutal-green transition-all hover:shadow-glow-green md:px-10 md:py-5"
+            className="bg-solana-green px-8 py-4 text-[10px] font-bold uppercase tracking-[0.14em] text-black shadow-brutal-green transition-all hover:shadow-glow-green md:px-10 md:py-5"
           >
             Launch System App
           </Link>
           <Link 
             to="/sim" 
-            className="flex items-center justify-center gap-2 border border-zinc-800 px-8 py-4 font-bold uppercase text-[10px] tracking-[0.2em] transition-all hover:bg-zinc-900 md:px-10 md:py-5"
+            className="flex items-center justify-center gap-2 border border-zinc-800 px-8 py-4 text-[10px] font-bold uppercase tracking-[0.14em] transition-all hover:bg-zinc-900 md:px-10 md:py-5"
           >
             Enter Simulation Bridge <ChevronRight size={14} />
           </Link>
@@ -80,14 +80,14 @@ export default function Home() {
           viewport={{ once: true }}
           className="space-y-6"
         >
-          <div className="text-[10px] font-bold uppercase tracking-widest text-emergency-red flex items-center gap-2">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-emergency-red">
             <AlertTriangle size={12} /> Systemic Risk
           </div>
           <h2 className="text-3xl font-bold uppercase leading-tight tracking-tight md:text-5xl">
             Static Parameters <br />
             Fail During <span className="text-emergency-red">Stress</span>
           </h2>
-          <p className="text-[11px] uppercase leading-relaxed tracking-[0.16em] text-zinc-500 md:text-sm">
+          <p className="text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-sm">
             During market stress, LST spreads deviate from their mean. Protocols using 
             static LTV react too slowly, leading to bad debt and liquidation gaps.
           </p>
@@ -98,7 +98,7 @@ export default function Home() {
                </div>
                <div>
                  <div className="text-[10px] font-bold uppercase mb-1">Concentrated Liquidity Risk</div>
-                 <div className="text-[10px] text-zinc-600 uppercase tracking-wide">LST/SOL liquidity pools dry up instantly during de-pegs.</div>
+                 <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-600">LST/SOL liquidity pools dry up instantly during de-pegs.</div>
                </div>
             </div>
             <div className="flex items-start gap-4 border border-zinc-900 bg-zinc-950 p-5 md:p-6">
@@ -107,7 +107,7 @@ export default function Home() {
                </div>
                <div>
                  <div className="text-[10px] font-bold uppercase mb-1">Reactive Liquidation Gaps</div>
-                 <div className="text-[10px] text-zinc-600 uppercase tracking-wide">Arbitrageurs can't exit fast enough when LTV is set too aggressively.</div>
+                 <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-600">Arbitrageurs can't exit fast enough when LTV is set too aggressively.</div>
                </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function Home() {
                    ))}
                 </div>
                 <div className="mono-data text-2xl font-bold uppercase tracking-tighter text-emergency-red md:text-3xl">DE-PEG DETECTED</div>
-                <div className="text-[10px] font-bold text-zinc-500 uppercase">Systemic Risk Confidence: 98.4%</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500">Systemic Risk Confidence: 98.4%</div>
              </div>
           </div>
           <div className="absolute -bottom-3 -right-3 flex h-24 w-24 items-center justify-center border border-emergency-red bg-background shadow-brutal-red animate-pulse md:-bottom-6 md:-right-6 md:h-40 md:w-40">
@@ -141,9 +141,9 @@ export default function Home() {
       {/* HOW IT WORKS */}
       <section className="mb-24 md:mb-40">
         <div className="mb-16 space-y-4 text-center">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-solana-green">How It Works</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">How It Works</div>
           <h2 className="text-3xl font-bold uppercase tracking-tight md:text-5xl">From Price Feed To Lending Decision</h2>
-          <p className="mx-auto max-w-2xl text-[11px] uppercase leading-relaxed tracking-[0.16em] text-zinc-500 md:text-xs">
+          <p className="mx-auto max-w-2xl text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
             PegShield sits between raw market prices and protocol risk management. It converts LST market behavior
             into a live on-chain signal that lenders can actually use.
           </p>
@@ -181,8 +181,8 @@ export default function Home() {
               className="border border-zinc-900 bg-zinc-950 p-6"
             >
               <item.icon className="mb-5 text-solana-green" />
-              <div className="mb-3 text-sm font-bold uppercase tracking-widest">{item.title}</div>
-              <p className="text-[10px] uppercase leading-relaxed tracking-[0.15em] text-zinc-500">{item.desc}</p>
+              <div className="mb-3 text-sm font-bold uppercase tracking-[0.08em]">{item.title}</div>
+              <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">{item.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -191,9 +191,9 @@ export default function Home() {
       {/* THE SOLUTION SECTION */}
       <section className="mb-24 md:mb-40">
         <div className="text-center mb-20 space-y-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-solana-green">The Infrastructure</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">The Infrastructure</div>
           <h2 className="text-3xl font-bold uppercase tracking-tight md:text-5xl">System Components</h2>
-          <p className="mx-auto max-w-xl text-[11px] uppercase leading-relaxed tracking-[0.16em] text-zinc-500 md:text-xs">
+          <p className="mx-auto max-w-xl text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
             PegShield transforms raw market data into decision-ready risk signals verified on-chain.
           </p>
         </div>
@@ -213,8 +213,8 @@ export default function Home() {
                className="group border border-zinc-900 bg-zinc-950 p-6 transition-all hover:border-solana-green/30 md:p-8"
              >
                <item.icon className="text-solana-green mb-6 group-hover:scale-110 transition-transform" />
-               <h3 className="text-sm font-bold uppercase mb-4 tracking-widest">{item.title}</h3>
-               <p className="text-[10px] text-zinc-500 uppercase tracking-wider leading-relaxed">{item.desc}</p>
+               <h3 className="mb-4 text-sm font-bold uppercase tracking-[0.08em]">{item.title}</h3>
+               <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">{item.desc}</p>
              </motion.div>
            ))}
         </div>
@@ -224,32 +224,32 @@ export default function Home() {
       <section className="mb-24 md:mb-40">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12">
           <div className="border border-zinc-900 bg-zinc-950 p-8 md:p-10">
-            <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-solana-green">For Protocols</div>
+            <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">For Protocols</div>
             <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight md:text-5xl">
               One Oracle Read, <br />
               One Safer Borrow Limit
             </h2>
-            <p className="mb-8 max-w-2xl text-[11px] uppercase leading-relaxed tracking-[0.16em] text-zinc-500 md:text-xs">
+            <p className="mb-8 max-w-2xl text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
               A lender does not need to trust a dashboard. It only needs one on-chain state account with the latest
               suggested LTV, regime flag, and calibration outputs. PegShield is designed as middleware that protocols
               can read before accepting LST collateral risk.
             </p>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="border border-zinc-800 p-4">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Inputs</div>
-                <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Inputs</div>
+                <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
                   mSOL price, SOL price, spread history, OU parameters, regime state
                 </div>
               </div>
               <div className="border border-zinc-800 p-4">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Output</div>
-                <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Output</div>
+                <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
                   Suggested LTV published on Solana devnet for protocol-side collateral policy
                 </div>
               </div>
               <div className="border border-zinc-800 p-4">
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Benefit</div>
-                <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Benefit</div>
+                <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
                   Tighter borrow limits during stress instead of waiting for liquidation gaps
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default function Home() {
           </div>
 
           <div className="border border-solana-green/30 bg-solana-green/5 p-8 md:p-10">
-            <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-solana-green">
+            <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">
               <Waypoints size={12} /> Live Resources
             </div>
             <div className="space-y-4">
@@ -296,10 +296,10 @@ export default function Home() {
                     className="block border border-solana-green/20 p-4 transition-colors hover:border-solana-green"
                   >
                     <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-solana-green">{item.label}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-solana-green">{item.label}</span>
                       <ArrowRight size={14} className="text-solana-green" />
                     </div>
-                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-300">{item.desc}</div>
+                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-300">{item.desc}</div>
                   </a>
                 ) : (
                   <Link
@@ -308,10 +308,10 @@ export default function Home() {
                     className="block border border-solana-green/20 p-4 transition-colors hover:border-solana-green"
                   >
                     <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-solana-green">{item.label}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-solana-green">{item.label}</span>
                       <ArrowRight size={14} className="text-solana-green" />
                     </div>
-                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-300">{item.desc}</div>
+                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-300">{item.desc}</div>
                   </Link>
                 )
               ))}
@@ -328,13 +328,13 @@ export default function Home() {
             Scale Your <br />
             Liquidity <span className="opacity-40">Safely</span>
           </h2>
-          <p className="mx-auto max-w-lg text-[11px] font-bold uppercase leading-relaxed tracking-[0.18em] md:text-xs">
+          <p className="mx-auto max-w-lg text-[11px] font-bold uppercase leading-relaxed tracking-[0.12em] md:text-xs">
             Infrastructure built for the next generation of risk-aware DeFi on Solana.
           </p>
           <div className="flex justify-center pt-8">
             <Link 
               to="/app"
-              className="flex items-center gap-4 bg-black px-8 py-4 text-[10px] font-bold uppercase tracking-[0.24em] text-white transition-all hover:shadow-brutal-green md:px-12 md:py-6 md:tracking-[0.3em]"
+              className="flex items-center gap-4 bg-black px-8 py-4 text-[10px] font-bold uppercase tracking-[0.14em] text-white transition-all hover:shadow-brutal-green md:px-12 md:py-6 md:tracking-[0.22em]"
             >
               Open System App <ArrowRight size={16} />
             </Link>

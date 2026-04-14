@@ -37,35 +37,35 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
             </Link>
 
             {/* LIVE SYSTEM INDICATORS - Product maturity signal */}
-            <div className="hidden lg:flex items-center gap-6 pl-6 border-l border-zinc-900">
+            <div className="hidden min-w-0 lg:flex items-center gap-4 xl:gap-6 pl-4 xl:pl-6 border-l border-zinc-900">
                <RegimeBadge regime={regime} />
                <div className="flex flex-col">
-                  <span className="text-[8px] text-zinc-600 uppercase font-bold tracking-widest">Live θ</span>
+                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live θ</span>
                   <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
                     {riskState.theta.toFixed(4)}
                   </span>
                </div>
                <div className="flex flex-col">
-                  <span className="text-[8px] text-zinc-600 uppercase font-bold tracking-widest">Live σ</span>
+                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live σ</span>
                   <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
                     {riskState.sigma.toFixed(4)}
                   </span>
                </div>
                <div className="flex items-center gap-1">
                   <Cpu size={10} className="text-zinc-700 animate-pulse" />
-                  <span className="text-[8px] text-zinc-700 uppercase font-bold tracking-widest">Oracle Node: mSOL-01</span>
+                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-700">Oracle Node: mSOL-01</span>
                </div>
             </div>
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-5 lg:gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  "text-[10px] font-bold uppercase tracking-widest transition-colors",
+                  "text-[10px] font-bold uppercase tracking-[0.12em] transition-colors",
                   location.pathname === link.path 
                     ? (regime === 1 ? "text-emergency-red" : "text-solana-green") 
                     : "text-zinc-500 hover:text-white"
@@ -77,7 +77,7 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
             <Link 
               to="/app"
               className={cn(
-                "px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all",
+                "border px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-all",
                 regime === 1 
                   ? "border-emergency-red text-emergency-red shadow-brutal-red hover:bg-emergency-red hover:text-white" 
                   : "border-solana-green text-solana-green shadow-brutal-green hover:bg-solana-green hover:text-black"
@@ -102,14 +102,14 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
 
       {/* Mobile Nav */}
       {isOpen && (
-        <div className="md:hidden border-t border-zinc-800 bg-black/95 backdrop-blur-md px-4 pt-2 pb-6 space-y-4">
+        <div className="space-y-4 border-t border-zinc-800 bg-black/95 px-4 pb-6 pt-2 backdrop-blur-md md:hidden">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
               onClick={() => setIsOpen(false)}
               className={cn(
-                "block text-sm font-bold uppercase tracking-widest",
+                "block text-sm font-bold uppercase tracking-[0.12em]",
                 location.pathname === link.path 
                   ? (regime === 1 ? "text-emergency-red" : "text-solana-green") 
                   : "text-zinc-500"
@@ -122,7 +122,7 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
             to="/app"
             onClick={() => setIsOpen(false)}
             className={cn(
-              "block w-full text-center px-4 py-3 border text-[10px] font-bold uppercase tracking-widest",
+              "block w-full border px-4 py-3 text-center text-[10px] font-bold uppercase tracking-[0.12em]",
               regime === 1 
                 ? "border-emergency-red text-emergency-red shadow-brutal-red" 
                 : "border-solana-green text-solana-green shadow-brutal-green"

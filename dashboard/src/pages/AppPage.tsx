@@ -68,9 +68,9 @@ function TerminalLine({ log }: { log: LogEntry }) {
         : 'text-zinc-400';
 
   return (
-    <div className="mb-1 flex gap-2 font-mono text-xs">
-      <span className="text-zinc-600">[{log.timestamp}]</span>
-      <span className={cn(colorClass)}>{log.message}</span>
+    <div className="mb-2 flex gap-2 font-mono text-[11px] leading-relaxed">
+      <span className="shrink-0 text-zinc-600">[{log.timestamp}]</span>
+      <span className={cn('min-w-0 break-words', colorClass)}>{log.message}</span>
     </div>
   );
 }
@@ -95,19 +95,19 @@ function FormulaPanel({
           : 'border-solana-green/50 shadow-glow-green',
       )}
     >
-      <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
+      <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-zinc-500">
         <Cpu size={12} /> Live OU-Process Calibration
       </div>
       <div className="flex flex-col gap-4">
         <div className="border border-zinc-800/80 bg-zinc-950/60 px-4 py-3 text-center">
-          <div className="mono-data text-sm uppercase tracking-[0.25em] text-zinc-500">
+          <div className="mono-data text-[11px] uppercase tracking-[0.18em] text-zinc-500 sm:text-sm">
             Ornstein-Uhlenbeck Process
           </div>
-          <div className="mt-2 font-mono text-sm text-white md:text-base">
+          <div className="mt-2 break-words font-mono text-[12px] leading-relaxed text-white sm:text-sm md:text-base">
             dX<span className="align-sub text-[10px]">t</span> = θ(μ - X<span className="align-sub text-[10px]">t</span>)dt + σ dW<span className="align-sub text-[10px]">t</span>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 font-mono text-[10px]">
+        <div className="grid grid-cols-1 gap-3 font-mono text-[10px] sm:grid-cols-3 sm:gap-2">
           <div className="flex flex-col">
             <span className="text-zinc-500">THETA (REVERSION)</span>
             <motion.span
@@ -314,9 +314,9 @@ export default function AppPage({
   }, []);
 
   return (
-    <div className="py-4">
-      <div className="mb-8 flex items-center justify-between border-b border-zinc-800 pb-4">
-        <div className="flex items-center gap-3">
+    <div className="py-4 md:py-6">
+      <div className="mb-8 flex flex-col gap-4 border-b border-zinc-800 pb-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
           <div
             className={cn(
               'flex h-10 w-10 items-center justify-center border transition-all duration-500',
@@ -333,22 +333,24 @@ export default function AppPage({
               }
             />
           </div>
-          <div>
-            <h1 className="text-xl font-bold uppercase tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold uppercase tracking-tight sm:text-xl">
               System App <span className="font-normal text-zinc-500">mSOL Risk Feed</span>
             </h1>
-            <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+            <div className="mt-1 flex min-w-0 items-start gap-2 text-[10px] leading-relaxed text-zinc-500">
               <span
                 className={cn(
-                  'h-2 w-2 animate-pulse rounded-full',
+                  'mt-1 h-2 w-2 shrink-0 animate-pulse rounded-full',
                   globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
                 )}
               />
-              Canonical State PDA: {oracleSnapshot?.risk_state_pda ?? 'snapshot unavailable'}
+              <span className="min-w-0 break-all">
+                Canonical State PDA: {oracleSnapshot?.risk_state_pda ?? 'snapshot unavailable'}
+              </span>
             </div>
           </div>
         </div>
-        <div className="hidden text-right md:block">
+        <div className="text-left md:text-right">
           <div className="text-[10px] uppercase text-zinc-500">Risk Regime</div>
           <div
             className={cn(
@@ -370,7 +372,7 @@ export default function AppPage({
         <motion.section variants={itemVariants} className="space-y-6 lg:col-span-3">
           <div className="space-y-4">
             <div className="relative overflow-hidden border border-zinc-800 p-4">
-              <div className="mb-1 flex items-center gap-2 text-[10px] uppercase text-zinc-500">
+              <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                 <Activity size={12} /> mSOL/SOL Premium
               </div>
               <div
@@ -381,13 +383,13 @@ export default function AppPage({
               >
                 {((marketSnapshot?.spread_pct ?? globalState.spread) * 100).toFixed(3)}%
               </div>
-              <div className="mt-2 text-[10px] uppercase tracking-widest text-zinc-600">
+              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-zinc-600">
                 Market tick {marketFreshness}
               </div>
             </div>
 
             <div className="border border-zinc-800 p-4">
-              <div className="mb-1 flex items-center gap-2 text-[10px] uppercase text-zinc-500">
+              <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                 <Zap size={12} /> Volatility (Sigma)
               </div>
               <div className="mono-data text-3xl font-bold">
@@ -406,12 +408,12 @@ export default function AppPage({
             </div>
 
             <div className="border border-zinc-800 p-4">
-              <div className="mb-3 text-[10px] uppercase text-zinc-500">Snapshot Metadata</div>
-              <div className="space-y-2 text-[10px] uppercase tracking-wider text-zinc-400">
-                <div>Oracle Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
-                <div>Market Source: {marketSnapshot?.source ?? 'unavailable'}</div>
-                <div>Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
-                <div>
+              <div className="mb-3 text-[10px] uppercase tracking-[0.12em] text-zinc-500">Snapshot Metadata</div>
+              <div className="space-y-2 text-[10px] uppercase leading-relaxed tracking-[0.1em] text-zinc-400">
+                <div className="break-words">Oracle Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
+                <div className="break-words">Market Source: {marketSnapshot?.source ?? 'unavailable'}</div>
+                <div className="break-words">Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
+                <div className="break-words">
                   Market Tick: {marketSnapshot ? new Date(marketSnapshot.publish_time * 1000).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -427,29 +429,29 @@ export default function AppPage({
             </div>
 
             <div className="flex items-center gap-4 border border-zinc-800 bg-zinc-900/30 p-4">
-              <FileText className="text-zinc-500" />
-              <div>
+              <FileText className="shrink-0 text-zinc-500" />
+              <div className="min-w-0">
                 <div className="text-xs font-bold uppercase">Dashboard Mode</div>
-                <div className="text-[10px] uppercase text-zinc-500">
+                <div className="text-[10px] uppercase leading-relaxed tracking-[0.1em] text-zinc-500">
                   Live PDA + live market + snapshot fallback
                 </div>
               </div>
             </div>
 
             <div className="border border-zinc-800 p-4">
-              <div className="mb-3 flex items-center gap-2 text-[10px] uppercase text-zinc-500">
+              <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                 <TimerReset size={12} /> Update Health
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-widest text-zinc-600">Oracle compute</span>
-                  <span className={cn('text-[10px] font-bold uppercase tracking-widest', oracleStatusTone)}>
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-600">Oracle compute</span>
+                  <span className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', oracleStatusTone)}>
                     {oracleFreshness}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-widest text-zinc-600">Market feed</span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-600">Market feed</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-300">
                     {marketFreshness}
                   </span>
                 </div>
@@ -469,12 +471,12 @@ export default function AppPage({
 
         <motion.section variants={itemVariants} className="space-y-6 lg:col-span-6">
           <div className="space-y-6">
-            <div className="relative border border-zinc-800 bg-black p-6">
-              <div className="absolute left-6 top-4 z-10">
-                <div className="mb-1 text-[10px] uppercase text-zinc-500">
+            <div className="relative border border-zinc-800 bg-black p-4 sm:p-6">
+              <div className="absolute left-4 right-4 top-4 z-10 sm:left-6 sm:right-auto">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                   Live Market Premium
                 </div>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600">
+                <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-600">
                   <Radio
                     size={10}
                     className={cn(
@@ -488,11 +490,11 @@ export default function AppPage({
                   />
                   Hermes pulse + live append
                 </div>
-                <div className="mt-1 text-[10px] uppercase tracking-widest text-zinc-700">
+                <div className="mt-1 text-[10px] uppercase tracking-[0.1em] text-zinc-700">
                   Snapshot base + live tail overlay
                 </div>
               </div>
-              <div className="mt-8 h-[300px] w-full">
+              <div className="mt-16 h-[260px] w-full sm:mt-8 sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
@@ -591,7 +593,7 @@ export default function AppPage({
                     <Lock size={12} /> Suggested LTV
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="mono-data text-5xl font-bold tracking-tighter">
+                    <span className="mono-data text-4xl font-bold tracking-tighter sm:text-5xl">
                       {(globalState.suggested_ltv * 100).toFixed(1)}%
                     </span>
                     <span className="font-mono text-xs uppercase text-zinc-500">
@@ -624,14 +626,14 @@ export default function AppPage({
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-              <div className="border border-zinc-800 bg-black p-5">
-                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
+              <div className="border border-zinc-800 bg-black p-4 sm:p-5">
+                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                   <WalletCards size={12} /> Protocol Borrow Calculator
                 </div>
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <div className="space-y-4">
                     <label className="block">
-                      <span className="mb-2 block text-[10px] uppercase tracking-widest text-zinc-600">
+                      <span className="mb-2 block text-[10px] uppercase tracking-[0.1em] text-zinc-600">
                         Collateral Value USD
                       </span>
                       <input
@@ -642,41 +644,41 @@ export default function AppPage({
                         placeholder="1000"
                       />
                     </label>
-                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.14em] text-zinc-500">
+                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.1em] text-zinc-500">
                       This shows how a lending protocol could translate PegShield’s current oracle target into a
                       max borrow decision for LST collateral.
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between border border-zinc-800 p-3">
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-500">Fixed 80% policy</span>
-                      <span className="font-mono text-sm text-zinc-300">${fixedBorrowLimitUsd.toFixed(2)}</span>
+                      <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Fixed 80% policy</span>
+                      <span className="shrink-0 font-mono text-sm text-zinc-300">${fixedBorrowLimitUsd.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between border border-solana-green/30 bg-solana-green/5 p-3">
-                      <span className="text-[10px] uppercase tracking-widest text-solana-green">PegShield policy</span>
-                      <span className="font-mono text-sm text-solana-green">${oracleBorrowLimitUsd.toFixed(2)}</span>
+                      <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-solana-green">PegShield policy</span>
+                      <span className="shrink-0 font-mono text-sm text-solana-green">${oracleBorrowLimitUsd.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between border border-zinc-800 p-3">
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-500">Risk delta</span>
-                      <span className="font-mono text-sm text-white">${oracleDeltaUsd.toFixed(2)}</span>
+                      <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Risk delta</span>
+                      <span className="shrink-0 font-mono text-sm text-white">${oracleDeltaUsd.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="border border-zinc-800 bg-black p-5">
-                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
+              <div className="border border-zinc-800 bg-black p-4 sm:p-5">
+                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                   <Database size={12} /> Integration Surface
                 </div>
                 <div className="space-y-3">
                   <div className="border border-zinc-800 p-3">
-                    <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-600">Program ID</div>
+                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Program ID</div>
                     <div className="break-all font-mono text-[11px] text-zinc-300">
                       {oracleSnapshot?.program_id ?? 'unavailable'}
                     </div>
                   </div>
                   <div className="border border-zinc-800 p-3">
-                    <div className="mb-1 text-[10px] uppercase tracking-widest text-zinc-600">Risk State PDA</div>
+                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Risk State PDA</div>
                     <div className="break-all font-mono text-[11px] text-zinc-300">
                       {oracleSnapshot?.risk_state_pda ?? 'unavailable'}
                     </div>
@@ -685,10 +687,10 @@ export default function AppPage({
                     href="https://peg-shield.vercel.app/api/oracle-state"
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-between border border-zinc-800 p-3 transition-colors hover:border-solana-green"
+                    className="flex items-center justify-between gap-3 border border-zinc-800 p-3 transition-colors hover:border-solana-green"
                   >
-                    <span className="text-[10px] uppercase tracking-widest text-zinc-400">Open live oracle payload</span>
-                    <ArrowUpRight size={14} className="text-solana-green" />
+                    <span className="min-w-0 text-[10px] uppercase tracking-[0.1em] text-zinc-400">Open live oracle payload</span>
+                    <ArrowUpRight size={14} className="shrink-0 text-solana-green" />
                   </a>
                 </div>
               </div>
@@ -699,11 +701,11 @@ export default function AppPage({
         <motion.section variants={itemVariants} className="lg:col-span-3">
           <div className="flex h-full flex-col border border-zinc-800 bg-black">
             <div className="border-b border-zinc-800 bg-zinc-900/50 p-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-zinc-500">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
                 <Terminal size={12} /> Logic Terminal
               </div>
             </div>
-            <div className="max-h-[600px] flex-1 overflow-y-auto p-4">
+            <div className="max-h-[520px] flex-1 overflow-y-auto p-4 sm:max-h-[600px]">
               <AnimatePresence initial={false}>
                 {logs.map((log) => (
                   <motion.div
@@ -717,7 +719,7 @@ export default function AppPage({
                 ))}
               </AnimatePresence>
             </div>
-            <div className="flex justify-between border-t border-zinc-800 p-3 font-mono text-[10px] uppercase text-zinc-600">
+            <div className="flex justify-between border-t border-zinc-800 p-3 font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-600">
               <span className="flex items-center gap-1">
                 <AlertTriangle
                   size={10}
