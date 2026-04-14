@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import Nav from '../components/Nav';
 import { cn } from '../types';
 import type { RiskState } from '../types';
@@ -40,18 +40,18 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
             <div>
               <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-6">Navigation</h4>
               <ul className="space-y-4 text-[10px] uppercase tracking-widest font-bold">
-                <li><a href="/" className="text-zinc-500 hover:text-white transition-colors">Narrative</a></li>
-                <li><a href="/app" className="text-zinc-500 hover:text-white transition-colors">System App</a></li>
-                <li><a href="/sim" className="text-zinc-500 hover:text-white transition-colors">Shock Simulation</a></li>
+                <li><Link to="/" className="text-zinc-500 hover:text-white transition-colors">Narrative</Link></li>
+                <li><Link to="/app" className="text-zinc-500 hover:text-white transition-colors">System App</Link></li>
+                <li><Link to="/sim" className="text-zinc-500 hover:text-white transition-colors">Shock Simulation</Link></li>
               </ul>
             </div>
             
             <div>
               <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest mb-6">Resources</h4>
               <ul className="space-y-4 text-[10px] uppercase tracking-widest font-bold">
-                <li><a href="#" className="text-zinc-500 hover:text-white transition-colors">Twitter / X</a></li>
-                <li><a href="#" className="text-zinc-500 hover:text-white transition-colors">Github</a></li>
-                <li><a href="#" className="text-zinc-500 hover:text-white transition-colors">Whitepaper</a></li>
+                <li><a href="https://peg-shield.vercel.app/api/oracle-state" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Live Oracle API</a></li>
+                <li><a href="https://github.com/Fianko-codes/PegShield" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Github</a></li>
+                <li><a href="https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Oracle Updater</a></li>
               </ul>
             </div>
           </div>

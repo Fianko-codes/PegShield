@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ResponsiveContainer,
@@ -144,86 +144,38 @@ export default function AppPage({
   globalState: RiskState;
   oracleSnapshot: OracleSnapshot | null;
 }) {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [chartData, setChartData] = useState<{ time: string; spread: number }[]>([]);
+  const [liveTail, setLiveTail] = useState<
+    { time: string; spread: number; publishTime: number }[]
+  >([]);
   const [heartbeat, setHeartbeat] = useState(false);
   const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
   const accentColor = globalState.regime_flag === 1 ? '#FF4B4B' : '#14F195';
 
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setHeartbeat((current) => !current);
-    }, 1400);
+  const baseChartData = useMemo(
+    () =>
+      oracleSnapshot
+        ? oracleSnapshot.history.map((point) => ({
+            time: new Date(point.timestamp * 1000).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            spread: point.spread_pct,
+            publishTime: point.timestamp,
+          }))
+        : [],
+    [oracleSnapshot],
+  );
 
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadMarket = async () => {
-      const snapshot = await fetchMarketSnapshot();
-      if (!snapshot || cancelled) {
-        return;
-      }
-
-      setMarketSnapshot(snapshot);
-      setChartData((current) => {
-        const nextPoint = {
-          time: new Date(snapshot.publish_time * 1000).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          spread: snapshot.spread_pct,
-        };
-
-        if (current.length === 0) {
-          return [nextPoint];
-        }
-
-        const lastPoint = current[current.length - 1];
-        if (lastPoint.time === nextPoint.time && lastPoint.spread === nextPoint.spread) {
-          return current;
-        }
-
-        return [...current.slice(-20), nextPoint];
-      });
-    };
-
-    void loadMarket();
-    const interval = window.setInterval(() => {
-      void loadMarket();
-    }, 30000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, []);
-
-  useEffect(() => {
+  const logs = useMemo<LogEntry[]>(() => {
     if (!oracleSnapshot) {
-      setChartData([]);
-      setLogs([]);
-      return;
+      return [];
     }
 
-    setChartData(
-      oracleSnapshot.history.map((point) => ({
-        time: new Date(point.timestamp * 1000).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        spread: point.spread_pct,
-      })),
-    );
+    const timestamp = new Date(oracleSnapshot.timestamp * 1000).toLocaleTimeString([], {
+      hour12: false,
+    });
 
-    const timestamp = new Date(oracleSnapshot.timestamp * 1000).toLocaleTimeString(
-      [],
-      { hour12: false },
-    );
-
-    setLogs([
+    return [
       {
         id: 'bridge',
         timestamp,
@@ -248,7 +200,75 @@ export default function AppPage({
         message: `Model window ${oracleSnapshot.history_points ?? oracleSnapshot.history.length} samples at ${oracleSnapshot.step_seconds ?? 0}s cadence`,
         type: 'info',
       },
-    ]);
+    ];
+  }, [oracleSnapshot]);
+
+  const chartData = useMemo(() => {
+    const baseTail = baseChartData.slice(-16).map(({ time, spread }) => ({ time, spread }));
+    const liveSeries = liveTail.map(({ time, spread }) => ({ time, spread }));
+    return [...baseTail, ...liveSeries].slice(-24);
+  }, [baseChartData, liveTail]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setHeartbeat((current) => !current);
+    }, 1400);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMarket = async () => {
+      const snapshot = await fetchMarketSnapshot();
+      if (!snapshot || cancelled) {
+        return;
+      }
+
+      setMarketSnapshot(snapshot);
+      setLiveTail((current) => {
+        const nextPoint = {
+          time: new Date(snapshot.publish_time * 1000).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          }),
+          spread: snapshot.spread_pct,
+          publishTime: snapshot.publish_time,
+        };
+
+        if (current.length === 0) {
+          if (
+            oracleSnapshot &&
+            snapshot.publish_time <= oracleSnapshot.timestamp
+          ) {
+            return current;
+          }
+          return [nextPoint];
+        }
+
+        const lastPoint = current[current.length - 1];
+        if (
+          snapshot.publish_time <= lastPoint.publishTime ||
+          (lastPoint.time === nextPoint.time && lastPoint.spread === nextPoint.spread)
+        ) {
+          return current;
+        }
+
+        return [...current.slice(-7), nextPoint];
+      });
+    };
+
+    void loadMarket();
+    const interval = window.setInterval(() => {
+      void loadMarket();
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, [oracleSnapshot]);
 
   return (
@@ -346,6 +366,13 @@ export default function AppPage({
                 <div>Oracle Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
                 <div>Market Source: {marketSnapshot?.source ?? 'unavailable'}</div>
                 <div>Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
+                <div>
+                  Market Tick: {marketSnapshot ? new Date(marketSnapshot.publish_time * 1000).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  }) : 'unavailable'}
+                </div>
                 <div>History: {oracleSnapshot?.history_points ?? 0} points</div>
                 <div className="break-all leading-relaxed">
                   Authority: {oracleSnapshot?.authority ?? 'unavailable'}
@@ -358,7 +385,7 @@ export default function AppPage({
               <div>
                 <div className="text-xs font-bold uppercase">Dashboard Mode</div>
                 <div className="text-[10px] uppercase text-zinc-500">
-                  Static snapshot synced from repo artifacts
+                  Live PDA + live market + snapshot fallback
                 </div>
               </div>
             </div>
@@ -385,6 +412,9 @@ export default function AppPage({
                     )}
                   />
                   Hermes pulse + live append
+                </div>
+                <div className="mt-1 text-[10px] uppercase tracking-widest text-zinc-700">
+                  Snapshot base + live tail overlay
                 </div>
               </div>
               <div className="mt-8 h-[300px] w-full">
