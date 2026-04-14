@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
+const REPO_ROOT = path.resolve(__dirname, "..");
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -14,9 +15,15 @@ function requiredEnv(name: string): string {
   return value;
 }
 
+function resolveRepoPath(targetPath: string): string {
+  return path.isAbsolute(targetPath)
+    ? targetPath
+    : path.resolve(REPO_ROOT, targetPath);
+}
+
 function loadWallet(): anchor.Wallet {
   const rawKeypair = JSON.parse(
-    fs.readFileSync(requiredEnv("UPDATER_KEYPAIR_PATH"), "utf-8"),
+    fs.readFileSync(resolveRepoPath(requiredEnv("UPDATER_KEYPAIR_PATH")), "utf-8"),
   ) as number[];
   return new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(rawKeypair)));
 }
