@@ -1,0 +1,102 @@
+name: Oracle Updater
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: oracle-updater
+  cancel-in-progress: false
+
+jobs:
+  update-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            updater/package-lock.json
+            dashboard/package-lock.json
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Install updater dependencies
+        run: npm ci
+        working-directory: updater
+
+      - name: Install dashboard dependencies
+        run: npm ci
+        working-directory: dashboard
+
+      - name: Write updater keypair
+        env:
+          UPDATER_KEYPAIR_JSON: ${{ secrets.UPDATER_KEYPAIR_JSON }}
+        run: |
+          test -n "$UPDATER_KEYPAIR_JSON"
+          printf '%s' "$UPDATER_KEYPAIR_JSON" > updater/keypair.json
+
+      - name: Write runtime environment file
+        env:
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          PROGRAM_ID: ${{ secrets.PROGRAM_ID }}
+          PYTH_HTTP_URL: ${{ secrets.PYTH_HTTP_URL }}
+          ORACLE_AUTHORITY: ${{ secrets.ORACLE_AUTHORITY }}
+        run: |
+          cat > .env <<EOF
+          SOLANA_RPC_URL=${SOLANA_RPC_URL}
+          PROGRAM_ID=${PROGRAM_ID}
+          UPDATER_KEYPAIR_PATH=./updater/keypair.json
+          PYTH_HTTP_URL=${PYTH_HTTP_URL:-https://hermes.pyth.network}
+          ORACLE_AUTHORITY=${ORACLE_AUTHORITY}
+          EOF
+
+      - name: Run micro tests
+        run: python -m unittest tests.test_core_engine -v
+
+      - name: Fetch live bridge payload
+        run: python bridge/fetch_pyth.py
+
+      - name: Run statistical pipeline
+        run: python core-engine/pipeline.py
+
+      - name: Submit live oracle update
+        run: npm --prefix updater run submit -- "${GITHUB_WORKSPACE}/core-engine/output/latest.json"
+
+      - name: Regenerate simulation outputs
+        run: python simulation/stress_test.py
+
+      - name: Sync dashboard snapshots
+        run: npm --prefix dashboard run sync:data
+
+      - name: Commit refreshed public snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dashboard/public/data/oracle_state.json dashboard/public/data/stress_scenario.json
+          if git diff --cached --quiet; then
+            echo "No public snapshot changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: refresh oracle dashboard snapshots"
+          git push

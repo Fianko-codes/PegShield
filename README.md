@@ -154,6 +154,31 @@ npm --prefix updater run read -- mSOL
 .venv/bin/python simulation/stress_test.py
 ```
 
+## GitHub Actions Updater
+
+The repo includes a scheduled GitHub Actions workflow at `.github/workflows/oracle-updater.yml`.
+
+What it does:
+
+- runs the micro tests
+- fetches live Pyth data
+- runs the statistical engine
+- submits a fresh on-chain update to the `mSOL` PDA
+- regenerates the public dashboard snapshots
+- commits `dashboard/public/data/*.json` back to the repo so Vercel redeploys automatically
+
+Required GitHub repository secrets:
+
+```bash
+SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea
+PYTH_HTTP_URL=https://hermes.pyth.network
+ORACLE_AUTHORITY=4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc
+UPDATER_KEYPAIR_JSON=[the full JSON array contents of updater/keypair.json]
+```
+
+The workflow is read-write for repository contents because it commits only the refreshed public dashboard snapshot files.
+
 ## Simulation Outputs
 
 The simulation writes:
