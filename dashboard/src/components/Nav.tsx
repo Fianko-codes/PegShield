@@ -59,7 +59,15 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-5 lg:gap-8">
+          <div className="hidden md:flex items-center gap-4 lg:gap-6">
+            <a
+              href="https://github.com/Fianko-codes"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 transition-colors hover:text-white"
+            >
+              Built by Fianko-codes
+            </a>
             {navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -103,6 +111,14 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
       {/* Mobile Nav */}
       {isOpen && (
         <div className="space-y-4 border-t border-zinc-800 bg-black/95 px-4 pb-6 pt-2 backdrop-blur-md md:hidden">
+          <a
+            href="https://github.com/Fianko-codes"
+            target="_blank"
+            rel="noreferrer"
+            className="block text-sm font-bold uppercase tracking-[0.1em] text-zinc-300"
+          >
+            Built by Fianko-codes
+          </a>
           {navLinks.map((link) => (
             <Link
               key={link.path}
