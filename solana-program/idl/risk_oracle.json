@@ -1,0 +1,235 @@
+{
+  "address": "DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea",
+  "metadata": {
+    "name": "risk_oracle",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Solana LST risk oracle program"
+  },
+  "instructions": [
+    {
+      "name": "initialize_oracle",
+      "discriminator": [
+        144,
+        223,
+        131,
+        120,
+        196,
+        253,
+        181,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "risk_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  105,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        },
+        {
+          "name": "authority",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "update_risk_state",
+      "discriminator": [
+        71,
+        227,
+        24,
+        202,
+        12,
+        22,
+        17,
+        96
+      ],
+      "accounts": [
+        {
+          "name": "risk_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  105,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "params.lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "RiskParams"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "RiskState",
+      "discriminator": [
+        120,
+        33,
+        58,
+        236,
+        210,
+        191,
+        106,
+        97
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Unauthorized authority"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidLstId",
+      "msg": "Invalid LST identifier"
+    },
+    {
+      "code": 6002,
+      "name": "LstIdMismatch",
+      "msg": "LST id does not match the initialized account"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidRiskParams",
+      "msg": "Risk parameters contain invalid numeric values"
+    }
+  ],
+  "types": [
+    {
+      "name": "RiskParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_id",
+            "type": "string"
+          },
+          {
+            "name": "theta",
+            "type": "f64"
+          },
+          {
+            "name": "sigma",
+            "type": "f64"
+          },
+          {
+            "name": "regime_flag",
+            "type": "u8"
+          },
+          {
+            "name": "suggested_ltv",
+            "type": "f64"
+          },
+          {
+            "name": "z_score",
+            "type": "f64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RiskState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_id",
+            "type": "string"
+          },
+          {
+            "name": "theta",
+            "type": "f64"
+          },
+          {
+            "name": "sigma",
+            "type": "f64"
+          },
+          {
+            "name": "regime_flag",
+            "type": "u8"
+          },
+          {
+            "name": "suggested_ltv",
+            "type": "f64"
+          },
+          {
+            "name": "z_score",
+            "type": "f64"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "last_updater",
+            "type": "pubkey"
+          }
+        ]
+      }
+    }
+  ]
+}
