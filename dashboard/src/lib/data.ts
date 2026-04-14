@@ -124,10 +124,30 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
   try {
     const response = await fetch('/api/market-state', { cache: 'no-store' });
     if (!response.ok) {
-      return null;
+      const staticSnapshot = await fetchStaticOracleSnapshot();
+      if (!staticSnapshot) {
+        return null;
+      }
+      return {
+        msol_price: staticSnapshot.msol_price,
+        sol_price: staticSnapshot.sol_price,
+        spread_pct: staticSnapshot.spread_pct,
+        publish_time: staticSnapshot.timestamp,
+        source: staticSnapshot.source ?? 'snapshot-fallback',
+      };
     }
     return (await response.json()) as MarketSnapshot;
   } catch {
-    return null;
+    const staticSnapshot = await fetchStaticOracleSnapshot();
+    if (!staticSnapshot) {
+      return null;
+    }
+    return {
+      msol_price: staticSnapshot.msol_price,
+      sol_price: staticSnapshot.sol_price,
+      spread_pct: staticSnapshot.spread_pct,
+      publish_time: staticSnapshot.timestamp,
+      source: staticSnapshot.source ?? 'snapshot-fallback',
+    };
   }
 }
