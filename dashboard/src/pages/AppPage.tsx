@@ -21,9 +21,9 @@ import {
   AlertTriangle,
   Radio,
 } from 'lucide-react';
-import { InlineMath } from 'react-katex';
 import { cn } from '../types';
-import type { LogEntry, OracleSnapshot, RiskState } from '../types';
+import type { LogEntry, MarketSnapshot, OracleSnapshot, RiskState } from '../types';
+import { fetchMarketSnapshot } from '../lib/data';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -56,7 +56,7 @@ function TerminalLine({ log }: { log: LogEntry }) {
   );
 }
 
-function MathOverlay({
+function FormulaPanel({
   theta,
   sigma,
   zScore,
@@ -80,8 +80,13 @@ function MathOverlay({
         <Cpu size={12} /> Live OU-Process Calibration
       </div>
       <div className="flex flex-col gap-4">
-        <div className="py-2 text-center text-lg md:text-xl">
-          <InlineMath math={`dx_t = \\theta (\\mu - x_t)dt + \\sigma dW_t`} />
+        <div className="border border-zinc-800/80 bg-zinc-950/60 px-4 py-3 text-center">
+          <div className="mono-data text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Ornstein-Uhlenbeck Process
+          </div>
+          <div className="mt-2 font-mono text-sm text-white md:text-base">
+            dX<span className="align-sub text-[10px]">t</span> = θ(μ - X<span className="align-sub text-[10px]">t</span>)dt + σ dW<span className="align-sub text-[10px]">t</span>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-2 font-mono text-[10px]">
           <div className="flex flex-col">
@@ -142,6 +147,7 @@ export default function AppPage({
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [chartData, setChartData] = useState<{ time: string; spread: number }[]>([]);
   const [heartbeat, setHeartbeat] = useState(false);
+  const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
   const accentColor = globalState.regime_flag === 1 ? '#FF4B4B' : '#14F195';
 
   useEffect(() => {
@@ -150,6 +156,49 @@ export default function AppPage({
     }, 1400);
 
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMarket = async () => {
+      const snapshot = await fetchMarketSnapshot();
+      if (!snapshot || cancelled) {
+        return;
+      }
+
+      setMarketSnapshot(snapshot);
+      setChartData((current) => {
+        const nextPoint = {
+          time: new Date(snapshot.publish_time * 1000).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          spread: snapshot.spread_pct,
+        };
+
+        if (current.length === 0) {
+          return [nextPoint];
+        }
+
+        const lastPoint = current[current.length - 1];
+        if (lastPoint.time === nextPoint.time && lastPoint.spread === nextPoint.spread) {
+          return current;
+        }
+
+        return [...current.slice(-20), nextPoint];
+      });
+    };
+
+    void loadMarket();
+    const interval = window.setInterval(() => {
+      void loadMarket();
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -268,7 +317,7 @@ export default function AppPage({
                   globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-white',
                 )}
               >
-                {(globalState.spread * 100).toFixed(3)}%
+                {((marketSnapshot?.spread_pct ?? globalState.spread) * 100).toFixed(3)}%
               </div>
             </div>
 
@@ -294,7 +343,8 @@ export default function AppPage({
             <div className="border border-zinc-800 p-4">
               <div className="mb-3 text-[10px] uppercase text-zinc-500">Snapshot Metadata</div>
               <div className="space-y-2 text-[10px] uppercase tracking-wider text-zinc-400">
-                <div>Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
+                <div>Oracle Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
+                <div>Market Source: {marketSnapshot?.source ?? 'unavailable'}</div>
                 <div>Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
                 <div>History: {oracleSnapshot?.history_points ?? 0} points</div>
                 <div className="break-all leading-relaxed">
@@ -320,7 +370,7 @@ export default function AppPage({
             <div className="relative border border-zinc-800 bg-black p-6">
               <div className="absolute left-6 top-4 z-10">
                 <div className="mb-1 text-[10px] uppercase text-zinc-500">
-                  mSOL/SOL Premium History
+                  Live Market Premium
                 </div>
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600">
                   <Radio
@@ -334,7 +384,7 @@ export default function AppPage({
                         : 'text-zinc-700',
                     )}
                   />
-                  Last point heartbeat
+                  Hermes pulse + live append
                 </div>
               </div>
               <div className="mt-8 h-[300px] w-full">
@@ -416,7 +466,7 @@ export default function AppPage({
             </div>
 
             <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
-              <MathOverlay
+              <FormulaPanel
                 theta={globalState.theta}
                 sigma={globalState.sigma}
                 zScore={globalState.z_score}

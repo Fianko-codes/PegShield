@@ -71,6 +71,14 @@ export interface SimulationSnapshot {
   };
 }
 
+export interface MarketSnapshot {
+  msol_price: number;
+  sol_price: number;
+  spread_pct: number;
+  publish_time: number;
+  source: string;
+}
+
 export interface LogEntry {
   id: string;
   timestamp: string;
