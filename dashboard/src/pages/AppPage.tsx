@@ -19,6 +19,7 @@ import {
   Zap,
   Lock,
   AlertTriangle,
+  Radio,
 } from 'lucide-react';
 import { InlineMath } from 'react-katex';
 import { cn } from '../types';
@@ -140,7 +141,16 @@ export default function AppPage({
 }) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [chartData, setChartData] = useState<{ time: string; spread: number }[]>([]);
+  const [heartbeat, setHeartbeat] = useState(false);
   const accentColor = globalState.regime_flag === 1 ? '#FF4B4B' : '#14F195';
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setHeartbeat((current) => !current);
+    }, 1400);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!oracleSnapshot) {
@@ -287,7 +297,9 @@ export default function AppPage({
                 <div>Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
                 <div>Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
                 <div>History: {oracleSnapshot?.history_points ?? 0} points</div>
-                <div>Authority: {oracleSnapshot?.authority ?? 'unavailable'}</div>
+                <div className="break-all leading-relaxed">
+                  Authority: {oracleSnapshot?.authority ?? 'unavailable'}
+                </div>
               </div>
             </div>
 
@@ -309,6 +321,20 @@ export default function AppPage({
               <div className="absolute left-6 top-4 z-10">
                 <div className="mb-1 text-[10px] uppercase text-zinc-500">
                   mSOL/SOL Premium History
+                </div>
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600">
+                  <Radio
+                    size={10}
+                    className={cn(
+                      'transition-colors duration-300',
+                      heartbeat
+                        ? globalState.regime_flag === 1
+                          ? 'text-emergency-red'
+                          : 'text-solana-green'
+                        : 'text-zinc-700',
+                    )}
+                  />
+                  Last point heartbeat
                 </div>
               </div>
               <div className="mt-8 h-[300px] w-full">
@@ -360,6 +386,29 @@ export default function AppPage({
                       fillOpacity={1}
                       fill="url(#colorSpread)"
                       animationDuration={1000}
+                      activeDot={{
+                        r: 6,
+                        stroke: accentColor,
+                        strokeWidth: 2,
+                        fill: '#0D0D0D',
+                      }}
+                      dot={(props) => {
+                        const pointIndex = typeof props.index === 'number' ? props.index : -1;
+                        if (pointIndex !== chartData.length - 1) {
+                          return false;
+                        }
+
+                        return (
+                          <circle
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={heartbeat ? 5 : 3}
+                            stroke={accentColor}
+                            strokeWidth={2}
+                            fill="#0D0D0D"
+                          />
+                        );
+                      }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
