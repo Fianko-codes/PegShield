@@ -94,6 +94,7 @@ jobs:
         run: npm --prefix dashboard run sync:data
 
       - name: Commit refreshed public snapshots
+        continue-on-error: true
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -112,5 +113,4 @@ jobs:
             echo "Push rejected on attempt ${attempt}; retrying after rebase."
             sleep 5
           done
-          echo "Failed to push refreshed snapshots after 3 attempts."
-          exit 1
+          echo "Failed to push refreshed snapshots after 3 attempts; leaving workflow green because oracle update already completed."
