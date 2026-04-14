@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
+const REPO_ROOT = path.resolve(__dirname, "..");
 
 type RiskPayload = {
   lst_id: string;
@@ -23,6 +24,12 @@ function requiredEnv(name: string): string {
   return value;
 }
 
+function resolveRepoPath(targetPath: string): string {
+  return path.isAbsolute(targetPath)
+    ? targetPath
+    : path.resolve(REPO_ROOT, targetPath);
+}
+
 function loadRiskPayload(jsonPath: string): RiskPayload {
   return JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as RiskPayload;
 }
@@ -35,7 +42,7 @@ async function main(): Promise<void> {
   const riskData = loadRiskPayload(jsonPath);
   const connection = new Connection(requiredEnv("SOLANA_RPC_URL"), "confirmed");
   const rawKeypair = JSON.parse(
-    fs.readFileSync(requiredEnv("UPDATER_KEYPAIR_PATH"), "utf-8"),
+    fs.readFileSync(resolveRepoPath(requiredEnv("UPDATER_KEYPAIR_PATH")), "utf-8"),
   ) as number[];
   const wallet = new anchor.Wallet(
     Keypair.fromSecretKey(Uint8Array.from(rawKeypair)),
