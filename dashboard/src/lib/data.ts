@@ -133,7 +133,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
         sol_price: staticSnapshot.sol_price,
         spread_pct: staticSnapshot.spread_pct,
         publish_time: staticSnapshot.timestamp,
-        source: staticSnapshot.source ?? 'snapshot-fallback',
+        source: 'snapshot-fallback',
       };
     }
     return (await response.json()) as MarketSnapshot;
@@ -147,7 +147,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
       sol_price: staticSnapshot.sol_price,
       spread_pct: staticSnapshot.spread_pct,
       publish_time: staticSnapshot.timestamp,
-      source: staticSnapshot.source ?? 'snapshot-fallback',
+      source: 'snapshot-fallback',
     };
   }
 }
