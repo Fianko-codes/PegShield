@@ -1,4 +1,4 @@
-import type { OracleSnapshot, RiskState, SimulationSnapshot } from '../types';
+import type { MarketSnapshot, OracleSnapshot, RiskState, SimulationSnapshot } from '../types';
 
 const fallbackRiskState: RiskState = {
   lst_id: 'mSOL',
@@ -115,6 +115,18 @@ export async function fetchSimulationSnapshot(): Promise<SimulationSnapshot | nu
       return null;
     }
     return (await response.json()) as SimulationSnapshot;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
+  try {
+    const response = await fetch('/api/market-state', { cache: 'no-store' });
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as MarketSnapshot;
   } catch {
     return null;
   }
