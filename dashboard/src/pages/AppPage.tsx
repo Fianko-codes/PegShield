@@ -120,42 +120,42 @@ function FormulaPanel({
           </div>
         </div>
         <div className="grid grid-cols-1 gap-3 font-mono text-[10px] sm:grid-cols-3 sm:gap-2">
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-col">
             <span className="text-zinc-500">THETA (REVERSION)</span>
             <motion.span
               key={theta}
               initial={{ opacity: 0.5, scale: 1.1 }}
               animate={{ opacity: 1, scale: 1 }}
               className={cn(
-                'text-base',
+                'text-base break-all',
                 regime === 1 ? 'text-emergency-red' : 'text-solana-green',
               )}
             >
               {theta.toFixed(4)}
             </motion.span>
           </div>
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-col">
             <span className="text-zinc-500">SIGMA (VOL)</span>
             <motion.span
               key={sigma}
               initial={{ opacity: 0.5, scale: 1.1 }}
               animate={{ opacity: 1, scale: 1 }}
               className={cn(
-                'text-base',
+                'text-base break-all',
                 regime === 1 ? 'text-emergency-red' : 'text-solana-green',
               )}
             >
               {sigma.toFixed(4)}
             </motion.span>
           </div>
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-col">
             <span className="text-zinc-500">Z-SCORE</span>
             <motion.span
               key={zScore}
               initial={{ opacity: 0.5, scale: 1.1 }}
               animate={{ opacity: 1, scale: 1 }}
               className={cn(
-                'text-base',
+                'text-base break-all',
                 regime === 1 ? 'text-emergency-red' : 'text-solana-green',
               )}
             >
@@ -408,7 +408,7 @@ export default function AppPage({
               </div>
               <div
                 className={cn(
-                  'mono-data text-3xl font-bold transition-colors duration-500',
+                  'mono-data text-3xl font-bold transition-colors duration-500 break-all',
                   globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-white',
                 )}
               >
@@ -423,7 +423,7 @@ export default function AppPage({
               <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                 <Zap size={12} /> Volatility (Sigma)
               </div>
-              <div className="mono-data text-3xl font-bold">
+              <div className="mono-data text-3xl font-bold break-all">
                 {(globalState.sigma * 100).toFixed(4)}%
               </div>
               <div className="mt-3 h-1 w-full bg-zinc-900">
@@ -626,8 +626,8 @@ export default function AppPage({
                   <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
                     <Lock size={12} /> Suggested LTV
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="mono-data text-4xl font-bold tracking-tighter sm:text-5xl">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="mono-data text-4xl font-bold tracking-tighter sm:text-5xl break-all">
                       {(globalState.suggested_ltv * 100).toFixed(1)}%
                     </span>
                     <span className="font-mono text-xs uppercase text-zinc-500">

@@ -38,15 +38,15 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
             {/* LIVE SYSTEM INDICATORS - Product maturity signal */}
             <div className="hidden min-w-0 lg:flex items-center gap-4 xl:gap-6 pl-4 xl:pl-6 border-l border-zinc-900">
               <RegimeBadge regime={regime} />
-              <div className="flex flex-col">
+              <div className="flex min-w-0 flex-col">
                 <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live θ</span>
-                <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
+                <span className={cn("text-[10px] mono-data font-bold break-all", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
                   {riskState.theta.toFixed(4)}
                 </span>
               </div>
-              <div className="flex flex-col">
+              <div className="flex min-w-0 flex-col">
                 <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live σ</span>
-                <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
+                <span className={cn("text-[10px] mono-data font-bold break-all", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
                   {riskState.sigma.toFixed(4)}
                 </span>
               </div>
