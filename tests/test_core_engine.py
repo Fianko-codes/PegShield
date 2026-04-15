@@ -114,6 +114,8 @@ class CoreEngineMicroTests(unittest.TestCase):
             "peg_deviation",
             "ltv_with_oracle",
             "ltv_no_oracle",
+            "shortfall_dynamic",
+            "shortfall_static",
             "bad_debt_with_oracle",
             "bad_debt_no_oracle",
             "regime_flag",
@@ -133,6 +135,17 @@ class CoreEngineMicroTests(unittest.TestCase):
         self.assertGreater(len(evaluated), 20)
         self.assertLess(evaluated["peg_deviation"].min(), -0.05)
         self.assertGreater(int((evaluated["regime_flag"] == 1).sum()), 0)
+
+    def test_historical_replay_oracle_outperforms_static(self) -> None:
+        scenario, bridge_payload, _ = load_historical_replay()
+        evaluated = evaluate_oracle(scenario, bridge_payload)
+        final_row = evaluated.iloc[-1]
+
+        shortfall_static_final = float(final_row["shortfall_static"])
+        shortfall_dynamic_final = float(final_row["shortfall_dynamic"])
+
+        self.assertGreater(shortfall_static_final, 0.0)
+        self.assertLessEqual(shortfall_dynamic_final, 0.5 * shortfall_static_final)
 
 
 if __name__ == "__main__":

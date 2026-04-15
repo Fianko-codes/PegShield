@@ -56,6 +56,8 @@ export interface SimulationPoint {
   regime_flag: number;
   ltv_with_oracle: number;
   ltv_no_oracle: number;
+  shortfall_dynamic: number;
+  shortfall_static: number;
   bad_debt_with_oracle: number;
   bad_debt_no_oracle: number;
 }
