@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import RootLayout from './layouts/RootLayout';
 import Home from './pages/Home';
 import AppPage from './pages/AppPage';
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/sim" element={<SimPage />} />
         </Route>
       </Routes>
+      <Analytics />
     </BrowserRouter>
   );
 }
