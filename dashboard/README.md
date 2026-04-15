@@ -6,7 +6,7 @@ Snapshot-backed frontend plus read-only Vercel API for the PegShield Solana LST 
 
 - Serves the React dashboard for `PegShield`
 - Exposes `GET /api/oracle-state` to read the live `mSOL` oracle PDA from Solana devnet
-- Exposes `GET /api/simulation` to serve the generated stress replay snapshot
+- Exposes `GET /api/simulation` to serve the historical replay snapshot
 - Falls back to `public/data/*.json` if the API is unavailable
 
 ## Local commands
@@ -55,6 +55,6 @@ npm run build
 
 - `/` narrative landing page
 - `/app` live oracle dashboard
-- `/sim` generated stress replay
+- `/sim` historical replay view
 - `/api/oracle-state` live PDA reader
 - `/api/simulation` simulation snapshot API

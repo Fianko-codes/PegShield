@@ -1,4 +1,4 @@
-"""Render the stress simulation comparison chart."""
+"""Render the replay comparison chart."""
 
 from __future__ import annotations
 
@@ -14,20 +14,25 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def plot_stress_scenario(df: pd.DataFrame, output_path: Path) -> Path:
+def plot_stress_scenario(
+    df: pd.DataFrame,
+    output_path: Path,
+    title: str | None = None,
+    subtitle: str | None = None,
+) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(13, 9), sharex=True)
     fig.suptitle(
-        "mSOL Stress Replay — Fixed LTV vs Dynamic Oracle LTV",
+        title or "Historical LST Depeg Replay — Fixed LTV vs Dynamic Oracle LTV",
         fontsize=14,
         fontweight="bold",
     )
 
     ax1.plot(df["timestamp"], df["spread_pct"], color="#d1495b", linewidth=1.8)
-    ax1.axhline(df["spread_pct"].iloc[0], color="#9a9a9a", linestyle="--", alpha=0.6)
-    ax1.set_ylabel("Spread vs SOL")
-    ax1.set_title("Synthetic stress path calibrated from recent mSOL/SOL behavior")
+    ax1.axhline(0.0, color="#9a9a9a", linestyle="--", alpha=0.6)
+    ax1.set_ylabel("Peg deviation")
+    ax1.set_title(subtitle or "Replay path")
 
     ax2.plot(
         df["timestamp"],
@@ -64,7 +69,12 @@ def plot_stress_scenario(df: pd.DataFrame, output_path: Path) -> Path:
     )
     ax3.set_ylabel("Excess Exposure (USD)")
     ax3.legend(loc="upper left", fontsize=9)
-    ax3.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+    timestamps = pd.to_datetime(df["timestamp"], utc=True)
+    span = timestamps.iloc[-1] - timestamps.iloc[0]
+    if span.total_seconds() > 172800:
+        ax3.xaxis.set_major_formatter(mdates.DateFormatter("%b %d"))
+    else:
+        ax3.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=160, bbox_inches="tight")

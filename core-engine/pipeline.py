@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+DEFAULT_LST_ID = os.environ.get("LST_ID", "mSOL-v2")
 
 from calibration import derive_baseline
 from ltv_calculator import compute_ltv
@@ -54,8 +57,21 @@ def build_risk_payload(bridge_payload: dict[str, Any]) -> dict[str, Any]:
 
     latest_row = history_df.iloc[-1]
 
+    # Expose both the deprecated USD premium and the correct peg deviation so
+    # the dashboard can show which signal the risk model consumed.
+    marinade_rate = bridge_payload.get("marinade_msol_sol_rate")
+    marinade_source = bridge_payload.get("marinade_rate_source", "unknown")
+    peg_deviation_pct = (
+        float(latest_row["peg_deviation"])
+        if "peg_deviation" in history_df.columns and pd.notna(latest_row.get("peg_deviation"))
+        else None
+    )
+    # The model consumes `spread` which now IS peg_deviation when available.
+    # Expose the series name so downstream consumers know what was calibrated.
+    spread_signal = "peg_deviation" if peg_deviation_pct is not None else "usd_premium_legacy"
+
     return {
-        "lst_id": "mSOL",
+        "lst_id": DEFAULT_LST_ID,
         "theta": ou_params["theta"],
         "sigma": ou_params["sigma"],
         "regime_flag": regime["regime_flag"],
@@ -68,7 +84,17 @@ def build_risk_payload(bridge_payload: dict[str, Any]) -> dict[str, Any]:
         "timestamp": int(latest_row["timestamp"]),
         "msol_price": round(float(latest_row["msol_usd_price"]), 8),
         "sol_price": round(float(latest_row["sol_usd_price"]), 8),
+        # Deprecated — kept so older dashboard builds do not crash
         "spread_pct": round(float(latest_row["msol_sol_spread_pct"]), 8),
+        # Canonical de-peg signal
+        "peg_deviation_pct": (
+            round(peg_deviation_pct, 8) if peg_deviation_pct is not None else None
+        ),
+        "marinade_msol_sol_rate": (
+            round(float(marinade_rate), 8) if marinade_rate is not None else None
+        ),
+        "marinade_rate_source": marinade_source,
+        "spread_signal": spread_signal,
         "baseline": baseline,
         "meta": {
             "source": bridge_payload["source"],

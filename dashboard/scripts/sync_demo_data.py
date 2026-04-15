@@ -13,6 +13,7 @@ DASHBOARD_PUBLIC = ROOT / "dashboard" / "public" / "data"
 ORACLE_INPUT = ROOT / "core-engine" / "output" / "latest.json"
 BRIDGE_INPUT = ROOT / "bridge" / "data" / "latest_raw.json"
 SIM_INPUT = ROOT / "simulation" / "charts" / "stress_scenario.csv"
+SIM_META_INPUT = ROOT / "simulation" / "charts" / "stress_scenario.meta.json"
 ENV_INPUT = ROOT / ".env"
 
 
@@ -49,6 +50,11 @@ def build_oracle_snapshot() -> dict:
             "spread_pct": float(point["msol_sol_spread_pct"]),
             "msol_price": float(point["msol_usd_price"]),
             "sol_price": float(point["sol_usd_price"]),
+            "peg_deviation": (
+                float(point["peg_deviation"])
+                if point.get("peg_deviation") is not None
+                else None
+            ),
         }
         for point in bridge_payload.get("history", [])
     ]
@@ -62,6 +68,10 @@ def build_oracle_snapshot() -> dict:
         "z_score": float(oracle_payload["z_score"]),
         "spread": float(oracle_payload["spread_pct"]),
         "spread_pct": float(oracle_payload["spread_pct"]),
+        "peg_deviation_pct": oracle_payload.get("peg_deviation_pct"),
+        "marinade_msol_sol_rate": oracle_payload.get("marinade_msol_sol_rate"),
+        "marinade_rate_source": oracle_payload.get("marinade_rate_source", "unknown"),
+        "spread_signal": oracle_payload.get("spread_signal", "usd_premium_legacy"),
         "timestamp": int(oracle_payload["timestamp"]),
         "updated_at_iso": iso_from_unix(int(oracle_payload["timestamp"])),
         "status": oracle_payload.get("status", "UNKNOWN"),
@@ -76,7 +86,7 @@ def build_oracle_snapshot() -> dict:
         "program_id": env.get("PROGRAM_ID", ""),
         "risk_state_pda": env.get(
             "MSOL_RISK_STATE_PDA",
-            "4Eq5dHgDSiE1jAesNcG8zSuD55xu1pwLjXziHCCsU2cn",
+            "7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo",
         ),
         "authority": env.get("ORACLE_AUTHORITY", ""),
         "network": "solana-devnet",
@@ -87,12 +97,21 @@ def build_oracle_snapshot() -> dict:
 
 def build_simulation_snapshot() -> dict:
     rows = list(csv.DictReader(SIM_INPUT.read_text(encoding="utf-8").splitlines()))
+    replay_meta = {}
+    if SIM_META_INPUT.exists():
+        replay_meta = load_json(SIM_META_INPUT).get("replay", {})
+
     normalized_rows = []
     for row in rows:
         normalized_rows.append(
             {
                 "timestamp": row["timestamp"],
                 "spread_pct": float(row["spread_pct"]),
+                "peg_deviation": (
+                    float(row["peg_deviation"])
+                    if row.get("peg_deviation") not in (None, "")
+                    else None
+                ),
                 "theta": float(row["theta"]),
                 "sigma": float(row["sigma"]),
                 "z_score": float(row["z_score"]),
@@ -107,9 +126,19 @@ def build_simulation_snapshot() -> dict:
     final_row = normalized_rows[-1] if normalized_rows else None
     summary = {
         "points": normalized_rows,
+        "replay": replay_meta,
         "summary": {
             "row_count": len(normalized_rows),
             "max_spread_pct": max((row["spread_pct"] for row in normalized_rows), default=0.0),
+            "min_spread_pct": min((row["spread_pct"] for row in normalized_rows), default=0.0),
+            "max_peg_deviation": max(
+                (row["peg_deviation"] for row in normalized_rows if row["peg_deviation"] is not None),
+                default=0.0,
+            ),
+            "min_peg_deviation": min(
+                (row["peg_deviation"] for row in normalized_rows if row["peg_deviation"] is not None),
+                default=0.0,
+            ),
             "max_z_score": max((row["z_score"] for row in normalized_rows), default=0.0),
             "critical_rows": sum(1 for row in normalized_rows if row["regime_flag"] == 1),
             "final_dynamic_ltv": final_row["ltv_with_oracle"] if final_row else 0.0,

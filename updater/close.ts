@@ -7,22 +7,6 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 const REPO_ROOT = path.resolve(__dirname, "..");
 
-/** Fixed-point scale: matches SCALE constant in lib.rs */
-const SCALE = 1_000_000;
-
-type RiskStateAccount = {
-  lstId: string;
-  thetaScaled: anchor.BN;
-  sigmaScaled: anchor.BN;
-  regimeFlag: number;
-  suggestedLtvBps: number;
-  zScoreScaled: anchor.BN;
-  slot: anchor.BN;
-  timestamp: anchor.BN;
-  authority: PublicKey;
-  lastUpdater: PublicKey;
-};
-
 function requiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -39,8 +23,8 @@ function resolveRepoPath(targetPath: string): string {
 
 function loadIdl(): anchor.Idl {
   const candidatePaths = [
-    path.resolve(REPO_ROOT, "solana-program", "idl", "risk_oracle.json"),
     path.resolve(REPO_ROOT, "solana-program", "target", "idl", "risk_oracle.json"),
+    path.resolve(REPO_ROOT, "solana-program", "idl", "risk_oracle.json"),
   ];
 
   for (const candidate of candidatePaths) {
@@ -64,46 +48,43 @@ function loadWallet(): anchor.Wallet {
 async function main(): Promise<void> {
   const lstId = process.argv[2] ?? "mSOL";
   const connection = new Connection(requiredEnv("SOLANA_RPC_URL"), "confirmed");
-  const idl = loadIdl();
   const wallet = loadWallet();
   const provider = new anchor.AnchorProvider(connection, wallet, {});
-  const program = new anchor.Program(idl as anchor.Idl, provider) as any;
+  const program = new anchor.Program(loadIdl(), provider) as any;
 
   const [riskStatePda] = PublicKey.findProgramAddressSync(
     [Buffer.from("risk"), Buffer.from(lstId)],
     program.programId,
   );
 
-  const state = (await program.account.riskState.fetch(
-    riskStatePda,
-  )) as RiskStateAccount;
+  // If the account doesn't exist, exit cleanly — idempotent
+  const info = await connection.getAccountInfo(riskStatePda, "confirmed");
+  if (!info) {
+    console.log(
+      JSON.stringify(
+        { status: "skipped", reason: "account-not-found", risk_state: riskStatePda.toBase58() },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
 
-  // Decode fixed-point fields back to human-readable floats
-  const theta = state.thetaScaled.toNumber() / SCALE;
-  const sigma = state.sigmaScaled.toNumber() / SCALE;
-  const z_score = state.zScoreScaled.toNumber() / SCALE;
-  const suggested_ltv = state.suggestedLtvBps / 10_000;
+  const tx = await program.methods
+    .closeOracle()
+    .accounts({
+      riskState: riskStatePda,
+      authority: wallet.publicKey,
+    })
+    .rpc();
 
   console.log(
     JSON.stringify(
       {
+        status: "closed",
+        lst_id: lstId,
         risk_state: riskStatePda.toBase58(),
-        lst_id: state.lstId,
-        // Human-readable floats
-        suggested_ltv,
-        regime_flag: state.regimeFlag,
-        theta,
-        sigma,
-        z_score,
-        // Raw on-chain fixed-point values (for auditing)
-        suggested_ltv_bps: state.suggestedLtvBps,
-        theta_scaled: state.thetaScaled.toNumber(),
-        sigma_scaled: state.sigmaScaled.toNumber(),
-        z_score_scaled: state.zScoreScaled.toNumber(),
-        slot: state.slot.toNumber(),
-        timestamp: state.timestamp.toNumber(),
-        authority: state.authority.toBase58(),
-        last_updater: state.lastUpdater.toBase58(),
+        tx,
       },
       null,
       2,
