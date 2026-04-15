@@ -88,7 +88,7 @@ export default function SimPage() {
     if (!currentPoint) {
       return 0;
     }
-    return Math.max(0, currentPoint.bad_debt_with_oracle - currentPoint.bad_debt_no_oracle);
+    return Math.max(0, currentPoint.shortfall_static - currentPoint.shortfall_dynamic);
   }, [currentPoint]);
 
   const finalDynamicLtv = currentPoint?.ltv_with_oracle ?? 0;
@@ -184,7 +184,7 @@ export default function SimPage() {
                  </div>
                  <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-300">
                     Replay entered a stressed regime. PegShield cut target LTV to {(finalDynamicLtv * 100).toFixed(1)}%.
-                    <span className="text-white font-bold ml-1">Exposure above the tighter policy: {exposureGap.toFixed(1)} USD.</span>
+                    <span className="ml-1 font-bold text-solana-green">Loss prevented by oracle: {exposureGap.toFixed(1)} USD.</span>
                  </p>
               </motion.div>
             )}
@@ -240,7 +240,7 @@ export default function SimPage() {
                </div>
                <div className="text-3xl font-bold mono-data text-zinc-400">{(finalStaticLtv * 100).toFixed(1)}%</div>
                <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.08em] text-emergency-red">
-                  Exposure gap during replay: {(currentPoint?.bad_debt_no_oracle ?? 0).toFixed(1)} USD
+                  Exposure: {(currentPoint?.shortfall_static ?? 0).toFixed(1)} USD (would have defaulted)
                </div>
             </div>
             <div className={cn(
@@ -258,6 +258,9 @@ export default function SimPage() {
                </div>
                <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500">
                   Status: {isCritical ? "TIGHTENED" : "MONITORING"}
+               </div>
+               <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.08em] text-solana-green">
+                  Loss prevented by oracle: {exposureGap.toFixed(1)} USD
                </div>
             </div>
           </div>

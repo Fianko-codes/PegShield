@@ -118,6 +118,12 @@ def build_simulation_snapshot() -> dict:
                 "regime_flag": int(float(row["regime_flag"])),
                 "ltv_with_oracle": float(row["ltv_with_oracle"]),
                 "ltv_no_oracle": float(row["ltv_no_oracle"]),
+                "shortfall_dynamic": float(
+                    row.get("shortfall_dynamic", row["bad_debt_with_oracle"])
+                ),
+                "shortfall_static": float(
+                    row.get("shortfall_static", row["bad_debt_no_oracle"])
+                ),
                 "bad_debt_with_oracle": float(row["bad_debt_with_oracle"]),
                 "bad_debt_no_oracle": float(row["bad_debt_no_oracle"]),
             }

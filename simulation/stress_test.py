@@ -170,16 +170,17 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
 
     collateral_units = 100.0
     initial_collateral_value = collateral_units * float(df["msol_usd_price"].iloc[0])
-    borrowed_value = initial_collateral_value * CF_BASE
+    borrow_static = initial_collateral_value * CF_BASE
 
     ltv_dynamic: list[float] = []
     ltv_fixed: list[float] = []
-    bad_debt_dynamic: list[float] = []
-    bad_debt_fixed: list[float] = []
+    shortfall_dynamic: list[float] = []
+    shortfall_static: list[float] = []
     theta_values: list[float] = []
     sigma_values: list[float] = []
     z_scores: list[float] = []
     regime_flags: list[int] = []
+    borrow_dynamic: float | None = None
 
     rolling_source = history_df[
         ["timestamp", "msol_usd_price", "sol_usd_price"]
@@ -213,8 +214,8 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
         )
 
         collateral_value = collateral_units * float(row.msol_usd_price)
-        safe_dynamic = collateral_value * ltv
-        safe_fixed = collateral_value * CF_BASE
+        if borrow_dynamic is None:
+            borrow_dynamic = initial_collateral_value * ltv
 
         theta_values.append(ou_params["theta"])
         sigma_values.append(ou_params["sigma"])
@@ -222,8 +223,8 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
         regime_flags.append(regime["regime_flag"])
         ltv_dynamic.append(ltv)
         ltv_fixed.append(CF_BASE)
-        bad_debt_dynamic.append(max(0.0, borrowed_value - safe_dynamic))
-        bad_debt_fixed.append(max(0.0, borrowed_value - safe_fixed))
+        shortfall_dynamic.append(max(0.0, borrow_dynamic - collateral_value))
+        shortfall_static.append(max(0.0, borrow_static - collateral_value))
 
     result = df.copy()
     result["theta"] = theta_values
@@ -232,8 +233,11 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     result["regime_flag"] = regime_flags
     result["ltv_with_oracle"] = ltv_dynamic
     result["ltv_no_oracle"] = ltv_fixed
-    result["bad_debt_with_oracle"] = bad_debt_dynamic
-    result["bad_debt_no_oracle"] = bad_debt_fixed
+    result["shortfall_dynamic"] = shortfall_dynamic
+    result["shortfall_static"] = shortfall_static
+    # Deprecated aliases kept so existing dashboard snapshots continue to parse.
+    result["bad_debt_with_oracle"] = shortfall_dynamic
+    result["bad_debt_no_oracle"] = shortfall_static
     return result
 
 
