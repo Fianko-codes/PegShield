@@ -41,8 +41,13 @@ export default function Home() {
         className="mb-24 space-y-8 text-center md:mb-40"
       >
         <motion.div variants={itemVariants} className="mb-10 flex justify-center">
-          <div className="border border-solana-green/30 bg-solana-green/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">
-            Now Live on Solana Devnet
+          <div className="space-y-3 text-center">
+            <div className="mx-auto inline-flex border border-solana-green/30 bg-solana-green/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">
+              Now Live on Solana Devnet
+            </div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 md:text-xs">
+              Risk oracle, not price oracle. For Solana LSTs as collateral.
+            </div>
           </div>
         </motion.div>
         
@@ -52,8 +57,8 @@ export default function Home() {
         </motion.h1>
         
         <motion.p variants={itemVariants} className="mx-auto max-w-xl text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-sm">
-          The verifiable on-chain risk layer for Solana LSTs. 
-          Dynamic LTV adjustments driven by statistical mean-reversion modeling.
+          PegShield converts raw LST market behavior into a verifiable on-chain collateral signal.
+          Dynamic LTV adjustments are driven by mean-reversion, volatility, and regime-break detection.
         </motion.p>
         
         <motion.div variants={itemVariants} className="flex flex-col justify-center gap-4 pt-8 md:flex-row md:gap-6 md:pt-10">

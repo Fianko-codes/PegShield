@@ -3,7 +3,9 @@
 [![Oracle Updater](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml/badge.svg)](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
-A Solana-native **risk oracle** for liquid staking token (LST) collateral. Lending protocols get a live, statistically-calibrated LTV that tightens automatically when an LST starts de-pegging — instead of the usual "set a static 80% collateral factor and hope."
+Risk oracle, not price oracle. For Solana LSTs as collateral.
+
+PegShield is a Solana-native **risk oracle** for liquid staking token (LST) collateral. It publishes a live, statistically calibrated LTV that tightens automatically when an LST starts de-pegging, instead of leaving lenders with a fixed collateral factor and hoping liquidations keep up.
 
 > **Price oracles answer:** what is this asset worth?
 > **PegShield answers:** how safe is this asset to use as collateral *right now*?
@@ -136,7 +138,7 @@ MSOL_RISK_STATE_PDA=7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo
 
 ## Run The 60-Second Demo
 
-For judges or teammates, the fastest path is the one-command demo:
+For anyone evaluating the project end-to-end, the fastest path is the one-command demo:
 
 ```bash
 ./demo.sh
