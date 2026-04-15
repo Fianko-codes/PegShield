@@ -38,56 +38,48 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
 
             {/* LIVE SYSTEM INDICATORS - Product maturity signal */}
             <div className="hidden min-w-0 lg:flex items-center gap-4 xl:gap-6 pl-4 xl:pl-6 border-l border-zinc-900">
-               <RegimeBadge regime={regime} />
-               <div className="flex flex-col">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live θ</span>
-                  <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
-                    {riskState.theta.toFixed(4)}
-                  </span>
-               </div>
-               <div className="flex flex-col">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live σ</span>
-                  <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
-                    {riskState.sigma.toFixed(4)}
-                  </span>
-               </div>
-               <div className="flex items-center gap-1">
-                  <Cpu size={10} className="text-zinc-700 animate-pulse" />
-                  <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-700">Oracle Node: mSOL-01</span>
-               </div>
+              <RegimeBadge regime={regime} />
+              <div className="flex flex-col">
+                <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live θ</span>
+                <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
+                  {riskState.theta.toFixed(4)}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-600">Live σ</span>
+                <span className={cn("text-[10px] mono-data font-bold", regime === 1 ? "text-emergency-red" : "text-zinc-300")}>
+                  {riskState.sigma.toFixed(4)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Cpu size={10} className="text-zinc-700 animate-pulse" />
+                <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-700">Oracle Node: mSOL-01</span>
+              </div>
             </div>
           </div>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-4 lg:gap-6">
-            <a
-              href="https://github.com/Fianko-codes"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 transition-colors hover:text-white"
-            >
-              Built by Fianko-codes
-            </a>
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 className={cn(
                   "text-[10px] font-bold uppercase tracking-[0.12em] transition-colors",
-                  location.pathname === link.path 
-                    ? (regime === 1 ? "text-emergency-red" : "text-solana-green") 
+                  location.pathname === link.path
+                    ? (regime === 1 ? "text-emergency-red" : "text-solana-green")
                     : "text-zinc-500 hover:text-white"
                 )}
               >
                 {link.name}
               </Link>
             ))}
-            <Link 
+            <Link
               to="/app"
               className={cn(
                 "border px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-all",
-                regime === 1 
-                  ? "border-emergency-red text-emergency-red shadow-brutal-red hover:bg-emergency-red hover:text-white" 
+                regime === 1
+                  ? "border-emergency-red text-emergency-red shadow-brutal-red hover:bg-emergency-red hover:text-white"
                   : "border-solana-green text-solana-green shadow-brutal-green hover:bg-solana-green hover:text-black"
               )}
             >
@@ -97,7 +89,7 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <button 
+            <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-zinc-400 hover:text-white"
               aria-label="Toggle navigation"
@@ -111,14 +103,6 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
       {/* Mobile Nav */}
       {isOpen && (
         <div className="space-y-4 border-t border-zinc-800 bg-black/95 px-4 pb-6 pt-2 backdrop-blur-md md:hidden">
-          <a
-            href="https://github.com/Fianko-codes"
-            target="_blank"
-            rel="noreferrer"
-            className="block text-sm font-bold uppercase tracking-[0.1em] text-zinc-300"
-          >
-            Built by Fianko-codes
-          </a>
           {navLinks.map((link) => (
             <Link
               key={link.path}
@@ -126,21 +110,21 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
               onClick={() => setIsOpen(false)}
               className={cn(
                 "block text-sm font-bold uppercase tracking-[0.12em]",
-                location.pathname === link.path 
-                  ? (regime === 1 ? "text-emergency-red" : "text-solana-green") 
+                location.pathname === link.path
+                  ? (regime === 1 ? "text-emergency-red" : "text-solana-green")
                   : "text-zinc-500"
               )}
             >
               {link.name}
             </Link>
           ))}
-          <Link 
+          <Link
             to="/app"
             onClick={() => setIsOpen(false)}
             className={cn(
               "block w-full border px-4 py-3 text-center text-[10px] font-bold uppercase tracking-[0.12em]",
-              regime === 1 
-                ? "border-emergency-red text-emergency-red shadow-brutal-red" 
+              regime === 1
+                ? "border-emergency-red text-emergency-red shadow-brutal-red"
                 : "border-solana-green text-solana-green shadow-brutal-green"
             )}
           >
