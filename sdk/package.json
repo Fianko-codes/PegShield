@@ -1,0 +1,54 @@
+{
+  "name": "@pegshield/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the PegShield on-chain risk oracle (LST collateral risk on Solana).",
+  "license": "Apache-2.0",
+  "author": "Fianko-codes",
+  "homepage": "https://github.com/Fianko-codes/PegShield",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fianko-codes/PegShield.git",
+    "directory": "sdk"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./idl": {
+      "types": "./dist/idl.d.ts",
+      "default": "./dist/idl.js"
+    }
+  },
+  "files": [
+    "dist",
+    "idl",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build",
+    "test": "ts-node test/decode.test.ts"
+  },
+  "keywords": [
+    "solana",
+    "oracle",
+    "lst",
+    "risk",
+    "mSOL",
+    "anchor",
+    "pegshield"
+  ],
+  "peerDependencies": {
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "@types/node": "^22.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

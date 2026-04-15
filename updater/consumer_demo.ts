@@ -7,13 +7,20 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 const REPO_ROOT = path.resolve(__dirname, "..");
 
+/** Fixed-point scale: matches SCALE constant in lib.rs */
+const SCALE = 1_000_000;
+
+/** Maximum age (seconds) before we consider the oracle data stale. */
+const MAX_STALENESS_SECS = 600; // 10 minutes
+
 type RiskStateAccount = {
   lstId: string;
-  suggestedLtv: number;
+  suggestedLtvBps: number;
   regimeFlag: number;
-  theta: number;
-  sigma: number;
-  zScore: number;
+  thetaScaled: anchor.BN;
+  sigmaScaled: anchor.BN;
+  zScoreScaled: anchor.BN;
+  timestamp: anchor.BN;
 };
 
 function requiredEnv(name: string): string {
@@ -73,8 +80,25 @@ async function main(): Promise<void> {
     riskStatePda,
   )) as RiskStateAccount;
 
+  // Decode fixed-point fields
+  const oracleLtv = state.suggestedLtvBps / 10_000;
+  const theta = state.thetaScaled.toNumber() / SCALE;
+  const sigma = state.sigmaScaled.toNumber() / SCALE;
+  const z_score = state.zScoreScaled.toNumber() / SCALE;
+  const oracleTimestamp = state.timestamp.toNumber();
+  const nowSecs = Math.floor(Date.now() / 1000);
+  const ageSeconds = nowSecs - oracleTimestamp;
+  const isStale = ageSeconds > MAX_STALENESS_SECS;
+
+  if (isStale) {
+    console.error(
+      `WARNING: Oracle data is ${ageSeconds}s old (max allowed: ${MAX_STALENESS_SECS}s). ` +
+      `Do not use stale data for borrow decisions.`,
+    );
+  }
+
   const fixedBorrowLimit = collateralValueUsd * fixedLtv;
-  const oracleBorrowLimit = collateralValueUsd * state.suggestedLtv;
+  const oracleBorrowLimit = collateralValueUsd * oracleLtv;
 
   console.log(
     JSON.stringify(
@@ -82,14 +106,17 @@ async function main(): Promise<void> {
         lst_id: state.lstId,
         collateral_value_usd: collateralValueUsd,
         fixed_ltv: fixedLtv,
-        oracle_ltv: state.suggestedLtv,
+        oracle_ltv: oracleLtv,
+        oracle_ltv_bps: state.suggestedLtvBps,
         fixed_borrow_limit_usd: Number(fixedBorrowLimit.toFixed(2)),
         oracle_borrow_limit_usd: Number(oracleBorrowLimit.toFixed(2)),
         borrow_limit_delta_usd: Number((fixedBorrowLimit - oracleBorrowLimit).toFixed(2)),
         regime_flag: state.regimeFlag,
-        theta: state.theta,
-        sigma: state.sigma,
-        z_score: state.zScore,
+        theta,
+        sigma,
+        z_score,
+        oracle_age_seconds: ageSeconds,
+        is_stale: isStale,
         risk_state: riskStatePda.toBase58(),
       },
       null,

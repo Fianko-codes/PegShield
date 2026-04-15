@@ -49,6 +49,7 @@ export interface OracleSnapshot extends RiskState {
 export interface SimulationPoint {
   timestamp: string;
   spread_pct: number;
+  peg_deviation?: number | null;
   theta: number;
   sigma: number;
   z_score: number;
@@ -59,11 +60,35 @@ export interface SimulationPoint {
   bad_debt_no_oracle: number;
 }
 
+export interface SimulationReplaySource {
+  label: string;
+  url: string;
+}
+
+export interface SimulationReplay {
+  id?: string;
+  kind?: string;
+  title?: string;
+  description?: string;
+  asset_symbol?: string;
+  base_symbol?: string;
+  reference_ratio?: number;
+  event_window_label?: string;
+  warmup_points?: number;
+  scenario_points?: number;
+  fixture_path?: string | null;
+  sources?: SimulationReplaySource[];
+}
+
 export interface SimulationSnapshot {
   points: SimulationPoint[];
+  replay?: SimulationReplay;
   summary: {
     row_count: number;
     max_spread_pct: number;
+    min_spread_pct?: number;
+    max_peg_deviation?: number;
+    min_peg_deviation?: number;
     max_z_score: number;
     critical_rows: number;
     final_dynamic_ltv: number;

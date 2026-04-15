@@ -78,6 +78,12 @@ export default function SimPage() {
   const currentPoint = simData[simData.length - 1];
   const isCritical = currentPoint?.regime_flag === 1;
   const isLoaded = simData.length > 0;
+  const replay = simulation?.replay;
+  const replayTitle = replay?.title ?? 'Historical depeg replay';
+  const replayDescription =
+    replay?.description ??
+    'Replay a real dislocation and compare the static 80% policy against PegShield tightening.';
+  const replayWindow = replay?.event_window_label ?? 'Historical event window';
   const exposureGap = useMemo(() => {
     if (!currentPoint) {
       return 0;
@@ -88,7 +94,12 @@ export default function SimPage() {
   const finalDynamicLtv = currentPoint?.ltv_with_oracle ?? 0;
   const finalStaticLtv = currentPoint?.ltv_no_oracle ?? 0;
   const spreadSeries = simData.map((point, index) => ({
-    time: index,
+    time: new Date(point.timestamp).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    }),
+    sequence: index,
     spread: point.spread_pct,
   }));
 
@@ -99,11 +110,11 @@ export default function SimPage() {
   return (
     <div className="space-y-12 py-8 md:py-12">
       <header className="mx-auto max-w-2xl space-y-4 text-center">
-        <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">Simulation Bridge</div>
-        <h1 className="text-3xl font-bold uppercase tracking-tighter md:text-5xl">Stress Test <br /> the <span className="text-solana-green">Oracle</span></h1>
+        <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">Historical Replay</div>
+        <h1 className="text-3xl font-bold uppercase tracking-tighter md:text-5xl">Replay <br /> the <span className="text-solana-green">Depeg</span></h1>
         <p className="text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
-          Replay the generated stress path and compare the static 80% policy
-          against PegShield&apos;s tighter oracle target during spread instability.
+          {replayTitle}. Compare the static 80% policy against PegShield&apos;s
+          tighter oracle target during a real dislocation.
         </p>
       </header>
 
@@ -112,9 +123,9 @@ export default function SimPage() {
         <div className="lg:col-span-4 space-y-6">
           <div className="space-y-8 border border-zinc-800 bg-black p-5 md:p-8">
             <div className="space-y-2">
-              <h3 className="text-sm font-bold uppercase tracking-widest">Simulation Controls</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest">Replay Controls</h3>
               <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-                Advance the precomputed stress scenario generated from the current oracle baseline.
+                Advance the precomputed historical replay for {replayWindow}.
               </p>
             </div>
 
@@ -124,7 +135,7 @@ export default function SimPage() {
                  className="w-full py-6"
                  onClick={triggerShock}
                >
-                 {isShocking ? 'REPLAY IN PROGRESS...' : 'REPLAY STRESS PATH'}
+                 {isShocking ? 'REPLAY IN PROGRESS...' : 'REPLAY HISTORICAL EVENT'}
                </BrutalistButton>
                
                <BrutalistButton 
@@ -184,7 +195,7 @@ export default function SimPage() {
         <div className="lg:col-span-8 space-y-6">
           <div className="relative border border-zinc-800 bg-black p-4 sm:p-6">
             <div className="absolute left-4 top-4 z-10 sm:left-6">
-              <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Generated Stress Scenario</div>
+              <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-500">{replayTitle}</div>
             </div>
             <div className="mt-8 h-[260px] w-full sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -196,7 +207,7 @@ export default function SimPage() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" vertical={false} />
-                  <XAxis dataKey="time" hide />
+                  <XAxis dataKey="sequence" hide />
                   <YAxis 
                     stroke="#444" 
                     fontSize={10} 
@@ -206,6 +217,7 @@ export default function SimPage() {
                   />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0D0D0D', border: '1px solid #333', fontSize: '10px', fontFamily: 'monospace' }}
+                    labelFormatter={(_, payload) => String(payload?.[0]?.payload?.time ?? '')}
                     formatter={(value) => `${(Number(value ?? 0) * 100).toFixed(2)}%`}
                   />
                   <Area 
@@ -228,7 +240,7 @@ export default function SimPage() {
                </div>
                <div className="text-3xl font-bold mono-data text-zinc-400">{(finalStaticLtv * 100).toFixed(1)}%</div>
                <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.08em] text-emergency-red">
-                  Exposure gap after shock: {(currentPoint?.bad_debt_no_oracle ?? 0).toFixed(1)} USD
+                  Exposure gap during replay: {(currentPoint?.bad_debt_no_oracle ?? 0).toFixed(1)} USD
                </div>
             </div>
             <div className={cn(
@@ -256,9 +268,8 @@ export default function SimPage() {
       <section className="mx-auto max-w-4xl border border-zinc-900 bg-zinc-950 p-6 text-center sm:p-12">
          <h2 className="mb-4 text-2xl font-bold uppercase tracking-tighter">What This Replay Shows</h2>
          <p className="mb-8 text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
-            This view is a generated replay from the current baseline, not a live market dashboard.
-            It shows how the oracle target tightens as spread instability rises, so teams can reason about
-            policy changes before shipping the feed into a lending integration.
+            {replayDescription}
+            It shows how the oracle target tightens as spread instability rises before a lending integration absorbs the move.
          </p>
          <div className="flex justify-center">
             <a href="/app" className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-solana-green hover:underline">

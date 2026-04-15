@@ -5,8 +5,22 @@ use anchor_lang::prelude::*;
 declare_id!("DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea");
 
 const MAX_LST_ID_LEN: usize = 16;
-const MIN_LTV: f64 = 0.0;
-const MAX_LTV: f64 = 1.0;
+
+/// Fixed-point scale factor. All float params are multiplied by this before
+/// storing and divided by this after reading.  Stored as i64, so values like
+/// theta=0.045 become 45_000 and z_score=-1.23 becomes -1_230_000.
+pub const SCALE: i64 = 1_000_000;
+
+/// Minimum seconds that must elapse between successive updates from the same
+/// authority.  Prevents spamming and cheap-replay attacks.
+const MIN_UPDATE_INTERVAL_SECS: i64 = 30;
+
+/// Minimum suggested LTV in basis points (40 %).
+const MIN_LTV_BPS: u16 = 0;
+
+/// Maximum suggested LTV in basis points (100 %).  Protocol-side caps enforce
+/// the real ceiling; the oracle just must not publish an impossible value.
+const MAX_LTV_BPS: u16 = 10_000;
 
 #[program]
 pub mod risk_oracle {
@@ -21,13 +35,13 @@ pub mod risk_oracle {
 
         let state = &mut ctx.accounts.risk_state;
         state.lst_id = lst_id;
-        state.theta = 0.0;
-        state.sigma = 0.0;
+        state.theta_scaled = 0;
+        state.sigma_scaled = 0;
         state.regime_flag = 0;
-        state.suggested_ltv = 0.0;
-        state.z_score = 0.0;
+        state.suggested_ltv_bps = 0;
+        state.z_score_scaled = 0;
         state.slot = Clock::get()?.slot;
-        state.timestamp = Clock::get()?.unix_timestamp;
+        state.timestamp = 0; // 0 means "never updated"; used in rate-limit check
         state.authority = authority;
         state.last_updater = authority;
         Ok(())
@@ -48,14 +62,27 @@ pub mod risk_oracle {
         );
         require!(state.lst_id == params.lst_id, OracleError::LstIdMismatch);
 
-        state.theta = params.theta;
-        state.sigma = params.sigma;
+        let now = Clock::get()?.unix_timestamp;
+        require!(
+            state.timestamp == 0 || now - state.timestamp >= MIN_UPDATE_INTERVAL_SECS,
+            OracleError::UpdateTooFrequent
+        );
+
+        state.theta_scaled = params.theta_scaled;
+        state.sigma_scaled = params.sigma_scaled;
         state.regime_flag = params.regime_flag;
-        state.suggested_ltv = params.suggested_ltv;
-        state.z_score = params.z_score;
+        state.suggested_ltv_bps = params.suggested_ltv_bps;
+        state.z_score_scaled = params.z_score_scaled;
         state.slot = Clock::get()?.slot;
-        state.timestamp = Clock::get()?.unix_timestamp;
+        state.timestamp = now;
         state.last_updater = ctx.accounts.authority.key();
+        Ok(())
+    }
+
+    /// Close the risk-state PDA and refund rent to the authority.
+    /// Intended for dev/test re-initialisation flows when the struct layout
+    /// changes; authority-only gate prevents griefing.
+    pub fn close_oracle(_ctx: Context<CloseOracle>) -> Result<()> {
         Ok(())
     }
 }
@@ -91,42 +118,86 @@ pub struct UpdateRiskState<'info> {
     pub authority: Signer<'info>,
 }
 
+#[derive(Accounts)]
+pub struct CloseOracle<'info> {
+    #[account(
+        mut,
+        close = authority,
+        seeds = [b"risk", risk_state.lst_id.as_bytes()],
+        bump,
+        has_one = authority @ OracleError::Unauthorized,
+    )]
+    pub risk_state: Account<'info, RiskState>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+}
+
 #[account]
 pub struct RiskState {
+    /// ASCII ticker of the LST (e.g. "mSOL"), max 16 bytes.
     pub lst_id: String,
-    pub theta: f64,
-    pub sigma: f64,
+
+    /// Mean-reversion speed θ from the OU model, stored as θ × SCALE.
+    /// Always non-negative; zero only before the first real update.
+    pub theta_scaled: i64,
+
+    /// Annualised volatility σ from the OU model, stored as σ × SCALE.
+    /// Always positive after the first real update.
+    pub sigma_scaled: i64,
+
+    /// 0 = NORMAL  |  1 = CRITICAL (spread non-stationary and extreme z-score).
     pub regime_flag: u8,
-    pub suggested_ltv: f64,
-    pub z_score: f64,
+
+    /// Suggested loan-to-value ratio in basis points.
+    /// 8000 = 80 %.  Clamped to [MIN_LTV_BPS, MAX_LTV_BPS] by the engine.
+    pub suggested_ltv_bps: u16,
+
+    /// Z-score of the current spread vs. the rolling window mean, stored as
+    /// z × SCALE.  Signed; negative means spread below the historical average.
+    pub z_score_scaled: i64,
+
+    /// Slot at which the last update was written.
     pub slot: u64,
+
+    /// Unix timestamp (seconds) of the last update.  Zero before first update.
     pub timestamp: i64,
+
+    /// The only public key allowed to call update_risk_state.
     pub authority: Pubkey,
+
+    /// Public key of the wallet that submitted the most recent update.
     pub last_updater: Pubkey,
 }
 
 impl RiskState {
-    pub const SPACE: usize = 8
-        + 4 + MAX_LST_ID_LEN
-        + 8
-        + 8
-        + 1
-        + 8
-        + 8
-        + 8
-        + 8
-        + 32
-        + 32;
+    pub const SPACE: usize = 8          // Anchor discriminator
+        + 4 + MAX_LST_ID_LEN           // String prefix (4) + data
+        + 8                            // theta_scaled  i64
+        + 8                            // sigma_scaled  i64
+        + 1                            // regime_flag   u8
+        + 2                            // suggested_ltv_bps u16
+        + 8                            // z_score_scaled i64
+        + 8                            // slot           u64
+        + 8                            // timestamp      i64
+        + 32                           // authority      Pubkey
+        + 32;                          // last_updater   Pubkey
+    // Total: 119 bytes (down from 141 with f64 fields)
 }
 
+/// Parameters submitted in every update call.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct RiskParams {
     pub lst_id: String,
-    pub theta: f64,
-    pub sigma: f64,
+    /// θ × SCALE  (non-negative)
+    pub theta_scaled: i64,
+    /// σ × SCALE  (positive)
+    pub sigma_scaled: i64,
     pub regime_flag: u8,
-    pub suggested_ltv: f64,
-    pub z_score: f64,
+    /// LTV in basis points, 0–10_000
+    pub suggested_ltv_bps: u16,
+    /// z × SCALE  (signed)
+    pub z_score_scaled: i64,
 }
 
 #[error_code]
@@ -139,6 +210,8 @@ pub enum OracleError {
     LstIdMismatch,
     #[msg("Risk parameters contain invalid numeric values")]
     InvalidRiskParams,
+    #[msg("Update submitted too frequently; wait at least 30 seconds")]
+    UpdateTooFrequent,
 }
 
 fn valid_lst_id(lst_id: &str) -> bool {
@@ -146,14 +219,9 @@ fn valid_lst_id(lst_id: &str) -> bool {
 }
 
 fn valid_risk_params(params: &RiskParams) -> bool {
-    finite(params.theta)
-        && finite(params.sigma)
-        && finite(params.z_score)
-        && finite(params.suggested_ltv)
-        && params.suggested_ltv >= MIN_LTV
-        && params.suggested_ltv <= MAX_LTV
-}
-
-fn finite(value: f64) -> bool {
-    !value.is_nan() && !value.is_infinite()
+    params.theta_scaled >= 0
+        && params.sigma_scaled > 0
+        && params.suggested_ltv_bps >= MIN_LTV_BPS
+        && params.suggested_ltv_bps <= MAX_LTV_BPS
+    // z_score_scaled is signed and unbounded — any i64 is valid
 }

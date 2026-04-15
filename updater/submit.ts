@@ -7,12 +7,16 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 const REPO_ROOT = path.resolve(__dirname, "..");
 
+/** Fixed-point scale: matches SCALE constant in lib.rs */
+const SCALE = 1_000_000;
+
+/** Pipeline outputs floats; this is what we read from latest.json */
 type RiskPayload = {
   lst_id: string;
   theta: number;
   sigma: number;
   regime_flag: number;
-  suggested_ltv: number;
+  suggested_ltv: number; // 0.0–1.0
   z_score: number;
 };
 
@@ -51,6 +55,16 @@ function loadRiskPayload(jsonPath: string): RiskPayload {
   return JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as RiskPayload;
 }
 
+/** Convert a float to a fixed-point i64 encoded as BN, clamped to safe range. */
+function toScaled(value: number): anchor.BN {
+  return new anchor.BN(Math.round(value * SCALE));
+}
+
+/** Convert suggested_ltv (0.0–1.0) to basis points (0–10_000). */
+function toLtvBps(ltv: number): number {
+  return Math.round(Math.max(0, Math.min(1, ltv)) * 10_000);
+}
+
 async function main(): Promise<void> {
   const jsonPath =
     process.argv[2] ??
@@ -73,14 +87,16 @@ async function main(): Promise<void> {
     program.programId,
   );
 
+  const suggestedLtvBps = toLtvBps(riskData.suggested_ltv);
+
   const tx = await program.methods
     .updateRiskState({
       lstId: riskData.lst_id,
-      theta: riskData.theta,
-      sigma: riskData.sigma,
+      thetaScaled: toScaled(riskData.theta),
+      sigmaScaled: toScaled(riskData.sigma),
       regimeFlag: riskData.regime_flag,
-      suggestedLtv: riskData.suggested_ltv,
-      zScore: riskData.z_score,
+      suggestedLtvBps,
+      zScoreScaled: toScaled(riskData.z_score),
     })
     .accounts({
       riskState: riskStatePda,
@@ -94,6 +110,9 @@ async function main(): Promise<void> {
         status: "submitted",
         lst_id: riskData.lst_id,
         suggested_ltv: riskData.suggested_ltv,
+        suggested_ltv_bps: suggestedLtvBps,
+        theta_scaled: riskData.theta * SCALE,
+        sigma_scaled: riskData.sigma * SCALE,
         risk_state: riskStatePda.toBase58(),
         tx,
       },

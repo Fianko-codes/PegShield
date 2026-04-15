@@ -1,7 +1,7 @@
 import type { MarketSnapshot, OracleSnapshot, RiskState, SimulationSnapshot } from '../types';
 
 const fallbackRiskState: RiskState = {
-  lst_id: 'mSOL',
+  lst_id: 'mSOL-v2',
   theta: 0,
   sigma: 0,
   regime_flag: 0,
@@ -39,7 +39,7 @@ function normalizeOracleSnapshot(
         : history[history.length - 1]?.spread_pct ?? 0;
 
   return {
-    lst_id: merged.lst_id ?? staticSnapshot?.lst_id ?? 'mSOL',
+    lst_id: merged.lst_id ?? staticSnapshot?.lst_id ?? 'mSOL-v2',
     theta: merged.theta ?? staticSnapshot?.theta ?? 0,
     sigma: merged.sigma ?? staticSnapshot?.sigma ?? 0,
     regime_flag: merged.regime_flag ?? staticSnapshot?.regime_flag ?? 0,
