@@ -236,39 +236,39 @@ function ModelCard({
               </div>
 
               <div className="grid grid-cols-1 gap-3 font-mono text-[10px] sm:grid-cols-2">
-                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                <div className="min-w-0 border border-zinc-800/80 bg-zinc-950/50 p-3">
                   <div className="text-zinc-500">Current θ</div>
-                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                  <div className={cn('mt-2 text-lg break-all', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
                     {theta.toFixed(2)}
                   </div>
-                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600 break-words">
                     Mean-reversion speed, 1/day
                   </div>
                 </div>
-                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                <div className="min-w-0 border border-zinc-800/80 bg-zinc-950/50 p-3">
                   <div className="text-zinc-500">Current σ</div>
-                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                  <div className={cn('mt-2 text-lg break-all', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
                     {sigma.toFixed(4)}
                   </div>
-                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600 break-words">
                     Daily volatility
                   </div>
                 </div>
-                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                <div className="min-w-0 border border-zinc-800/80 bg-zinc-950/50 p-3">
                   <div className="text-zinc-500">Current z</div>
-                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                  <div className={cn('mt-2 text-lg break-all', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
                     {formatSigned(zScore, 3)}
                   </div>
-                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600 break-words">
                     σ from rolling mean
                   </div>
                 </div>
-                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                <div className="min-w-0 border border-zinc-800/80 bg-zinc-950/50 p-3">
                   <div className="text-zinc-500">ADF p-val</div>
-                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                  <div className={cn('mt-2 text-lg break-all', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
                     {formatAdfPvalue(adfPvalue)}
                   </div>
-                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600 break-words">
                     {typeof isStationary === 'boolean'
                       ? isStationary
                         ? 'Stationary mean-reversion holds'
