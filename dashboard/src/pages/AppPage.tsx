@@ -691,8 +691,8 @@ export default function AppPage({
   };
 
   return (
-    <div className="py-4 md:py-6">
-      <div className="mb-8 flex flex-col gap-4 border-b border-zinc-800 pb-4 md:flex-row md:items-center md:justify-between">
+    <div className="py-6 md:py-10">
+      <div className="mb-10 flex flex-col gap-6 border-b border-zinc-800 pb-6 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div
             className={cn(
@@ -768,10 +768,10 @@ export default function AppPage({
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 gap-6 xl:grid-cols-12"
+        className="grid grid-cols-1 gap-8 2xl:gap-10 xl:grid-cols-12"
       >
-        <motion.section variants={itemVariants} className="space-y-6 xl:col-span-3">
-          <div className="space-y-4">
+        <motion.section variants={itemVariants} className="space-y-8 xl:col-span-3">
+          <div className="space-y-6">
             <div className="relative overflow-hidden border border-zinc-800 p-4">
               <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                 <Activity size={12} /> mSOL/SOL Premium
@@ -906,8 +906,8 @@ export default function AppPage({
           </div>
         </motion.section>
 
-        <motion.section variants={itemVariants} className="space-y-6 xl:col-span-6">
-          <div className="space-y-6">
+        <motion.section variants={itemVariants} className="space-y-8 xl:col-span-6">
+          <div className="space-y-8">
             <div className="relative border border-zinc-800 bg-black p-4 sm:p-6">
               <div className="absolute left-4 right-4 top-4 z-10 sm:left-6 sm:right-auto">
                 <div className="mb-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
@@ -1009,7 +1009,7 @@ export default function AppPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2">
               <ModelCard
                 theta={globalState.theta}
                 sigma={globalState.sigma}
@@ -1065,7 +1065,7 @@ export default function AppPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.1fr_0.9fr]">
               <div className="border border-zinc-800 bg-black p-4 sm:p-5">
                 <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
                   <WalletCards size={12} /> Protocol Borrow Calculator
@@ -1211,10 +1211,10 @@ export default function AppPage({
         variants={itemVariants}
         initial="hidden"
         animate="show"
-        className="mt-8 border border-zinc-800 bg-black p-5 sm:mt-10 sm:p-6 lg:p-8"
+        className="mt-12 border border-zinc-800 bg-black p-6 sm:mt-16 sm:p-8 lg:p-10"
       >
-        <div className="mb-8 flex flex-col gap-3 border-b border-zinc-900 pb-6 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-3">
+        <div className="mb-10 flex flex-col gap-4 border-b border-zinc-900 pb-8 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-4">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
               <WalletCards size={12} /> Devnet Write Guard Demo
             </div>
@@ -1231,8 +1231,8 @@ export default function AppPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[0.82fr_1.18fr]">
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-8 2xl:grid-cols-[0.82fr_1.18fr]">
+          <div className="space-y-6">
             <div className="border border-zinc-800 bg-zinc-950/40 p-4">
               <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">How This Demo Works</div>
               <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
@@ -1300,7 +1300,7 @@ export default function AppPage({
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div
               className={cn(
                 'border p-4 transition-colors',
