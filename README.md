@@ -91,6 +91,7 @@ sdk/            @pegshield/sdk — typed TypeScript client for consumers
 updater/        init / submit / read / close / consumer-demo scripts
 simulation/     Historical replay + synthetic fallback (oracle vs fixed-LTV)
 dashboard/      Vite + React dashboard and read-only Vercel API
+docs/           Design notes and architecture roadmap documents
 tests/          Python micro-tests for the statistical engine
 ```
 
@@ -216,6 +217,8 @@ Neither should show any secrets or local operational files.
 ## Security
 
 See [SECURITY.md](./SECURITY.md) for the trust model, on-chain safety properties, consumer responsibilities, and responsible-disclosure process.
+
+The roadmap away from single-signer trust is documented in [docs/MULTI_ATTESTER.md](./docs/MULTI_ATTESTER.md).
 
 ## License
 
