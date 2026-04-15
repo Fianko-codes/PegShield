@@ -47,6 +47,11 @@ function normalizeOracleSnapshot(
     z_score: merged.z_score ?? staticSnapshot?.z_score ?? 0,
     spread: spreadPct,
     spread_pct: spreadPct,
+    mu: merged.mu ?? staticSnapshot?.mu,
+    adf_pvalue: merged.adf_pvalue ?? staticSnapshot?.adf_pvalue,
+    is_stationary: merged.is_stationary ?? staticSnapshot?.is_stationary,
+    spread_signal: merged.spread_signal ?? staticSnapshot?.spread_signal,
+    peg_deviation_pct: merged.peg_deviation_pct ?? staticSnapshot?.peg_deviation_pct,
     timestamp: merged.timestamp ?? staticSnapshot?.timestamp ?? 0,
     updated_at_iso:
       merged.updated_at_iso ??
@@ -65,6 +70,7 @@ function normalizeOracleSnapshot(
     program_id: merged.program_id ?? staticSnapshot?.program_id,
     risk_state_pda: liveRiskState ?? merged.risk_state_pda ?? staticSnapshot?.risk_state_pda,
     authority: merged.authority ?? staticSnapshot?.authority,
+    last_updater: merged.last_updater ?? staticSnapshot?.last_updater,
     network: merged.network ?? staticSnapshot?.network ?? 'solana-devnet',
     history,
     baseline: merged.baseline ?? staticSnapshot?.baseline,

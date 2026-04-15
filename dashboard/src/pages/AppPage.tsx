@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ResponsiveContainer,
@@ -12,6 +13,7 @@ import {
 } from 'recharts';
 import {
   Activity,
+  ChevronDown,
   Cpu,
   FileText,
   Terminal,
@@ -25,6 +27,7 @@ import {
   Database,
   ArrowUpRight,
 } from 'lucide-react';
+import { BlockMath } from 'react-katex';
 import { cn } from '../types';
 import type { LogEntry, MarketSnapshot, OracleSnapshot, RiskState } from '../types';
 import { fetchMarketSnapshot } from '../lib/data';
@@ -43,6 +46,8 @@ const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
 };
+
+const DEVNET_EXPLORER_BASE = 'https://explorer.solana.com';
 
 function formatRelativeMinutes(timestampSeconds: number | undefined, nowMs: number): string {
   if (!timestampSeconds) {
@@ -71,6 +76,13 @@ function shortenMiddle(value: string | undefined, lead = 8, tail = 6): string {
   return `${value.slice(0, lead)}...${value.slice(-tail)}`;
 }
 
+function explorerHref(kind: 'address' | 'tx', value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  return `${DEVNET_EXPLORER_BASE}/${kind}/${value}?cluster=devnet`;
+}
+
 function TerminalLine({ log }: { log: LogEntry }) {
   const colorClass =
     log.type === 'alert'
@@ -87,83 +99,161 @@ function TerminalLine({ log }: { log: LogEntry }) {
   );
 }
 
-function FormulaPanel({
+function formatSigned(value: number, digits: number): string {
+  const formatted = value.toFixed(digits);
+  return value > 0 ? `+${formatted}` : formatted;
+}
+
+function formatAdfPvalue(value: number | undefined): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 'unavailable';
+  }
+  if (value < 0.0001) {
+    return '<0.0001';
+  }
+  return value.toFixed(4);
+}
+
+function ModelCard({
   theta,
   sigma,
   zScore,
+  mu,
+  adfPvalue,
+  isStationary,
   regime,
 }: {
   theta: number;
   sigma: number;
   zScore: number;
+  mu?: number;
+  adfPvalue?: number;
+  isStationary?: boolean;
   regime: number;
 }) {
+  const [isOpen, setIsOpen] = useState(true);
+  const isCritical = regime === 1;
+  const regimeLabel = isCritical ? 'CRITICAL' : 'NORMAL';
+  const stationarityLabel =
+    typeof isStationary === 'boolean'
+      ? isStationary
+        ? 'ADF rejects non-stationarity'
+        : 'ADF indicates non-stationary spread'
+      : 'ADF pending';
+
   return (
     <div
       className={cn(
-        'relative h-full overflow-hidden border bg-black/40 p-4 backdrop-blur-sm transition-colors duration-500',
-        regime === 1
+        'relative h-full overflow-hidden border bg-black/40 backdrop-blur-sm transition-colors duration-500',
+        isCritical
           ? 'border-emergency-red/50 shadow-glow-red'
           : 'border-solana-green/50 shadow-glow-green',
       )}
     >
-      <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-        <Cpu size={12} /> Live OU-Process Calibration
-      </div>
-      <div className="flex flex-col gap-4">
-        <div className="border border-zinc-800/80 bg-zinc-950/60 px-4 py-3 text-center">
-          <div className="mono-data text-[11px] uppercase tracking-[0.18em] text-zinc-500 sm:text-sm">
-            Ornstein-Uhlenbeck Process
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-4 p-4 text-left"
+      >
+        <div className="min-w-0">
+          <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-zinc-500">
+            <Cpu size={12} /> Model
           </div>
-          <div className="mt-2 break-words font-mono text-[12px] leading-relaxed text-white sm:text-sm md:text-base">
-            dX<span className="align-sub text-[10px]">t</span> = θ(μ - X<span className="align-sub text-[10px]">t</span>)dt + σ dW<span className="align-sub text-[10px]">t</span>
+          <div className="text-sm font-bold uppercase tracking-[0.08em] text-white">
+            Live OU Process Calibration
           </div>
-        </div>
-        <div className="grid grid-cols-1 gap-3 font-mono text-[10px] sm:grid-cols-3 sm:gap-2">
-          <div className="flex min-w-0 flex-col">
-            <span className="text-zinc-500">THETA (REVERSION)</span>
-            <motion.span
-              key={theta}
-              initial={{ opacity: 0.5, scale: 1.1 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={cn(
-                'text-base break-all',
-                regime === 1 ? 'text-emergency-red' : 'text-solana-green',
-              )}
-            >
-              {theta.toFixed(4)}
-            </motion.span>
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="text-zinc-500">SIGMA (VOL)</span>
-            <motion.span
-              key={sigma}
-              initial={{ opacity: 0.5, scale: 1.1 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={cn(
-                'text-base break-all',
-                regime === 1 ? 'text-emergency-red' : 'text-solana-green',
-              )}
-            >
-              {sigma.toFixed(4)}
-            </motion.span>
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="text-zinc-500">Z-SCORE</span>
-            <motion.span
-              key={zScore}
-              initial={{ opacity: 0.5, scale: 1.1 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={cn(
-                'text-base break-all',
-                regime === 1 ? 'text-emergency-red' : 'text-solana-green',
-              )}
-            >
-              {zScore.toFixed(2)}
-            </motion.span>
+          <div className="mt-1 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+            {regimeLabel} • {stationarityLabel}
           </div>
         </div>
-      </div>
+        <ChevronDown
+          size={16}
+          className={cn(
+            'shrink-0 transition-transform duration-300',
+            isOpen ? 'rotate-180' : 'rotate-0',
+            isCritical ? 'text-emergency-red' : 'text-solana-green',
+          )}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            key="model-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-4 border-t border-zinc-800/80 p-4 pt-5">
+              <div className="border border-zinc-800/80 bg-zinc-950/70 px-4 py-4 text-center">
+                <div className="mono-data text-[11px] uppercase tracking-[0.18em] text-zinc-500 sm:text-sm">
+                  Ornstein-Uhlenbeck Process
+                </div>
+                <div className="mt-3 overflow-x-auto text-white">
+                  <BlockMath math={'dX_t = \\theta\\,(\\mu - X_t)\\,dt + \\sigma\\,dW_t'} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 font-mono text-[10px] sm:grid-cols-2">
+                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                  <div className="text-zinc-500">Current θ</div>
+                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                    {theta.toFixed(2)}
+                  </div>
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                    Mean-reversion speed, 1/day
+                  </div>
+                </div>
+                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                  <div className="text-zinc-500">Current σ</div>
+                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                    {sigma.toFixed(4)}
+                  </div>
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                    Daily volatility
+                  </div>
+                </div>
+                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                  <div className="text-zinc-500">Current z</div>
+                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                    {formatSigned(zScore, 3)}
+                  </div>
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                    σ from rolling mean
+                  </div>
+                </div>
+                <div className="border border-zinc-800/80 bg-zinc-950/50 p-3">
+                  <div className="text-zinc-500">ADF p-val</div>
+                  <div className={cn('mt-2 text-lg', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
+                    {formatAdfPvalue(adfPvalue)}
+                  </div>
+                  <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                    {typeof isStationary === 'boolean'
+                      ? isStationary
+                        ? 'Stationary mean-reversion holds'
+                        : 'Stationarity rejected'
+                      : 'Stationarity unavailable'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border border-zinc-800/80 bg-black/30 px-4 py-3 font-mono text-[10px] uppercase tracking-[0.08em]">
+                <span className="text-zinc-500">
+                  Regime: <span className={isCritical ? 'text-emergency-red' : 'text-solana-green'}>{regimeLabel}</span>
+                </span>
+                <span className="text-zinc-500">
+                  μ: <span className="text-zinc-300">{typeof mu === 'number' ? formatSigned(mu, 4) : 'unavailable'}</span>
+                </span>
+                <span className="text-zinc-500">
+                  Trigger: <span className="text-zinc-300">|z| ≥ 2.5 and ADF p ≥ 0.05</span>
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -180,6 +270,7 @@ export default function AppPage({
   >([]);
   const [heartbeat, setHeartbeat] = useState(false);
   const [marketSnapshot, setMarketSnapshot] = useState<MarketSnapshot | null>(null);
+  const [latestTxSignature, setLatestTxSignature] = useState<string | null>(null);
   const [collateralInput, setCollateralInput] = useState('1000');
   const [clockMs, setClockMs] = useState(() => new Date().getTime());
   const accentColor = globalState.regime_flag === 1 ? '#FF4B4B' : '#14F195';
@@ -252,6 +343,10 @@ export default function AppPage({
   const oracleDeltaUsd = fixedBorrowLimitUsd - oracleBorrowLimitUsd;
   const oracleFreshness = formatRelativeMinutes(oracleSnapshot?.timestamp, clockMs);
   const marketFreshness = formatRelativeMinutes(marketSnapshot?.publish_time, clockMs);
+  const lastUpdateAgeSec =
+    oracleSnapshot?.timestamp != null
+      ? Math.max(0, Math.floor(clockMs / 1000) - oracleSnapshot.timestamp)
+      : null;
   const oracleStatusTone =
     globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-solana-green';
 
@@ -341,6 +436,38 @@ export default function AppPage({
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLatestSignature = async () => {
+      const riskStatePda = oracleSnapshot?.risk_state_pda;
+      if (!riskStatePda) {
+        setLatestTxSignature(null);
+        return;
+      }
+
+      try {
+        const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+        const signatures = await connection.getSignaturesForAddress(new PublicKey(riskStatePda), {
+          limit: 1,
+        });
+        if (!cancelled) {
+          setLatestTxSignature(signatures[0]?.signature ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setLatestTxSignature(null);
+        }
+      }
+    };
+
+    void loadLatestSignature();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [oracleSnapshot?.risk_state_pda]);
+
   return (
     <div className="py-4 md:py-6">
       <div className="mb-8 flex flex-col gap-4 border-b border-zinc-800 pb-4 md:flex-row md:items-center md:justify-between">
@@ -365,6 +492,18 @@ export default function AppPage({
             <h1 className="text-lg font-bold uppercase tracking-tight sm:text-xl">
               System App <span className="font-normal text-zinc-500">mSOL Risk Feed</span>
             </h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {lastUpdateAgeSec !== null && lastUpdateAgeSec > 1800 && (
+                <span className="border border-emergency-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emergency-red">
+                  Unsafe to consume • {lastUpdateAgeSec}s since last update
+                </span>
+              )}
+              {lastUpdateAgeSec !== null && lastUpdateAgeSec > 600 && lastUpdateAgeSec <= 1800 && (
+                <span className="border border-yellow-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-yellow-500">
+                  Stale • {lastUpdateAgeSec}s since last update
+                </span>
+              )}
+            </div>
             <div className="mt-1 flex min-w-0 items-start gap-2 text-[10px] leading-relaxed text-zinc-500">
               <span
                 className={cn(
@@ -376,7 +515,16 @@ export default function AppPage({
                 className="min-w-0 break-all"
                 title={oracleSnapshot?.risk_state_pda ?? 'snapshot unavailable'}
               >
-                Canonical State PDA: {shortenMiddle(oracleSnapshot?.risk_state_pda, 10, 8)}
+                Canonical State PDA:{' '}
+                <a
+                  href={explorerHref('address', oracleSnapshot?.risk_state_pda)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-solana-green"
+                >
+                  {shortenMiddle(oracleSnapshot?.risk_state_pda, 10, 8)}
+                  <ArrowUpRight size={10} className="shrink-0" />
+                </a>
               </span>
             </div>
           </div>
@@ -453,11 +601,44 @@ export default function AppPage({
                 </div>
                 <div>History: {oracleSnapshot?.history_points ?? 0} points</div>
                 <div>Oracle Freshness: {oracleFreshness}</div>
-                <div
-                  className="break-all font-mono lowercase tracking-normal text-zinc-500"
-                  title={oracleSnapshot?.authority ?? 'unavailable'}
-                >
-                  Authority: {shortenMiddle(oracleSnapshot?.authority, 10, 8)}
+                <div className="break-all font-mono lowercase tracking-normal text-zinc-500">
+                  Authority:{' '}
+                  <a
+                    href={explorerHref('address', oracleSnapshot?.authority)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-solana-green"
+                    title={oracleSnapshot?.authority ?? 'unavailable'}
+                  >
+                    {shortenMiddle(oracleSnapshot?.authority, 10, 8)}
+                    <ArrowUpRight size={10} className="shrink-0" />
+                  </a>
+                </div>
+                <div className="break-all font-mono lowercase tracking-normal text-zinc-500">
+                  Last Updater:{' '}
+                  <a
+                    href={explorerHref('address', oracleSnapshot?.last_updater)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-solana-green"
+                    title={oracleSnapshot?.last_updater ?? 'unavailable'}
+                  >
+                    {shortenMiddle(oracleSnapshot?.last_updater, 10, 8)}
+                    <ArrowUpRight size={10} className="shrink-0" />
+                  </a>
+                </div>
+                <div className="break-all font-mono lowercase tracking-normal text-zinc-500">
+                  Latest Tx:{' '}
+                  <a
+                    href={explorerHref('tx', latestTxSignature ?? undefined)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-solana-green"
+                    title={latestTxSignature ?? 'unavailable'}
+                  >
+                    {shortenMiddle(latestTxSignature ?? undefined, 10, 8)}
+                    <ArrowUpRight size={10} className="shrink-0" />
+                  </a>
                 </div>
               </div>
             </div>
@@ -607,10 +788,13 @@ export default function AppPage({
             </div>
 
             <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
-              <FormulaPanel
+              <ModelCard
                 theta={globalState.theta}
                 sigma={globalState.sigma}
                 zScore={globalState.z_score}
+                mu={oracleSnapshot?.mu}
+                adfPvalue={oracleSnapshot?.adf_pvalue}
+                isStationary={oracleSnapshot?.is_stationary}
                 regime={globalState.regime_flag}
               />
 
@@ -707,15 +891,47 @@ export default function AppPage({
                 <div className="space-y-3">
                   <div className="border border-zinc-800 p-3">
                     <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Program ID</div>
-                    <div className="break-all font-mono text-[11px] text-zinc-300">
+                    <a
+                      href={explorerHref('address', oracleSnapshot?.program_id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
+                    >
                       {oracleSnapshot?.program_id ?? 'unavailable'}
-                    </div>
+                    </a>
                   </div>
                   <div className="border border-zinc-800 p-3">
                     <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Risk State PDA</div>
-                    <div className="break-all font-mono text-[11px] text-zinc-300">
+                    <a
+                      href={explorerHref('address', oracleSnapshot?.risk_state_pda)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
+                    >
                       {oracleSnapshot?.risk_state_pda ?? 'unavailable'}
-                    </div>
+                    </a>
+                  </div>
+                  <div className="border border-zinc-800 p-3">
+                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Last Updater</div>
+                    <a
+                      href={explorerHref('address', oracleSnapshot?.last_updater)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
+                    >
+                      {oracleSnapshot?.last_updater ?? 'unavailable'}
+                    </a>
+                  </div>
+                  <div className="border border-zinc-800 p-3">
+                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Latest Tx Signature</div>
+                    <a
+                      href={explorerHref('tx', latestTxSignature ?? undefined)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
+                    >
+                      {latestTxSignature ?? 'unavailable'}
+                    </a>
                   </div>
                   <a
                     href="https://peg-shield.vercel.app/api/oracle-state"

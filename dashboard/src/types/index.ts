@@ -21,10 +21,16 @@ export interface OracleHistoryPoint {
   spread_pct: number;
   msol_price: number;
   sol_price: number;
+  peg_deviation?: number | null;
 }
 
 export interface OracleSnapshot extends RiskState {
   spread_pct: number;
+  mu?: number;
+  adf_pvalue?: number;
+  is_stationary?: boolean;
+  spread_signal?: string;
+  peg_deviation_pct?: number | null;
   updated_at_iso?: string;
   status?: string;
   msol_price: number;
@@ -37,6 +43,7 @@ export interface OracleSnapshot extends RiskState {
   program_id?: string;
   risk_state_pda?: string;
   authority?: string;
+  last_updater?: string;
   network?: string;
   history: OracleHistoryPoint[];
   baseline?: {
