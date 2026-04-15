@@ -86,7 +86,7 @@ run_step "▶ 7/7  sync dashboard snapshot" \
 
 echo
 if (( DRY_RUN )); then
-  echo "✅ dry run passed. live dashboard: https://peg-shield.vercel.app/app  |  replay: /sim"
+  echo "✅ dry run passed. live dashboard: https://pegshield.anubhavprasai.com.np/app  |  replay: /sim"
 else
-  echo "✅ done. live dashboard: https://peg-shield.vercel.app/app  |  replay: /sim"
+  echo "✅ done. live dashboard: https://pegshield.anubhavprasai.com.np/app  |  replay: /sim"
 fi

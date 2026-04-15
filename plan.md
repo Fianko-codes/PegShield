@@ -133,7 +133,7 @@ echo "▶ 6/6  replay real stETH depeg + show prevented loss"
 .venv/bin/python simulation/stress_test.py
 .venv/bin/python dashboard/scripts/sync_demo_data.py
 echo ""
-echo "✅ done. dashboard: https://peg-shield.vercel.app/app  |  replay: /sim"
+echo "✅ done. dashboard: https://pegshield.anubhavprasai.com.np/app  |  replay: /sim"
 ```
 
 `chmod +x demo.sh`. Add a top-level README section *"Run the 60-second demo"* pointing at it.
@@ -282,7 +282,7 @@ You have `test/decode.test.ts`. Add a `test/guards.test.ts` with isStale/isCriti
 ## The 60-Second Live Demo — Rehearsed Script
 
 Open two browser tabs in advance:
-1. `https://peg-shield.vercel.app/sim` (SimPage, replay paused at t=0)
+1. `https://pegshield.anubhavprasai.com.np/sim` (SimPage, replay paused at t=0)
 2. `https://explorer.solana.com/address/7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo?cluster=devnet`
 
 **The flow:**

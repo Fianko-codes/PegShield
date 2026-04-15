@@ -19,9 +19,9 @@ PegShield is a Solana-native **risk oracle** for liquid staking token (LST) coll
 | Program | `DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea` | [view](https://explorer.solana.com/address/DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea?cluster=devnet) |
 | Risk State PDA (`mSOL-v2`) | `7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo` | [view](https://explorer.solana.com/address/7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo?cluster=devnet) |
 | Updater Authority | `4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc` | [view](https://explorer.solana.com/address/4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc?cluster=devnet) |
-| Dashboard | [peg-shield.vercel.app](https://peg-shield.vercel.app/) | — |
-| Live oracle API | `https://peg-shield.vercel.app/api/oracle-state` | — |
-| Live market API | `https://peg-shield.vercel.app/api/market-state` | — |
+| Dashboard | [pegshield.anubhavprasai.com.np](https://pegshield.anubhavprasai.com.np/) | — |
+| Live oracle API | `https://pegshield.anubhavprasai.com.np/api/oracle-state` | — |
+| Live market API | `https://pegshield.anubhavprasai.com.np/api/market-state` | — |
 
 The PDA is updated on a cron by [`oracle-updater.yml`](./.github/workflows/oracle-updater.yml).
 
