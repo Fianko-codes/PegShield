@@ -1,0 +1,19 @@
+{
+  "name": "pegshield-lending-borrow-demo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Reference consumer showing how a lending protocol can consume PegShield safely.",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "start:snapshot": "ts-node index.ts --snapshot ../../dashboard/public/data/oracle_state.json"
+  },
+  "dependencies": {
+    "@pegshield/sdk": "file:../../sdk",
+    "@solana/web3.js": "^1.98.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -134,6 +134,16 @@ LST_ID=mSOL-v2
 MSOL_RISK_STATE_PDA=7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo
 ```
 
+## Run The 60-Second Demo
+
+For judges or teammates, the fastest path is the one-command demo:
+
+```bash
+./demo.sh
+```
+
+This runs the engine tests, fetches live bridge data, computes the fresh risk payload, submits it on devnet, reads the PDA back through `@pegshield/sdk`, replays the real June 2022 `stETH/ETH` depeg, and refreshes the dashboard snapshot. Use `./demo.sh --dry-run` to verify the command path and local prerequisites without touching devnet.
+
 ## Run The Full Flow
 
 ```bash
