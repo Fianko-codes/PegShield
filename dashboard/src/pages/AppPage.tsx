@@ -1168,135 +1168,6 @@ export default function AppPage({
               </div>
             </div>
 
-            <div className="border border-zinc-800 bg-black p-4 sm:p-5">
-              <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                <WalletCards size={12} /> Devnet Write Guard Demo
-              </div>
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-                <div className="space-y-4">
-                  <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-                    Connect a devnet wallet and try calling <span className="text-zinc-300">update_risk_state</span> yourself.
-                    The current PegShield payload is used as the transaction body. Unless your wallet is the configured
-                    oracle authority, the program should reject the write with <span className="text-emergency-red">Unauthorized</span>.
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <WalletMultiButton />
-                    <button
-                      type="button"
-                      onClick={simulateUnauthorizedCall}
-                      disabled={!connected || !walletDemoPreview || walletDemo.phase === 'simulating' || walletDemo.phase === 'sending'}
-                      className="border border-zinc-800 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {walletDemo.phase === 'simulating' ? 'Simulating...' : 'Preview Unauthorized Call'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={sendUnauthorizedCall}
-                      disabled={!connected || !walletDemoPreview || walletDemo.phase === 'simulating' || walletDemo.phase === 'sending'}
-                      className="border border-solana-green/40 bg-solana-green/5 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-solana-green transition-colors hover:border-solana-green hover:bg-solana-green/10 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {walletDemo.phase === 'sending' ? 'Awaiting Wallet...' : 'Request Wallet Signature'}
-                    </button>
-                  </div>
-                  <div className="border border-zinc-800 bg-zinc-950/60 p-4 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-                    Preview runs <span className="text-zinc-300">simulation only</span> and does not ask the wallet to sign.
-                    The second button is the explicit approval step. It is expected to fail for non-authority wallets.
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div
-                    className={cn(
-                      'border p-4 transition-colors',
-                      walletDemo.tone === 'expected'
-                        ? 'border-solana-green/40 bg-solana-green/5'
-                        : walletDemo.tone === 'danger'
-                          ? 'border-emergency-red/40 bg-emergency-red/10'
-                          : 'border-zinc-800 bg-zinc-950/40',
-                    )}
-                  >
-                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">Latest Result</div>
-                    <div
-                      className={cn(
-                        'text-sm font-bold uppercase tracking-[0.08em]',
-                        walletDemo.tone === 'expected'
-                          ? 'text-solana-green'
-                          : walletDemo.tone === 'danger'
-                            ? 'text-emergency-red'
-                            : 'text-white',
-                      )}
-                    >
-                      {walletDemo.headline}
-                    </div>
-                    <div className="mt-2 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-                      {walletDemo.detail}
-                    </div>
-                    {walletDemo.signature && (
-                      <a
-                        href={explorerHref('tx', walletDemo.signature)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-solana-green hover:underline"
-                      >
-                        View signature on Explorer <ArrowUpRight size={12} />
-                      </a>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <div className="border border-zinc-800 p-3">
-                      <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Cluster</div>
-                      <div className="font-mono text-[11px] text-zinc-300">devnet</div>
-                    </div>
-                    <div className="border border-zinc-800 p-3">
-                      <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Connected Wallet</div>
-                      <div className="break-all font-mono text-[11px] text-zinc-300">
-                        {publicKey ? publicKey.toBase58() : 'not connected'}
-                      </div>
-                    </div>
-                    <div className="border border-zinc-800 p-3">
-                      <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Program ID</div>
-                      <div className="break-all font-mono text-[11px] text-zinc-300">
-                        {walletDemoPreview?.programId ?? 'unavailable'}
-                      </div>
-                    </div>
-                    <div className="border border-zinc-800 p-3">
-                      <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Risk State PDA</div>
-                      <div className="break-all font-mono text-[11px] text-zinc-300">
-                        {walletDemoPreview?.riskStatePda ?? 'unavailable'}
-                      </div>
-                    </div>
-                    <div className="border border-zinc-800 p-3">
-                      <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Instruction</div>
-                      <div className="font-mono text-[11px] text-zinc-300">update_risk_state</div>
-                    </div>
-                    <div className="border border-zinc-800 p-3">
-                      <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Payload LTV</div>
-                      <div className="font-mono text-[11px] text-zinc-300">
-                        {walletDemoPreview ? `${(walletDemoPreview.suggestedLtv * 100).toFixed(1)}%` : 'unavailable'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-zinc-800 bg-zinc-950/50 p-4">
-                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">Simulation / Preflight Logs</div>
-                    <div className="max-h-48 overflow-y-auto font-mono text-[11px] leading-relaxed text-zinc-400">
-                      {walletDemo.logs.length > 0 ? (
-                        walletDemo.logs.map((entry, index) => (
-                          <div key={`${entry}-${index}`} className="mb-1 break-all">
-                            {entry}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-zinc-600">
-                          Run the preview step to inspect runtime logs before any wallet signature is requested.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </motion.section>
 
@@ -1335,6 +1206,163 @@ export default function AppPage({
           </div>
         </motion.section>
       </motion.main>
+
+      <motion.section
+        variants={itemVariants}
+        initial="hidden"
+        animate="show"
+        className="mt-8 border border-zinc-800 bg-black p-5 sm:mt-10 sm:p-6 lg:p-8"
+      >
+        <div className="mb-8 flex flex-col gap-3 border-b border-zinc-900 pb-6 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+              <WalletCards size={12} /> Devnet Write Guard Demo
+            </div>
+            <h2 className="text-2xl font-bold uppercase tracking-tight md:text-3xl">
+              Try Calling <span className="text-solana-green">update_risk_state</span> Yourself
+            </h2>
+            <p className="max-w-3xl text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500 md:text-[11px]">
+              This section is intentionally separated from the live dashboard metrics. It demonstrates that the on-chain
+              program is real, writable on devnet, and still rejects any wallet that is not the configured authority.
+            </p>
+          </div>
+          <div className="border border-zinc-800 bg-zinc-950/60 px-4 py-3 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
+            Preview first. Sign second. Unauthorized rejection is the expected success condition.
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[0.82fr_1.18fr]">
+          <div className="space-y-4">
+            <div className="border border-zinc-800 bg-zinc-950/40 p-4">
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">How This Demo Works</div>
+              <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
+                Connect a devnet wallet and try calling <span className="text-zinc-300">update_risk_state</span> yourself.
+                The current PegShield payload is reused as the transaction body. Unless your wallet is the configured
+                oracle authority, the program should reject the write with <span className="text-emergency-red">Unauthorized</span>.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <div className="border border-zinc-800 p-3">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Cluster</div>
+                <div className="font-mono text-[11px] text-zinc-300">devnet</div>
+              </div>
+              <div className="border border-zinc-800 p-3">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Instruction</div>
+                <div className="font-mono text-[11px] text-zinc-300">update_risk_state</div>
+              </div>
+              <div className="border border-zinc-800 p-3">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Program ID</div>
+                <div className="break-all font-mono text-[11px] text-zinc-300">
+                  {walletDemoPreview?.programId ?? 'unavailable'}
+                </div>
+              </div>
+              <div className="border border-zinc-800 p-3">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Risk State PDA</div>
+                <div className="break-all font-mono text-[11px] text-zinc-300">
+                  {walletDemoPreview?.riskStatePda ?? 'unavailable'}
+                </div>
+              </div>
+              <div className="border border-zinc-800 p-3">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Payload LTV</div>
+                <div className="font-mono text-[11px] text-zinc-300">
+                  {walletDemoPreview ? `${(walletDemoPreview.suggestedLtv * 100).toFixed(1)}%` : 'unavailable'}
+                </div>
+              </div>
+              <div className="border border-zinc-800 p-3">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Connected Wallet</div>
+                <div className="break-all font-mono text-[11px] text-zinc-300">
+                  {publicKey ? publicKey.toBase58() : 'not connected'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="min-w-0">
+                <WalletMultiButton />
+              </div>
+              <button
+                type="button"
+                onClick={simulateUnauthorizedCall}
+                disabled={!connected || !walletDemoPreview || walletDemo.phase === 'simulating' || walletDemo.phase === 'sending'}
+                className="border border-zinc-800 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {walletDemo.phase === 'simulating' ? 'Simulating...' : 'Preview Unauthorized Call'}
+              </button>
+              <button
+                type="button"
+                onClick={sendUnauthorizedCall}
+                disabled={!connected || !walletDemoPreview || walletDemo.phase === 'simulating' || walletDemo.phase === 'sending'}
+                className="border border-solana-green/40 bg-solana-green/5 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-solana-green transition-colors hover:border-solana-green hover:bg-solana-green/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {walletDemo.phase === 'sending' ? 'Awaiting Wallet...' : 'Request Wallet Signature'}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div
+              className={cn(
+                'border p-4 transition-colors',
+                walletDemo.tone === 'expected'
+                  ? 'border-solana-green/40 bg-solana-green/5'
+                  : walletDemo.tone === 'danger'
+                    ? 'border-emergency-red/40 bg-emergency-red/10'
+                    : 'border-zinc-800 bg-zinc-950/40',
+              )}
+            >
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">Latest Result</div>
+              <div
+                className={cn(
+                  'text-sm font-bold uppercase tracking-[0.08em]',
+                  walletDemo.tone === 'expected'
+                    ? 'text-solana-green'
+                    : walletDemo.tone === 'danger'
+                      ? 'text-emergency-red'
+                      : 'text-white',
+                )}
+              >
+                {walletDemo.headline}
+              </div>
+              <div className="mt-2 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
+                {walletDemo.detail}
+              </div>
+              {walletDemo.signature && (
+                <a
+                  href={explorerHref('tx', walletDemo.signature)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-solana-green hover:underline"
+                >
+                  View signature on Explorer <ArrowUpRight size={12} />
+                </a>
+              )}
+            </div>
+
+            <div className="border border-zinc-800 bg-zinc-950/50 p-4 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
+              Preview runs <span className="text-zinc-300">simulation only</span> and does not ask the wallet to sign.
+              The second button is the explicit approval step. It is expected to fail for non-authority wallets.
+            </div>
+
+            <div className="border border-zinc-800 bg-zinc-950/50 p-4">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">Simulation / Preflight Logs</div>
+              <div className="max-h-56 overflow-y-auto font-mono text-[11px] leading-relaxed text-zinc-400">
+                {walletDemo.logs.length > 0 ? (
+                  walletDemo.logs.map((entry, index) => (
+                    <div key={`${entry}-${index}`} className="mb-1 break-all">
+                      {entry}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-zinc-600">
+                    Run the preview step to inspect runtime logs before any wallet signature is requested.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
     </div>
   );
 }
