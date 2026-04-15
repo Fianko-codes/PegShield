@@ -12,7 +12,6 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
 
   const navLinks = [
     { name: 'Narrative', path: '/' },
-    { name: 'System App', path: '/app' },
     { name: 'Shock Simulation', path: '/sim' },
   ];
 
