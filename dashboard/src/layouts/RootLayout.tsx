@@ -67,7 +67,7 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
             <div>
               <h4 className="mb-6 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-300">Resources</h4>
               <ul className="space-y-4 text-[10px] font-bold uppercase tracking-[0.1em]">
-                <li><a href="https://peg-shield.vercel.app/api/oracle-state" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Live Oracle API</a></li>
+                <li><a href="https://pegshield.anubhavprasai.com.np/api/oracle-state" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Live Oracle API</a></li>
                 <li><a href="https://github.com/Fianko-codes/PegShield" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Github</a></li>
                 <li><a href="https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml" target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">Oracle Updater</a></li>
               </ul>

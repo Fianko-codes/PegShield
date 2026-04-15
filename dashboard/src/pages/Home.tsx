@@ -275,13 +275,13 @@ export default function Home() {
                 },
                 {
                   label: 'Oracle API',
-                  href: 'https://peg-shield.vercel.app/api/oracle-state',
+                  href: 'https://pegshield.anubhavprasai.com.np/api/oracle-state',
                   external: true,
                   desc: 'Read the current risk PDA payload served by the hosted app.',
                 },
                 {
                   label: 'Market API',
-                  href: 'https://peg-shield.vercel.app/api/market-state',
+                  href: 'https://pegshield.anubhavprasai.com.np/api/market-state',
                   external: true,
                   desc: 'Read live Hermes-backed market state used by the dashboard.',
                 },

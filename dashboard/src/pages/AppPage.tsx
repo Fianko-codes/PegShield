@@ -934,7 +934,7 @@ export default function AppPage({
                     </a>
                   </div>
                   <a
-                    href="https://peg-shield.vercel.app/api/oracle-state"
+                    href="https://pegshield.anubhavprasai.com.np/api/oracle-state"
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center justify-between gap-3 border border-zinc-800 p-3 transition-colors hover:border-solana-green"
