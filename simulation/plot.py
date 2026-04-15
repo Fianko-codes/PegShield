@@ -55,19 +55,19 @@ def plot_stress_scenario(
 
     ax3.fill_between(
         df["timestamp"],
-        df["bad_debt_no_oracle"],
+        df["shortfall_static"],
         alpha=0.30,
         color="#d1495b",
-        label="Bad debt risk: fixed LTV",
+        label="Shortfall risk: fixed LTV",
     )
     ax3.fill_between(
         df["timestamp"],
-        df["bad_debt_with_oracle"],
+        df["shortfall_dynamic"],
         alpha=0.30,
         color="#2d6a4f",
-        label="Bad debt risk: oracle LTV",
+        label="Shortfall risk: oracle LTV",
     )
-    ax3.set_ylabel("Excess Exposure (USD)")
+    ax3.set_ylabel("Shortfall (USD)")
     ax3.legend(loc="upper left", fontsize=9)
     timestamps = pd.to_datetime(df["timestamp"], utc=True)
     span = timestamps.iloc[-1] - timestamps.iloc[0]
