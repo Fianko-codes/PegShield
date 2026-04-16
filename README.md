@@ -226,6 +226,14 @@ git ls-files | rg 'keypair|\.env|latest_raw|latest\.json|stress_scenario|\.mplca
 
 Neither should show any secrets or local operational files.
 
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system diagram, components, update sequence, data contracts, failure modes
+- [`docs/INTEGRATION.md`](./docs/INTEGRATION.md) — step-by-step lender integration walkthrough using `@pegshield/sdk`
+- [`sdk/README.md`](./sdk/README.md) — SDK API reference + consumer safety checklist
+- [`SECURITY.md`](./SECURITY.md) — trust model, on-chain safety properties, responsible disclosure
+- [`docs/MULTI_ATTESTER.md`](./docs/MULTI_ATTESTER.md) — roadmap away from single-signer trust
+
 ## Security
 
 See [SECURITY.md](./SECURITY.md) for the trust model, on-chain safety properties, consumer responsibilities, and responsible-disclosure process.
