@@ -12,13 +12,13 @@ export default function RootLayout({ riskState }: { riskState: RiskState }) {
       regime === 1 && "regime-critical selection:bg-emergency-red"
     )}>
       <Nav riskState={riskState} />
-      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="flex-grow w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1900px] mx-auto px-4 sm:px-6 lg:px-8">
         <Outlet />
       </main>
       
       {/* GLOBAL FOOTER */}
       <footer className="mt-20 border-t border-zinc-800 bg-black py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1900px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-12">
             <div className="col-span-1 md:col-span-2">
               <div className="mb-6 flex items-center gap-2">

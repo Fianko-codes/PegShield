@@ -195,7 +195,7 @@ function ModelCard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 font-mono text-[10px] sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 font-mono text-[10px] lg:grid-cols-4">
                 <div className="min-w-0 border border-zinc-800/80 bg-zinc-950/50 p-3">
                   <div className="text-zinc-500">Current θ</div>
                   <div className={cn('mt-2 text-lg break-all', isCritical ? 'text-emergency-red' : 'text-solana-green')}>
@@ -275,12 +275,6 @@ function AppPageContent({
   const accentColor = globalState.regime_flag === 1 ? '#FF4B4B' : '#14F195';
   const assetSymbol = oracleSnapshot?.asset_symbol ?? assetSymbolFromLstId(globalState.lst_id);
   const baseSymbol = oracleSnapshot?.base_symbol ?? 'SOL';
-  const referenceRateLabel =
-    oracleSnapshot?.reference_rate_source === 'jito-kobe-api'
-      ? 'Jito stake-pool rate'
-      : oracleSnapshot?.reference_rate_source === 'marinade-api'
-        ? 'Marinade exchange rate'
-        : 'Reference rate';
 
   const baseChartData = useMemo(
     () =>
@@ -488,11 +482,12 @@ function AppPageContent({
 
   return (
     <div className="py-6 md:py-10">
-      <div className="mb-10 flex flex-col gap-6 border-b border-zinc-800 pb-6 md:flex-row md:items-center md:justify-between">
+      {/* ===================== HEADER ===================== */}
+      <div className="mb-8 flex flex-col gap-5 border-b border-zinc-800 pb-6 sm:mb-10 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div
             className={cn(
-              'flex h-10 w-10 items-center justify-center border transition-all duration-500',
+              'flex h-10 w-10 shrink-0 items-center justify-center border transition-all duration-500 sm:h-12 sm:w-12',
               globalState.regime_flag === 1
                 ? 'border-emergency-red shadow-glow-red'
                 : 'border-solana-green shadow-glow-green',
@@ -507,7 +502,7 @@ function AppPageContent({
             />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold uppercase tracking-tight sm:text-xl">
+            <h1 className="text-base font-bold uppercase tracking-tight sm:text-xl md:text-2xl 3xl:text-3xl">
               System App <span className="font-normal text-zinc-500">{assetSymbol} Risk Feed</span>
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -522,7 +517,7 @@ function AppPageContent({
                 </span>
               )}
             </div>
-            <div className="mt-1 flex min-w-0 items-start gap-2 text-[10px] leading-relaxed text-zinc-500">
+            <div className="mt-2 flex min-w-0 items-start gap-2 text-[10px] leading-relaxed text-zinc-500">
               <span
                 className={cn(
                   'mt-1 h-2 w-2 shrink-0 animate-pulse rounded-full',
@@ -533,7 +528,7 @@ function AppPageContent({
                 className="min-w-0 break-all"
                 title={oracleSnapshot?.risk_state_pda ?? 'snapshot unavailable'}
               >
-                Canonical State PDA:{' '}
+                State PDA:{' '}
                 <a
                   href={explorerHref('address', oracleSnapshot?.risk_state_pda)}
                   target="_blank"
@@ -547,11 +542,16 @@ function AppPageContent({
             </div>
           </div>
         </div>
-        <div className="text-left md:text-right">
-          <div className="text-[10px] uppercase text-zinc-500">Risk Regime</div>
+        <div
+          className={cn(
+            'shrink-0 border px-4 py-3 text-left md:text-right',
+            globalState.regime_flag === 1 ? 'border-emergency-red/40 bg-emergency-red/5' : 'border-solana-green/40 bg-solana-green/5',
+          )}
+        >
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Risk Regime</div>
           <div
             className={cn(
-              'text-xs font-bold uppercase',
+              'mt-1 text-sm font-bold uppercase tracking-[0.1em] sm:text-base',
               globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-solana-green',
             )}
           >
@@ -560,174 +560,134 @@ function AppPageContent({
         </div>
       </div>
 
+      {/* ===================== KPI STRIP ===================== */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4"
+      >
+        <motion.div
+          variants={itemVariants}
+          className={cn(
+            'relative overflow-hidden border p-3 sm:p-4',
+            globalState.regime_flag === 1 ? 'border-emergency-red/40' : 'border-zinc-800',
+          )}
+        >
+          <div className="mb-1 flex items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-zinc-500 sm:text-[10px]">
+            <Activity size={11} /> {assetSymbol}/{baseSymbol} Premium
+          </div>
+          <div
+            className={cn(
+              'mono-data truncate text-xl font-bold transition-colors duration-500 sm:text-2xl md:text-3xl',
+              globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-white',
+            )}
+          >
+            {((marketSnapshot?.spread_pct ?? globalState.spread) * 100).toFixed(3)}%
+          </div>
+          <div className="mt-1 truncate text-[9px] uppercase tracking-[0.1em] text-zinc-600 sm:text-[10px]">
+            Tick {marketFreshness}
+          </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="border border-zinc-800 p-3 sm:p-4">
+          <div className="mb-1 flex items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-zinc-500 sm:text-[10px]">
+            <Zap size={11} /> Volatility σ
+          </div>
+          <div className="mono-data truncate text-xl font-bold sm:text-2xl md:text-3xl">
+            {(globalState.sigma * 100).toFixed(4)}%
+          </div>
+          <div className="mt-2 h-1 w-full bg-zinc-900">
+            <motion.div
+              className={cn(
+                'h-full',
+                globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
+              )}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(globalState.sigma * 5000, 100)}%` }}
+            />
+          </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="border border-zinc-800 p-3 sm:p-4">
+          <div className="mb-1 flex items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-zinc-500 sm:text-[10px]">
+            <Cpu size={11} /> z-score
+          </div>
+          <div
+            className={cn(
+              'mono-data truncate text-xl font-bold sm:text-2xl md:text-3xl',
+              Math.abs(globalState.z_score) >= 2.5 ? 'text-emergency-red' : 'text-white',
+            )}
+          >
+            {formatSigned(globalState.z_score, 3)}
+          </div>
+          <div className="mt-1 truncate text-[9px] uppercase tracking-[0.1em] text-zinc-600 sm:text-[10px]">
+            Trigger ≥ 2.5
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={itemVariants}
+          className={cn(
+            'border p-3 transition-all duration-500 sm:p-4',
+            globalState.regime_flag === 1
+              ? 'border-emergency-red bg-emergency-red/10'
+              : 'border-solana-green bg-solana-green/10',
+          )}
+        >
+          <div className="mb-1 flex items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-zinc-500 sm:text-[10px]">
+            <Lock size={11} /> Suggested LTV
+          </div>
+          <div
+            className={cn(
+              'mono-data truncate text-xl font-bold sm:text-2xl md:text-3xl',
+              globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-solana-green',
+            )}
+          >
+            {(globalState.suggested_ltv * 100).toFixed(1)}%
+          </div>
+          <div className="relative mt-2 h-1 w-full overflow-hidden bg-black/40">
+            <div
+              className={cn(
+                'h-full',
+                globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
+              )}
+              style={{ width: `${globalState.suggested_ltv * 100}%` }}
+            />
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* ===================== MAIN GRID ===================== */}
       <motion.main
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 gap-8 2xl:gap-10 xl:grid-cols-12"
+        className="flex flex-col gap-6 lg:gap-8"
       >
-        <motion.section variants={itemVariants} className="space-y-8 xl:col-span-3">
-          <div className="space-y-6">
-            <div className="relative overflow-hidden border border-zinc-800 p-4">
-              <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                <Activity size={12} /> {assetSymbol}/{baseSymbol} Premium
+        {/* Chart full width */}
+        <motion.section variants={itemVariants}>
+          <Suspense
+            fallback={
+              <div className="border border-zinc-800 bg-black p-6 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                Loading chart…
               </div>
-              <div
-                className={cn(
-                  'mono-data text-3xl font-bold transition-colors duration-500 break-all',
-                  globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-white',
-                )}
-              >
-                {((marketSnapshot?.spread_pct ?? globalState.spread) * 100).toFixed(3)}%
-              </div>
-              <div className="mt-2 text-[10px] uppercase tracking-[0.12em] text-zinc-600">
-                Market tick {marketFreshness}
-              </div>
-            </div>
-
-            <div className="border border-zinc-800 p-4">
-              <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                <Zap size={12} /> Volatility (Sigma)
-              </div>
-              <div className="mono-data text-3xl font-bold break-all">
-                {(globalState.sigma * 100).toFixed(4)}%
-              </div>
-              <div className="mt-3 h-1 w-full bg-zinc-900">
-                <motion.div
-                  className={cn(
-                    'h-full',
-                    globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
-                  )}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(globalState.sigma * 5000, 100)}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="border border-zinc-800 p-4">
-              <div className="mb-3 text-[10px] uppercase tracking-[0.08em] text-zinc-500">Snapshot Metadata</div>
-              <div className="space-y-2 text-[10px] leading-relaxed tracking-[0.04em] text-zinc-400">
-                <div className="break-words">Oracle Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
-                <div className="break-words">Market Source: {marketSnapshot?.source ?? 'unavailable'}</div>
-                <div className="break-words">
-                  Asset: {oracleSnapshot?.asset_display_name ?? assetSymbol} / {baseSymbol}
-                </div>
-                <div className="break-words">Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
-                <div className="break-words">
-                  {referenceRateLabel}: {typeof oracleSnapshot?.reference_rate === 'number' ? oracleSnapshot.reference_rate.toFixed(6) : 'unavailable'}
-                </div>
-                <div className="break-words">Rate Source: {oracleSnapshot?.reference_rate_source ?? 'unavailable'}</div>
-                <div className="break-words">
-                  Market Tick: {marketSnapshot ? new Date(marketSnapshot.publish_time * 1000).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  }) : 'unavailable'}
-                </div>
-                <div>History: {oracleSnapshot?.history_points ?? 0} points</div>
-                <div>Oracle Freshness: {oracleFreshness}</div>
-                <div className="break-all font-mono lowercase tracking-normal text-zinc-500">
-                  Authority:{' '}
-                  <a
-                    href={explorerHref('address', oracleSnapshot?.authority)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-solana-green"
-                    title={oracleSnapshot?.authority ?? 'unavailable'}
-                  >
-                    {shortenMiddle(oracleSnapshot?.authority, 10, 8)}
-                    <ArrowUpRight size={10} className="shrink-0" />
-                  </a>
-                </div>
-                <div className="break-all font-mono lowercase tracking-normal text-zinc-500">
-                  Last Updater:{' '}
-                  <a
-                    href={explorerHref('address', oracleSnapshot?.last_updater)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-solana-green"
-                    title={oracleSnapshot?.last_updater ?? 'unavailable'}
-                  >
-                    {shortenMiddle(oracleSnapshot?.last_updater, 10, 8)}
-                    <ArrowUpRight size={10} className="shrink-0" />
-                  </a>
-                </div>
-                <div className="break-all font-mono lowercase tracking-normal text-zinc-500">
-                  Latest Tx:{' '}
-                  <a
-                    href={explorerHref('tx', latestTxSignature ?? undefined)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-solana-green"
-                    title={latestTxSignature ?? 'unavailable'}
-                  >
-                    {shortenMiddle(latestTxSignature ?? undefined, 10, 8)}
-                    <ArrowUpRight size={10} className="shrink-0" />
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 border border-zinc-800 bg-zinc-900/30 p-4">
-              <FileText className="shrink-0 text-zinc-500" />
-              <div className="min-w-0">
-                <div className="text-xs font-bold uppercase">Dashboard Mode</div>
-                <div className="text-[10px] uppercase leading-relaxed tracking-[0.1em] text-zinc-500">
-                  Live PDA + live market + snapshot fallback
-                </div>
-              </div>
-            </div>
-
-            <div className="border border-zinc-800 p-4">
-              <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                <TimerReset size={12} /> Update Health
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-600">Oracle compute</span>
-                  <span className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', oracleStatusTone)}>
-                    {oracleFreshness}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-600">Market feed</span>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-300">
-                    {marketFreshness}
-                  </span>
-                </div>
-                <div className="h-1 w-full bg-zinc-900">
-                  <div
-                    className={cn(
-                      'h-full transition-all duration-500',
-                      globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
-                    )}
-                    style={{ width: oracleFreshness === 'just now' ? '100%' : oracleFreshness === '1 min ago' ? '75%' : '45%' }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+            }
+          >
+            <AppMarketChart
+              chartData={chartData}
+              accentColor={accentColor}
+              heartbeat={heartbeat}
+              regimeFlag={globalState.regime_flag}
+              baselineSpread={oracleSnapshot?.history?.[0]?.spread_pct ?? 0}
+            />
+          </Suspense>
         </motion.section>
 
-        <motion.section variants={itemVariants} className="space-y-8 xl:col-span-6">
-          <div className="space-y-8">
-            <Suspense
-              fallback={
-                <div className="border border-zinc-800 bg-black p-6 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
-                  Loading chart…
-                </div>
-              }
-            >
-              <AppMarketChart
-                chartData={chartData}
-                accentColor={accentColor}
-                heartbeat={heartbeat}
-                regimeFlag={globalState.regime_flag}
-                baselineSpread={oracleSnapshot?.history?.[0]?.spread_pct ?? 0}
-              />
-            </Suspense>
-
-            <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2">
+        {/* Model + LTV policy */}
+        <motion.section variants={itemVariants}>
+          <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-3 lg:gap-8">
+            <div className="lg:col-span-2">
               <ModelCard
                 theta={globalState.theta}
                 sigma={globalState.sigma}
@@ -737,189 +697,300 @@ function AppPageContent({
                 isStationary={oracleSnapshot?.is_stationary}
                 regime={globalState.regime_flag}
               />
+            </div>
 
-              <div
-                className={cn(
-                  'flex flex-col justify-between border p-4 transition-all duration-500',
-                  globalState.regime_flag === 1
-                    ? 'border-emergency-red bg-emergency-red/10 shadow-brutal-red'
-                    : 'border-solana-green bg-solana-green/10 shadow-brutal-green',
-                )}
-              >
-                <div>
-                  <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
-                    <Lock size={12} /> Suggested LTV
-                  </div>
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="mono-data text-4xl font-bold tracking-tighter sm:text-5xl break-all">
-                      {(globalState.suggested_ltv * 100).toFixed(1)}%
-                    </span>
-                    <span className="font-mono text-xs uppercase text-zinc-500">
-                      Oracle Target
-                    </span>
-                  </div>
+            <div
+              className={cn(
+                'flex flex-col justify-between border p-4 transition-all duration-500 sm:p-5',
+                globalState.regime_flag === 1
+                  ? 'border-emergency-red bg-emergency-red/10 shadow-brutal-red'
+                  : 'border-solana-green bg-solana-green/10 shadow-brutal-green',
+              )}
+            >
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+                  <Lock size={12} /> Oracle LTV Target
                 </div>
-                <div className="mt-4 space-y-1">
-                  <div className="relative flex h-4 w-full overflow-hidden bg-black/40">
-                    <div className="h-full bg-zinc-800" style={{ width: '60%' }} />
-                    <motion.div
-                      className={cn(
-                        'absolute top-0 z-10 h-full w-1',
-                        globalState.regime_flag === 1
-                          ? 'bg-white shadow-glow-red'
-                          : 'bg-black',
-                      )}
-                      animate={{ left: `${globalState.suggested_ltv * 100}%` }}
-                    />
-                    <div
-                      className={cn(
-                        'h-full opacity-50',
-                        globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
-                      )}
-                      style={{ width: `${globalState.suggested_ltv * 100}%` }}
-                    />
-                  </div>
+                <div className="mono-data text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
+                  {(globalState.suggested_ltv * 100).toFixed(1)}%
+                </div>
+                <div className="mt-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+                  vs. fixed 80% policy baseline
+                </div>
+              </div>
+              <div className="mt-6 space-y-1">
+                <div className="relative flex h-4 w-full overflow-hidden bg-black/40">
+                  <div className="h-full bg-zinc-800" style={{ width: '60%' }} />
+                  <motion.div
+                    className={cn(
+                      'absolute top-0 z-10 h-full w-1',
+                      globalState.regime_flag === 1
+                        ? 'bg-white shadow-glow-red'
+                        : 'bg-black',
+                    )}
+                    animate={{ left: `${globalState.suggested_ltv * 100}%` }}
+                  />
+                  <div
+                    className={cn(
+                      'h-full opacity-50',
+                      globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
+                    )}
+                    style={{ width: `${globalState.suggested_ltv * 100}%` }}
+                  />
+                </div>
+                <div className="flex justify-between pt-1 text-[9px] uppercase tracking-[0.1em] text-zinc-600">
+                  <span>0%</span>
+                  <span>60%</span>
+                  <span>100%</span>
                 </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-              <div className="border border-zinc-800 bg-black p-4 sm:p-5">
-                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                  <WalletCards size={12} /> Protocol Borrow Calculator
-                </div>
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <label className="block">
-                      <span className="mb-2 block text-[10px] uppercase tracking-[0.1em] text-zinc-600">
-                        Collateral Value USD
-                      </span>
-                      <input
-                        value={collateralInput}
-                        onChange={(event) => setCollateralInput(event.target.value)}
-                        inputMode="decimal"
-                        className="w-full border border-zinc-700 bg-zinc-950 px-4 py-3 font-mono text-sm text-white outline-none transition-colors focus:border-solana-green"
-                        placeholder="1000"
-                      />
-                    </label>
-                    <div className="text-[10px] uppercase leading-relaxed tracking-[0.1em] text-zinc-500">
-                      This shows how a lending protocol could translate PegShield’s current oracle target into a
-                      max borrow decision for LST collateral.
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3 border border-zinc-800 p-3">
-                      <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Fixed 80% policy</span>
-                      <span className="shrink-0 font-mono text-sm text-zinc-300">${fixedBorrowLimitUsd.toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 border border-solana-green/30 bg-solana-green/5 p-3">
-                      <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-solana-green">PegShield policy</span>
-                      <span className="shrink-0 font-mono text-sm text-solana-green">${oracleBorrowLimitUsd.toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 border border-zinc-800 p-3">
-                      <span className="pr-4 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Risk delta</span>
-                      <span className="shrink-0 font-mono text-sm text-white">${oracleDeltaUsd.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border border-zinc-800 bg-black p-4 sm:p-5">
-                <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                  <Database size={12} /> Integration Surface
-                </div>
-                <div className="space-y-3">
-                  <div className="border border-zinc-800 p-3">
-                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Program ID</div>
-                    <a
-                      href={explorerHref('address', oracleSnapshot?.program_id)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
-                    >
-                      {oracleSnapshot?.program_id ?? 'unavailable'}
-                    </a>
-                  </div>
-                  <div className="border border-zinc-800 p-3">
-                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Risk State PDA</div>
-                    <a
-                      href={explorerHref('address', oracleSnapshot?.risk_state_pda)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
-                    >
-                      {oracleSnapshot?.risk_state_pda ?? 'unavailable'}
-                    </a>
-                  </div>
-                  <div className="border border-zinc-800 p-3">
-                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Last Updater</div>
-                    <a
-                      href={explorerHref('address', oracleSnapshot?.last_updater)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
-                    >
-                      {oracleSnapshot?.last_updater ?? 'unavailable'}
-                    </a>
-                  </div>
-                  <div className="border border-zinc-800 p-3">
-                    <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Latest Tx Signature</div>
-                    <a
-                      href={explorerHref('tx', latestTxSignature ?? undefined)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
-                    >
-                      {latestTxSignature ?? 'unavailable'}
-                    </a>
-                  </div>
-                  <a
-                    href="https://pegshield.anubhavprasai.com.np/api/oracle-state"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between gap-3 border border-zinc-800 p-3 transition-colors hover:border-solana-green"
-                  >
-                    <span className="min-w-0 text-[10px] uppercase tracking-[0.1em] text-zinc-400">Open live oracle payload</span>
-                    <ArrowUpRight size={14} className="shrink-0 text-solana-green" />
-                  </a>
-                </div>
-              </div>
-            </div>
-
           </div>
         </motion.section>
 
-        <motion.section variants={itemVariants} className="xl:col-span-3">
-          <div className="flex h-full flex-col border border-zinc-800 bg-black">
-            <div className="border-b border-zinc-800 bg-zinc-900/50 p-3">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
-                <Terminal size={12} /> Logic Terminal
+        {/* Calculator + Integration Surface */}
+        <motion.section variants={itemVariants}>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+            <div className="border border-zinc-800 bg-black p-4 sm:p-5">
+              <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+                <WalletCards size={12} /> Protocol Borrow Calculator
+              </div>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] uppercase tracking-[0.1em] text-zinc-600">
+                      Collateral Value USD
+                    </span>
+                    <input
+                      value={collateralInput}
+                      onChange={(event) => setCollateralInput(event.target.value)}
+                      inputMode="decimal"
+                      className="w-full border border-zinc-700 bg-zinc-950 px-4 py-3 font-mono text-sm text-white outline-none transition-colors focus:border-solana-green"
+                      placeholder="1000"
+                    />
+                  </label>
+                  <div className="text-[10px] uppercase leading-relaxed tracking-[0.1em] text-zinc-500">
+                    How a lending protocol could translate PegShield's oracle target into a max borrow for LST collateral.
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 border border-zinc-800 p-3">
+                    <span className="pr-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Fixed 80%</span>
+                    <span className="shrink-0 font-mono text-sm text-zinc-300">${fixedBorrowLimitUsd.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border border-solana-green/30 bg-solana-green/5 p-3">
+                    <span className="pr-2 text-[10px] uppercase tracking-[0.1em] text-solana-green">PegShield</span>
+                    <span className="shrink-0 font-mono text-sm text-solana-green">${oracleBorrowLimitUsd.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border border-zinc-800 p-3">
+                    <span className="pr-2 text-[10px] uppercase tracking-[0.1em] text-zinc-500">Risk Δ</span>
+                    <span className="shrink-0 font-mono text-sm text-white">${oracleDeltaUsd.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="max-h-[520px] flex-1 overflow-y-auto p-4 sm:max-h-[600px]">
-              <AnimatePresence initial={false}>
-                {logs.map((log) => (
-                  <motion.div
-                    key={log.id}
-                    initial={{ opacity: 0, x: 5 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2 }}
+
+            <div className="border border-zinc-800 bg-black p-4 sm:p-5">
+              <div className="mb-4 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+                <Database size={12} /> Integration Surface
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="border border-zinc-800 p-3">
+                  <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Program ID</div>
+                  <a
+                    href={explorerHref('address', oracleSnapshot?.program_id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
                   >
-                    <TerminalLine log={log} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                    {shortenMiddle(oracleSnapshot?.program_id, 8, 8)}
+                  </a>
+                </div>
+                <div className="border border-zinc-800 p-3">
+                  <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Risk State PDA</div>
+                  <a
+                    href={explorerHref('address', oracleSnapshot?.risk_state_pda)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
+                  >
+                    {shortenMiddle(oracleSnapshot?.risk_state_pda, 8, 8)}
+                  </a>
+                </div>
+                <div className="border border-zinc-800 p-3">
+                  <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Last Updater</div>
+                  <a
+                    href={explorerHref('address', oracleSnapshot?.last_updater)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
+                  >
+                    {shortenMiddle(oracleSnapshot?.last_updater, 8, 8)}
+                  </a>
+                </div>
+                <div className="border border-zinc-800 p-3">
+                  <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Latest Tx</div>
+                  <a
+                    href={explorerHref('tx', latestTxSignature ?? undefined)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex break-all font-mono text-[11px] text-zinc-300 transition-colors hover:text-solana-green"
+                  >
+                    {shortenMiddle(latestTxSignature ?? undefined, 8, 8)}
+                  </a>
+                </div>
+                <a
+                  href="https://pegshield.anubhavprasai.com.np/api/oracle-state"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between gap-3 border border-zinc-800 p-3 transition-colors hover:border-solana-green sm:col-span-2"
+                >
+                  <span className="min-w-0 text-[10px] uppercase tracking-[0.1em] text-zinc-400">Open live oracle payload</span>
+                  <ArrowUpRight size={14} className="shrink-0 text-solana-green" />
+                </a>
+              </div>
             </div>
-            <div className="flex justify-between border-t border-zinc-800 p-3 font-mono text-[10px] uppercase tracking-[0.1em] text-zinc-600">
-              <span className="flex items-center gap-1">
-                <AlertTriangle
-                  size={10}
-                  className={
-                    globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-zinc-700'
-                  }
-                />
-                Snapshot Active
-              </span>
+          </div>
+        </motion.section>
+
+        {/* Snapshot Metadata + Update Health + Logic Terminal */}
+        <motion.section variants={itemVariants}>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:gap-8 xl:grid-cols-3">
+            <div className="border border-zinc-800 p-4 sm:p-5">
+              <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+                <FileText size={12} /> Snapshot Metadata
+              </div>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-[10px] leading-relaxed text-zinc-400">
+                <dt className="text-zinc-600">Oracle</dt>
+                <dd className="min-w-0 truncate text-zinc-300">{oracleSnapshot?.source ?? 'unavailable'}</dd>
+                <dt className="text-zinc-600">Market</dt>
+                <dd className="min-w-0 truncate text-zinc-300">{marketSnapshot?.source ?? 'unavailable'}</dd>
+                <dt className="text-zinc-600">Asset</dt>
+                <dd className="min-w-0 truncate text-zinc-300">{oracleSnapshot?.asset_display_name ?? assetSymbol} / {baseSymbol}</dd>
+                <dt className="text-zinc-600">Rate</dt>
+                <dd className="min-w-0 truncate text-zinc-300">
+                  {typeof oracleSnapshot?.reference_rate === 'number' ? oracleSnapshot.reference_rate.toFixed(6) : 'unavailable'}
+                </dd>
+                <dt className="text-zinc-600">Rate Src</dt>
+                <dd className="min-w-0 truncate text-zinc-300">{oracleSnapshot?.reference_rate_source ?? 'unavailable'}</dd>
+                <dt className="text-zinc-600">History</dt>
+                <dd className="min-w-0 truncate text-zinc-300">{oracleSnapshot?.history_points ?? 0} pts</dd>
+                <dt className="text-zinc-600">Authority</dt>
+                <dd className="min-w-0 truncate">
+                  <a
+                    href={explorerHref('address', oracleSnapshot?.authority)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-mono text-zinc-300 hover:text-solana-green"
+                  >
+                    {shortenMiddle(oracleSnapshot?.authority, 6, 6)}
+                    <ArrowUpRight size={10} className="shrink-0" />
+                  </a>
+                </dd>
+                <dt className="text-zinc-600">Updater</dt>
+                <dd className="min-w-0 truncate">
+                  <a
+                    href={explorerHref('address', oracleSnapshot?.last_updater)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-mono text-zinc-300 hover:text-solana-green"
+                  >
+                    {shortenMiddle(oracleSnapshot?.last_updater, 6, 6)}
+                    <ArrowUpRight size={10} className="shrink-0" />
+                  </a>
+                </dd>
+                <dt className="text-zinc-600">Latest Tx</dt>
+                <dd className="min-w-0 truncate">
+                  <a
+                    href={explorerHref('tx', latestTxSignature ?? undefined)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-mono text-zinc-300 hover:text-solana-green"
+                  >
+                    {shortenMiddle(latestTxSignature ?? undefined, 6, 6)}
+                    <ArrowUpRight size={10} className="shrink-0" />
+                  </a>
+                </dd>
+              </dl>
+            </div>
+
+            <div className="border border-zinc-800 p-4 sm:p-5">
+              <div className="mb-3 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+                <TimerReset size={12} /> Update Health
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-600">Oracle compute</span>
+                    <span className={cn('text-[10px] font-bold uppercase tracking-[0.1em]', oracleStatusTone)}>
+                      {oracleFreshness}
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-zinc-900">
+                    <div
+                      className={cn(
+                        'h-full transition-all duration-500',
+                        globalState.regime_flag === 1 ? 'bg-emergency-red' : 'bg-solana-green',
+                      )}
+                      style={{ width: oracleFreshness === 'just now' ? '100%' : oracleFreshness === '1 min ago' ? '75%' : '45%' }}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-zinc-600">Market feed</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-300">
+                      {marketFreshness}
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-zinc-900">
+                    <div
+                      className="h-full bg-zinc-500 transition-all duration-500"
+                      style={{ width: marketFreshness === 'just now' ? '100%' : marketFreshness === '1 min ago' ? '75%' : '45%' }}
+                    />
+                  </div>
+                </div>
+                <div className="border border-zinc-800 bg-zinc-900/30 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-300">Mode</div>
+                  <div className="mt-1 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
+                    Live PDA + live market + snapshot fallback
+                  </div>
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.08em] text-zinc-600">
+                  Updated: <span className="text-zinc-400">{oracleSnapshot?.updated_at_iso ?? 'unavailable'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex min-h-[320px] flex-col border border-zinc-800 bg-black md:col-span-2 xl:col-span-1">
+              <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/50 p-3">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  <Terminal size={12} /> Logic Terminal
+                </div>
+                <span className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.1em] text-zinc-600">
+                  <AlertTriangle
+                    size={10}
+                    className={
+                      globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-zinc-700'
+                    }
+                  />
+                  Live
+                </span>
+              </div>
+              <div className="max-h-[400px] flex-1 overflow-y-auto p-4">
+                <AnimatePresence initial={false}>
+                  {logs.map((log) => (
+                    <motion.div
+                      key={log.id}
+                      initial={{ opacity: 0, x: 5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <TerminalLine log={log} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </motion.section>
@@ -929,7 +1000,7 @@ function AppPageContent({
         variants={itemVariants}
         initial="hidden"
         animate="show"
-        className="mt-12 border border-zinc-800 bg-black p-6 sm:mt-16 sm:p-8 lg:p-10"
+        className="mt-12 border border-zinc-800 bg-black p-5 sm:mt-16 sm:p-8 lg:p-10"
       >
         <div className="mb-10 flex flex-col gap-4 border-b border-zinc-900 pb-8 md:flex-row md:items-end md:justify-between">
           <div className="space-y-4">
