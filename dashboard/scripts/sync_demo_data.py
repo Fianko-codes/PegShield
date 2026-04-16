@@ -39,6 +39,18 @@ def iso_from_unix(timestamp: int) -> str:
     return datetime.fromtimestamp(timestamp, tz=UTC).isoformat()
 
 
+def risk_state_pda_from_env(lst_id: str, env: dict[str, str]) -> str:
+    normalized = lst_id.lower()
+    if normalized.startswith("jitosol"):
+        return env.get("JITOSOL_RISK_STATE_PDA", env.get("ORACLE_RISK_STATE_PDA", ""))
+    if normalized.startswith("msol"):
+        return env.get(
+            "MSOL_RISK_STATE_PDA",
+            env.get("ORACLE_RISK_STATE_PDA", "7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo"),
+        )
+    return env.get("ORACLE_RISK_STATE_PDA", "")
+
+
 def build_oracle_snapshot() -> dict:
     oracle_payload = load_json(ORACLE_INPUT)
     bridge_payload = load_json(BRIDGE_INPUT)
@@ -48,6 +60,7 @@ def build_oracle_snapshot() -> dict:
         {
             "timestamp": int(point["timestamp"]),
             "spread_pct": float(point["msol_sol_spread_pct"]),
+            "asset_price": float(point.get("asset_usd_price", point["msol_usd_price"])),
             "msol_price": float(point["msol_usd_price"]),
             "sol_price": float(point["sol_usd_price"]),
             "peg_deviation": (
@@ -61,6 +74,9 @@ def build_oracle_snapshot() -> dict:
 
     snapshot = {
         "lst_id": oracle_payload["lst_id"],
+        "asset_symbol": oracle_payload.get("asset_symbol"),
+        "asset_display_name": oracle_payload.get("asset_display_name"),
+        "base_symbol": oracle_payload.get("base_symbol", "SOL"),
         "theta": float(oracle_payload["theta"]),
         "sigma": float(oracle_payload["sigma"]),
         "regime_flag": int(oracle_payload["regime_flag"]),
@@ -73,6 +89,9 @@ def build_oracle_snapshot() -> dict:
         "spread_pct": float(oracle_payload["spread_pct"]),
         "spread_signal": oracle_payload.get("spread_signal", "unknown"),
         "peg_deviation_pct": oracle_payload.get("peg_deviation_pct"),
+        "asset_price": float(oracle_payload.get("asset_price", oracle_payload["msol_price"])),
+        "reference_rate": oracle_payload.get("reference_rate"),
+        "reference_rate_source": oracle_payload.get("reference_rate_source", "unknown"),
         "marinade_msol_sol_rate": oracle_payload.get("marinade_msol_sol_rate"),
         "marinade_rate_source": oracle_payload.get("marinade_rate_source", "unknown"),
         "timestamp": int(oracle_payload["timestamp"]),
@@ -87,10 +106,7 @@ def build_oracle_snapshot() -> dict:
         "step_seconds": int(oracle_payload.get("meta", {}).get("step_seconds", 0)),
         "baseline": oracle_payload.get("baseline", {}),
         "program_id": env.get("PROGRAM_ID", ""),
-        "risk_state_pda": env.get(
-            "MSOL_RISK_STATE_PDA",
-            "7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo",
-        ),
+        "risk_state_pda": risk_state_pda_from_env(oracle_payload["lst_id"], env),
         "authority": env.get("ORACLE_AUTHORITY", ""),
         "network": "solana-devnet",
         "history": history,

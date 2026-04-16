@@ -9,6 +9,9 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const regime = riskState.regime_flag;
+  const nodeLabel = riskState.lst_id
+    ? `${riskState.lst_id.replace(/-v\d+$/i, '').toUpperCase()}-01`
+    : 'LST-01';
 
   const navLinks = [
     { name: 'Narrative', path: '/' },
@@ -52,7 +55,7 @@ export default function Nav({ riskState }: { riskState: RiskState }) {
               </div>
               <div className="flex items-center gap-1">
                 <Cpu size={10} className="text-zinc-700 animate-pulse" />
-                <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-700">Oracle Node: mSOL-01</span>
+                <span className="text-[8px] font-bold uppercase tracking-[0.08em] text-zinc-700">Oracle Node: {nodeLabel}</span>
               </div>
             </div>
           </div>

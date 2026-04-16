@@ -36,7 +36,10 @@ def infer_step_seconds(history: list[dict[str, Any]]) -> int:
     return positive[0] if positive else 60
 
 
-def build_risk_payload(bridge_payload: dict[str, Any]) -> dict[str, Any]:
+def build_risk_payload(
+    bridge_payload: dict[str, Any],
+    lst_id: str | None = None,
+) -> dict[str, Any]:
     history = bridge_payload.get("history", [])
     if len(history) < 20:
         raise ValueError("Bridge payload does not contain enough historical samples")
@@ -59,8 +62,20 @@ def build_risk_payload(bridge_payload: dict[str, Any]) -> dict[str, Any]:
 
     # Expose both the deprecated USD premium and the correct peg deviation so
     # the dashboard can show which signal the risk model consumed.
-    marinade_rate = bridge_payload.get("marinade_msol_sol_rate")
-    marinade_source = bridge_payload.get("marinade_rate_source", "unknown")
+    reference_rate = bridge_payload.get(
+        "asset_sol_reference_rate",
+        bridge_payload.get("marinade_msol_sol_rate"),
+    )
+    reference_rate_source = bridge_payload.get(
+        "reference_rate_source",
+        bridge_payload.get("marinade_rate_source", "unknown"),
+    )
+    asset_price_column = "asset_usd_price" if "asset_usd_price" in history_df.columns else "msol_usd_price"
+    spread_column = (
+        "asset_sol_spread_pct"
+        if "asset_sol_spread_pct" in history_df.columns
+        else "msol_sol_spread_pct"
+    )
     peg_deviation_pct = (
         float(latest_row["peg_deviation"])
         if "peg_deviation" in history_df.columns and pd.notna(latest_row.get("peg_deviation"))
@@ -71,7 +86,10 @@ def build_risk_payload(bridge_payload: dict[str, Any]) -> dict[str, Any]:
     spread_signal = "peg_deviation" if peg_deviation_pct is not None else "usd_premium_legacy"
 
     return {
-        "lst_id": DEFAULT_LST_ID,
+        "lst_id": lst_id or bridge_payload.get("lst_id") or DEFAULT_LST_ID,
+        "asset_symbol": bridge_payload.get("asset_symbol", "mSOL"),
+        "asset_display_name": bridge_payload.get("asset_display_name", "Marinade Staked SOL"),
+        "base_symbol": bridge_payload.get("base_symbol", "SOL"),
         "theta": ou_params["theta"],
         "sigma": ou_params["sigma"],
         "regime_flag": regime["regime_flag"],
@@ -82,18 +100,21 @@ def build_risk_payload(bridge_payload: dict[str, Any]) -> dict[str, Any]:
         "is_stationary": regime["is_stationary"],
         "status": regime["status"],
         "timestamp": int(latest_row["timestamp"]),
-        "msol_price": round(float(latest_row["msol_usd_price"]), 8),
+        "asset_price": round(float(latest_row[asset_price_column]), 8),
+        "msol_price": round(float(latest_row[asset_price_column]), 8),  # legacy alias
         "sol_price": round(float(latest_row["sol_usd_price"]), 8),
         # Deprecated — kept so older dashboard builds do not crash
-        "spread_pct": round(float(latest_row["msol_sol_spread_pct"]), 8),
+        "spread_pct": round(float(latest_row[spread_column]), 8),
         # Canonical de-peg signal
         "peg_deviation_pct": (
             round(peg_deviation_pct, 8) if peg_deviation_pct is not None else None
         ),
+        "reference_rate": round(float(reference_rate), 8) if reference_rate is not None else None,
+        "reference_rate_source": reference_rate_source,
         "marinade_msol_sol_rate": (
-            round(float(marinade_rate), 8) if marinade_rate is not None else None
+            round(float(reference_rate), 8) if reference_rate is not None else None
         ),
-        "marinade_rate_source": marinade_source,
+        "marinade_rate_source": reference_rate_source,
         "spread_signal": spread_signal,
         "baseline": baseline,
         "meta": {
@@ -107,7 +128,7 @@ def build_risk_payload(bridge_payload: dict[str, Any]) -> dict[str, Any]:
 
 def run_pipeline(input_path: Path = INPUT_PATH, output_path: Path = OUTPUT_PATH) -> Path:
     bridge_payload = load_bridge_payload(input_path)
-    risk_payload = build_risk_payload(bridge_payload)
+    risk_payload = build_risk_payload(bridge_payload, lst_id=os.environ.get("LST_ID"))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(risk_payload, indent=2), encoding="utf-8")
     return output_path

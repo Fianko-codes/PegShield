@@ -1,12 +1,23 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import RootLayout from './layouts/RootLayout';
-import Home from './pages/Home';
-import AppPage from './pages/AppPage';
-import SimPage from './pages/SimPage';
 import type { OracleSnapshot, RiskState } from './types';
 import { fetchOracleSnapshot, getFallbackRiskState } from './lib/data';
+
+const Home = lazy(() => import('./pages/Home'));
+const AppPage = lazy(() => import('./pages/AppPage'));
+const SimPage = lazy(() => import('./pages/SimPage'));
+
+function RouteFallback() {
+  return (
+    <div className="py-12">
+      <div className="border border-zinc-800 bg-black p-6 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+        Loading route…
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [oracleSnapshot, setOracleSnapshot] = useState<OracleSnapshot | null>(null);
@@ -47,16 +58,18 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<RootLayout riskState={riskState} />}>
-          <Route path="/" element={<Home />} />
-          <Route 
-            path="/app" 
-            element={<AppPage globalState={riskState} oracleSnapshot={oracleSnapshot} />} 
-          />
-          <Route path="/sim" element={<SimPage />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route element={<RootLayout riskState={riskState} />}>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/app"
+              element={<AppPage globalState={riskState} oracleSnapshot={oracleSnapshot} />}
+            />
+            <Route path="/sim" element={<SimPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
       <Analytics />
     </BrowserRouter>
   );

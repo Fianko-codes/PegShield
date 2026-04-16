@@ -159,7 +159,7 @@ export default function Home() {
             {
               title: 'Pyth Market Data',
               icon: Zap,
-              desc: 'Live mSOL and SOL prices arrive from Hermes with recent spread history.',
+              desc: 'Live LST and SOL prices arrive from Hermes with recent spread history. Current repo support covers mSOL and jitoSOL.',
             },
             {
               title: 'Statistical Engine',
@@ -243,7 +243,7 @@ export default function Home() {
               <div className="border border-zinc-800 p-4">
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Inputs</div>
                 <div className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-                  mSOL price, SOL price, spread history, OU parameters, regime state
+                  LST price, SOL price, spread history, OU parameters, regime state
                 </div>
               </div>
               <div className="border border-zinc-800 p-4">

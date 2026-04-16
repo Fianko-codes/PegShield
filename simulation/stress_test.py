@@ -85,7 +85,7 @@ def infer_step_seconds(history: list[dict[str, Any]]) -> int:
 
 
 def _marinade_rate(bridge_payload: dict[str, Any]) -> float:
-    rate = bridge_payload.get("marinade_msol_sol_rate")
+    rate = bridge_payload.get("asset_sol_reference_rate", bridge_payload.get("marinade_msol_sol_rate"))
     return float(rate) if rate else FALLBACK_MARINADE_RATE
 
 
@@ -99,6 +99,7 @@ def generate_stress_scenario(
 
     base_mean = float(spread.mean())
     base_std = float(spread.std(ddof=1))
+    asset_column = "asset_usd_price" if "asset_usd_price" in history.columns else "msol_usd_price"
     base_sol = float(history["sol_usd_price"].iloc[-1])
     step_seconds = infer_step_seconds(bridge_payload["history"])
     baseline = derive_baseline(spread, dt_seconds=step_seconds)
@@ -140,17 +141,18 @@ def generate_stress_scenario(
     #   market_ratio = marinade_rate * (1 + peg_deviation)
     #   msol_usd = sol_usd * market_ratio
     market_ratio_path = marinade_rate * (1.0 + peg_deviation_path)
-    msol_price_path = sol_price_path * market_ratio_path
+    asset_price_path = sol_price_path * market_ratio_path
 
     # Legacy spread_pct kept on each row for CSV backward-compatibility;
     # the regime model itself operates on peg_deviation.
-    legacy_spread_pct = (msol_price_path - sol_price_path) / sol_price_path
+    legacy_spread_pct = (asset_price_path - sol_price_path) / sol_price_path
 
     return pd.DataFrame(
         {
             "timestamp": timestamps,
             "sol_usd_price": sol_price_path,
-            "msol_usd_price": msol_price_path,
+            "asset_usd_price": asset_price_path,
+            "msol_usd_price": asset_price_path,
             "spread_pct": legacy_spread_pct,
             "peg_deviation": peg_deviation_path,
             "baseline_theta_avg": baseline["theta_avg"],
@@ -167,9 +169,10 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     step_seconds = infer_step_seconds(bridge_payload["history"])
     baseline = derive_baseline(baseline_spread, dt_seconds=step_seconds)
     marinade_rate = _marinade_rate(bridge_payload)
+    asset_column = "asset_usd_price" if "asset_usd_price" in history_df.columns else "msol_usd_price"
 
     collateral_units = 100.0
-    initial_collateral_value = collateral_units * float(df["msol_usd_price"].iloc[0])
+    initial_collateral_value = collateral_units * float(df[asset_column].iloc[0])
     borrow_static = initial_collateral_value * CF_BASE
 
     ltv_dynamic: list[float] = []
@@ -183,8 +186,10 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     borrow_dynamic: float | None = None
 
     rolling_source = history_df[
-        ["timestamp", "msol_usd_price", "sol_usd_price"]
+        ["timestamp", asset_column, "sol_usd_price"]
     ].copy()
+    if asset_column != "msol_usd_price":
+        rolling_source["msol_usd_price"] = history_df.get("msol_usd_price", history_df[asset_column])
     # Seed peg_deviation for each historical row so compute_spread uses the
     # correct signal throughout the rolling window.
     if "peg_deviation" in history_df.columns:
@@ -197,8 +202,9 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     for row in df.itertuples(index=False):
         rolling_source.loc[len(rolling_source)] = {
             "timestamp": row.timestamp,
-            "msol_usd_price": row.msol_usd_price,
+            asset_column: getattr(row, asset_column),
             "sol_usd_price": row.sol_usd_price,
+            "msol_usd_price": getattr(row, asset_column),
             "peg_deviation": row.peg_deviation,
         }
 
@@ -213,7 +219,7 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
             baseline=baseline,
         )
 
-        collateral_value = collateral_units * float(row.msol_usd_price)
+        collateral_value = collateral_units * float(getattr(row, asset_column))
         if borrow_dynamic is None:
             borrow_dynamic = initial_collateral_value * ltv
 

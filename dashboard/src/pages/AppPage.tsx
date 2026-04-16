@@ -1,18 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { PublicKey, Transaction } from '@solana/web3.js';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ReferenceLine,
-} from 'recharts';
 import {
   Activity,
   ChevronDown,
@@ -23,7 +10,6 @@ import {
   Zap,
   Lock,
   AlertTriangle,
-  Radio,
   TimerReset,
   WalletCards,
   Database,
@@ -33,10 +19,9 @@ import { BlockMath } from 'react-katex';
 import { cn } from '../types';
 import type { LogEntry, MarketSnapshot, OracleSnapshot, RiskState } from '../types';
 import { fetchMarketSnapshot } from '../lib/data';
-import {
-  buildUpdateRiskStateInstruction,
-  isUnauthorizedOracleRejection,
-} from '../lib/updateRiskInstruction';
+
+const AppMarketChart = lazy(() => import('../components/AppMarketChart'));
+const DevnetWriteGuardDemo = lazy(() => import('../components/DevnetWriteGuardDemo'));
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -54,6 +39,7 @@ const itemVariants = {
 };
 
 const DEVNET_EXPLORER_BASE = 'https://explorer.solana.com';
+const DEVNET_RPC_URL = 'https://api.devnet.solana.com';
 
 function formatRelativeMinutes(timestampSeconds: number | undefined, nowMs: number): string {
   if (!timestampSeconds) {
@@ -89,38 +75,12 @@ function explorerHref(kind: 'address' | 'tx', value: string | undefined): string
   return `${DEVNET_EXPLORER_BASE}/${kind}/${value}?cluster=devnet`;
 }
 
-function formatUnknownError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+function assetSymbolFromLstId(lstId: string | undefined): string {
+  if (!lstId) {
+    return 'LST';
   }
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Unknown error';
-  }
+  return lstId.replace(/-v\d+$/i, '');
 }
-
-function extractErrorLogs(error: unknown): string[] {
-  if (error && typeof error === 'object' && 'logs' in error) {
-    const { logs } = error as { logs?: unknown };
-    if (Array.isArray(logs)) {
-      return logs.filter((value): value is string => typeof value === 'string');
-    }
-  }
-  return [];
-}
-
-type WalletDemoTone = 'neutral' | 'expected' | 'danger';
-
-type WalletDemoState = {
-  phase: 'idle' | 'simulating' | 'previewed' | 'sending' | 'sent';
-  headline: string;
-  detail: string;
-  logs: string[];
-  tone: WalletDemoTone;
-  signature?: string | null;
-  expectedUnauthorized: boolean;
-};
 
 function TerminalLine({ log }: { log: LogEntry }) {
   const colorClass =
@@ -297,15 +257,13 @@ function ModelCard({
   );
 }
 
-export default function AppPage({
+function AppPageContent({
   globalState,
   oracleSnapshot,
 }: {
   globalState: RiskState;
   oracleSnapshot: OracleSnapshot | null;
 }) {
-  const { connection } = useConnection();
-  const { connected, publicKey, sendTransaction } = useWallet();
   const [liveTail, setLiveTail] = useState<
     { time: string; spread: number; publishTime: number }[]
   >([]);
@@ -314,17 +272,15 @@ export default function AppPage({
   const [latestTxSignature, setLatestTxSignature] = useState<string | null>(null);
   const [collateralInput, setCollateralInput] = useState('1000');
   const [clockMs, setClockMs] = useState(() => new Date().getTime());
-  const [walletDemo, setWalletDemo] = useState<WalletDemoState>({
-    phase: 'idle',
-    headline: 'Preview a live devnet call before asking your wallet to sign.',
-    detail:
-      'The simulation step uses the current oracle payload and your connected wallet address as the signer. Non-authority wallets should be rejected with Unauthorized.',
-    logs: [],
-    tone: 'neutral',
-    signature: null,
-    expectedUnauthorized: false,
-  });
   const accentColor = globalState.regime_flag === 1 ? '#FF4B4B' : '#14F195';
+  const assetSymbol = oracleSnapshot?.asset_symbol ?? assetSymbolFromLstId(globalState.lst_id);
+  const baseSymbol = oracleSnapshot?.base_symbol ?? 'SOL';
+  const referenceRateLabel =
+    oracleSnapshot?.reference_rate_source === 'jito-kobe-api'
+      ? 'Jito stake-pool rate'
+      : oracleSnapshot?.reference_rate_source === 'marinade-api'
+        ? 'Marinade exchange rate'
+        : 'Reference rate';
 
   const baseChartData = useMemo(
     () =>
@@ -400,22 +356,6 @@ export default function AppPage({
       : null;
   const oracleStatusTone =
     globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-solana-green';
-  const walletDemoPreview = useMemo(() => {
-    if (!oracleSnapshot?.program_id || !oracleSnapshot?.risk_state_pda) {
-      return null;
-    }
-    return {
-      cluster: 'devnet',
-      programId: oracleSnapshot.program_id,
-      riskStatePda: oracleSnapshot.risk_state_pda,
-      lstId: oracleSnapshot.lst_id,
-      theta: oracleSnapshot.theta,
-      sigma: oracleSnapshot.sigma,
-      regimeFlag: oracleSnapshot.regime_flag,
-      suggestedLtv: oracleSnapshot.suggested_ltv,
-      zScore: oracleSnapshot.z_score,
-    };
-  }, [oracleSnapshot]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -514,11 +454,23 @@ export default function AppPage({
       }
 
       try {
-        const signatures = await connection.getSignaturesForAddress(new PublicKey(riskStatePda), {
-          limit: 1,
+        const response = await fetch(DEVNET_RPC_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 'risk-oracle-latest-tx',
+            method: 'getSignaturesForAddress',
+            params: [riskStatePda, { limit: 1, commitment: 'confirmed' }],
+          }),
         });
+        const payload = (await response.json()) as {
+          result?: Array<{ signature?: string }>;
+        };
         if (!cancelled) {
-          setLatestTxSignature(signatures[0]?.signature ?? null);
+          setLatestTxSignature(payload.result?.[0]?.signature ?? null);
         }
       } catch {
         if (!cancelled) {
@@ -532,163 +484,7 @@ export default function AppPage({
     return () => {
       cancelled = true;
     };
-  }, [connection, oracleSnapshot?.risk_state_pda]);
-
-  const buildWalletDemoTransaction = async (authority: PublicKey) => {
-    if (!walletDemoPreview) {
-      throw new Error('Oracle snapshot unavailable for wallet demo.');
-    }
-
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-    const instruction = buildUpdateRiskStateInstruction({
-      authority,
-      riskStatePda: walletDemoPreview.riskStatePda,
-      programId: walletDemoPreview.programId,
-      lstId: walletDemoPreview.lstId,
-      theta: walletDemoPreview.theta,
-      sigma: walletDemoPreview.sigma,
-      regimeFlag: walletDemoPreview.regimeFlag,
-      suggestedLtv: walletDemoPreview.suggestedLtv,
-      zScore: walletDemoPreview.zScore,
-    });
-
-    const transaction = new Transaction({
-      feePayer: authority,
-      blockhash,
-      lastValidBlockHeight,
-    }).add(instruction);
-
-    return { transaction, blockhash, lastValidBlockHeight };
-  };
-
-  const simulateUnauthorizedCall = async () => {
-    if (!publicKey) {
-      return;
-    }
-
-    setWalletDemo({
-      phase: 'simulating',
-      headline: 'Simulating devnet transaction...',
-      detail: 'No wallet signature requested in this step.',
-      logs: [],
-      tone: 'neutral',
-      signature: null,
-      expectedUnauthorized: false,
-    });
-
-    try {
-      const { transaction } = await buildWalletDemoTransaction(publicKey);
-      // web3.js supports this config at runtime for legacy transactions even
-      // though the published TS overloads still prefer the older signature.
-      const simulation = await connection.simulateTransaction(
-        transaction as never,
-        {
-          commitment: 'processed',
-          sigVerify: false,
-        } as never,
-      );
-      const logs = simulation.value.logs ?? [];
-      const detail = simulation.value.err
-        ? JSON.stringify(simulation.value.err)
-        : 'Simulation returned success.';
-      const expectedUnauthorized = isUnauthorizedOracleRejection(detail, logs);
-
-      setWalletDemo({
-        phase: 'previewed',
-        headline: expectedUnauthorized
-          ? 'Simulation shows the program will reject this wallet.'
-          : simulation.value.err
-            ? 'Simulation failed for an unexpected reason.'
-            : 'Simulation unexpectedly succeeded.',
-        detail: expectedUnauthorized
-          ? 'The on-chain authority gate is active. Non-authority wallets should fail here.'
-          : detail,
-        logs,
-        tone: expectedUnauthorized ? 'expected' : simulation.value.err ? 'danger' : 'danger',
-        signature: null,
-        expectedUnauthorized,
-      });
-    } catch (error) {
-      setWalletDemo({
-        phase: 'previewed',
-        headline: 'Simulation failed before the program could run.',
-        detail: formatUnknownError(error),
-        logs: extractErrorLogs(error),
-        tone: 'danger',
-        signature: null,
-        expectedUnauthorized: false,
-      });
-    }
-  };
-
-  const sendUnauthorizedCall = async () => {
-    if (!publicKey) {
-      return;
-    }
-
-    setWalletDemo((current) => ({
-      ...current,
-      phase: 'sending',
-      headline: 'Requesting wallet signature...',
-      detail: 'The signed transaction should still be rejected by the program unless this wallet is the stored authority.',
-      signature: null,
-    }));
-
-    try {
-      const { transaction, blockhash, lastValidBlockHeight } = await buildWalletDemoTransaction(publicKey);
-      const signature = await sendTransaction(transaction, connection, {
-        skipPreflight: false,
-        preflightCommitment: 'processed',
-      });
-      const confirmation = await connection.confirmTransaction(
-        { signature, blockhash, lastValidBlockHeight },
-        'confirmed',
-      );
-
-      if (confirmation.value.err) {
-        const detail = JSON.stringify(confirmation.value.err);
-        setWalletDemo({
-          phase: 'sent',
-          headline: 'Transaction reached the cluster but failed.',
-          detail,
-          logs: [],
-          tone: 'danger',
-          signature,
-          expectedUnauthorized: false,
-        });
-        return;
-      }
-
-      setWalletDemo({
-        phase: 'sent',
-        headline: 'Transaction succeeded unexpectedly.',
-        detail:
-          'This wallet was able to update the oracle. That should only happen for the configured authority and needs review if unexpected.',
-        logs: [],
-        tone: 'danger',
-        signature,
-        expectedUnauthorized: false,
-      });
-    } catch (error) {
-      const detail = formatUnknownError(error);
-      const logs = extractErrorLogs(error);
-      const expectedUnauthorized = isUnauthorizedOracleRejection(detail, logs);
-
-      setWalletDemo({
-        phase: 'sent',
-        headline: expectedUnauthorized
-          ? 'Program rejected the wallet as expected.'
-          : 'Wallet flow failed for an unexpected reason.',
-        detail: expectedUnauthorized
-          ? 'The signature path confirmed the program enforces its authority check on devnet.'
-          : detail,
-        logs,
-        tone: expectedUnauthorized ? 'expected' : 'danger',
-        signature: null,
-        expectedUnauthorized,
-      });
-    }
-  };
+  }, [oracleSnapshot?.risk_state_pda]);
 
   return (
     <div className="py-6 md:py-10">
@@ -712,7 +508,7 @@ export default function AppPage({
           </div>
           <div className="min-w-0">
             <h1 className="text-lg font-bold uppercase tracking-tight sm:text-xl">
-              System App <span className="font-normal text-zinc-500">mSOL Risk Feed</span>
+              System App <span className="font-normal text-zinc-500">{assetSymbol} Risk Feed</span>
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {lastUpdateAgeSec !== null && lastUpdateAgeSec > 1800 && (
@@ -774,7 +570,7 @@ export default function AppPage({
           <div className="space-y-6">
             <div className="relative overflow-hidden border border-zinc-800 p-4">
               <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                <Activity size={12} /> mSOL/SOL Premium
+                <Activity size={12} /> {assetSymbol}/{baseSymbol} Premium
               </div>
               <div
                 className={cn(
@@ -813,7 +609,14 @@ export default function AppPage({
               <div className="space-y-2 text-[10px] leading-relaxed tracking-[0.04em] text-zinc-400">
                 <div className="break-words">Oracle Source: {oracleSnapshot?.source ?? 'unavailable'}</div>
                 <div className="break-words">Market Source: {marketSnapshot?.source ?? 'unavailable'}</div>
+                <div className="break-words">
+                  Asset: {oracleSnapshot?.asset_display_name ?? assetSymbol} / {baseSymbol}
+                </div>
                 <div className="break-words">Updated: {oracleSnapshot?.updated_at_iso ?? 'unavailable'}</div>
+                <div className="break-words">
+                  {referenceRateLabel}: {typeof oracleSnapshot?.reference_rate === 'number' ? oracleSnapshot.reference_rate.toFixed(6) : 'unavailable'}
+                </div>
+                <div className="break-words">Rate Source: {oracleSnapshot?.reference_rate_source ?? 'unavailable'}</div>
                 <div className="break-words">
                   Market Tick: {marketSnapshot ? new Date(marketSnapshot.publish_time * 1000).toLocaleTimeString([], {
                     hour: '2-digit',
@@ -908,106 +711,21 @@ export default function AppPage({
 
         <motion.section variants={itemVariants} className="space-y-8 xl:col-span-6">
           <div className="space-y-8">
-            <div className="relative border border-zinc-800 bg-black p-4 sm:p-6">
-              <div className="absolute left-4 right-4 top-4 z-10 sm:left-6 sm:right-auto">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                  Live Market Premium
+            <Suspense
+              fallback={
+                <div className="border border-zinc-800 bg-black p-6 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                  Loading chart…
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-zinc-600">
-                  <Radio
-                    size={10}
-                    className={cn(
-                      'transition-colors duration-300',
-                      heartbeat
-                        ? globalState.regime_flag === 1
-                          ? 'text-emergency-red'
-                          : 'text-solana-green'
-                        : 'text-zinc-700',
-                    )}
-                  />
-                  Hermes pulse + live append
-                </div>
-                <div className="mt-1 text-[10px] uppercase tracking-[0.1em] text-zinc-700">
-                  Snapshot base + live tail overlay
-                </div>
-              </div>
-              <div className="mt-16 h-[260px] w-full sm:mt-8 sm:h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="colorSpread" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={accentColor} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={accentColor} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" vertical={false} />
-                    <XAxis
-                      dataKey="time"
-                      stroke="#444"
-                      fontSize={10}
-                      tickLine={false}
-                      axisLine={false}
-                      minTickGap={30}
-                    />
-                    <YAxis
-                      stroke="#444"
-                      fontSize={10}
-                      tickLine={false}
-                      axisLine={false}
-                      domain={['dataMin - 0.001', 'dataMax + 0.001']}
-                      tickFormatter={(val: number) => `${(val * 100).toFixed(2)}%`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#0D0D0D',
-                        border: '1px solid #333',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                      }}
-                      itemStyle={{ color: accentColor }}
-                      formatter={(value) => `${(Number(value ?? 0) * 100).toFixed(2)}%`}
-                    />
-                    <ReferenceLine
-                      y={oracleSnapshot?.history?.[0]?.spread_pct ?? 0}
-                      stroke="#333"
-                      strokeDasharray="5 5"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="spread"
-                      stroke={accentColor}
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#colorSpread)"
-                      animationDuration={1000}
-                      activeDot={{
-                        r: 6,
-                        stroke: accentColor,
-                        strokeWidth: 2,
-                        fill: '#0D0D0D',
-                      }}
-                      dot={(props) => {
-                        const pointIndex = typeof props.index === 'number' ? props.index : -1;
-                        if (pointIndex !== chartData.length - 1) {
-                          return false;
-                        }
-
-                        return (
-                          <circle
-                            cx={props.cx}
-                            cy={props.cy}
-                            r={heartbeat ? 5 : 3}
-                            stroke={accentColor}
-                            strokeWidth={2}
-                            fill="#0D0D0D"
-                          />
-                        );
-                      }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+              }
+            >
+              <AppMarketChart
+                chartData={chartData}
+                accentColor={accentColor}
+                heartbeat={heartbeat}
+                regimeFlag={globalState.regime_flag}
+                baselineSpread={oracleSnapshot?.history?.[0]?.spread_pct ?? 0}
+              />
+            </Suspense>
 
             <div className="grid grid-cols-1 items-stretch gap-8 md:grid-cols-2">
               <ModelCard
@@ -1231,138 +949,23 @@ export default function AppPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 2xl:grid-cols-[0.82fr_1.18fr]">
-          <div className="space-y-6">
-            <div className="border border-zinc-800 bg-zinc-950/40 p-4">
-              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">How This Demo Works</div>
-              <p className="text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-                Connect a devnet wallet and try calling <span className="text-zinc-300">update_risk_state</span> yourself.
-                The current PegShield payload is reused as the transaction body. Unless your wallet is the configured
-                oracle authority, the program should reject the write with <span className="text-emergency-red">Unauthorized</span>.
-              </p>
+        <Suspense
+          fallback={
+            <div className="border border-zinc-800 bg-zinc-950/50 p-6 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+              Loading wallet demo…
             </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-              <div className="border border-zinc-800 p-3">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Cluster</div>
-                <div className="font-mono text-[11px] text-zinc-300">devnet</div>
-              </div>
-              <div className="border border-zinc-800 p-3">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Instruction</div>
-                <div className="font-mono text-[11px] text-zinc-300">update_risk_state</div>
-              </div>
-              <div className="border border-zinc-800 p-3">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Program ID</div>
-                <div className="break-all font-mono text-[11px] text-zinc-300">
-                  {walletDemoPreview?.programId ?? 'unavailable'}
-                </div>
-              </div>
-              <div className="border border-zinc-800 p-3">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Risk State PDA</div>
-                <div className="break-all font-mono text-[11px] text-zinc-300">
-                  {walletDemoPreview?.riskStatePda ?? 'unavailable'}
-                </div>
-              </div>
-              <div className="border border-zinc-800 p-3">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Payload LTV</div>
-                <div className="font-mono text-[11px] text-zinc-300">
-                  {walletDemoPreview ? `${(walletDemoPreview.suggestedLtv * 100).toFixed(1)}%` : 'unavailable'}
-                </div>
-              </div>
-              <div className="border border-zinc-800 p-3">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.1em] text-zinc-600">Connected Wallet</div>
-                <div className="break-all font-mono text-[11px] text-zinc-300">
-                  {publicKey ? publicKey.toBase58() : 'not connected'}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <div className="min-w-0">
-                <WalletMultiButton />
-              </div>
-              <button
-                type="button"
-                onClick={simulateUnauthorizedCall}
-                disabled={!connected || !walletDemoPreview || walletDemo.phase === 'simulating' || walletDemo.phase === 'sending'}
-                className="border border-zinc-800 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white transition-colors hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {walletDemo.phase === 'simulating' ? 'Simulating...' : 'Preview Unauthorized Call'}
-              </button>
-              <button
-                type="button"
-                onClick={sendUnauthorizedCall}
-                disabled={!connected || !walletDemoPreview || walletDemo.phase === 'simulating' || walletDemo.phase === 'sending'}
-                className="border border-solana-green/40 bg-solana-green/5 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-solana-green transition-colors hover:border-solana-green hover:bg-solana-green/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {walletDemo.phase === 'sending' ? 'Awaiting Wallet...' : 'Request Wallet Signature'}
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div
-              className={cn(
-                'border p-4 transition-colors',
-                walletDemo.tone === 'expected'
-                  ? 'border-solana-green/40 bg-solana-green/5'
-                  : walletDemo.tone === 'danger'
-                    ? 'border-emergency-red/40 bg-emergency-red/10'
-                    : 'border-zinc-800 bg-zinc-950/40',
-              )}
-            >
-              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">Latest Result</div>
-              <div
-                className={cn(
-                  'text-sm font-bold uppercase tracking-[0.08em]',
-                  walletDemo.tone === 'expected'
-                    ? 'text-solana-green'
-                    : walletDemo.tone === 'danger'
-                      ? 'text-emergency-red'
-                      : 'text-white',
-                )}
-              >
-                {walletDemo.headline}
-              </div>
-              <div className="mt-2 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-                {walletDemo.detail}
-              </div>
-              {walletDemo.signature && (
-                <a
-                  href={explorerHref('tx', walletDemo.signature)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-solana-green hover:underline"
-                >
-                  View signature on Explorer <ArrowUpRight size={12} />
-                </a>
-              )}
-            </div>
-
-            <div className="border border-zinc-800 bg-zinc-950/50 p-4 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-zinc-500">
-              Preview runs <span className="text-zinc-300">simulation only</span> and does not ask the wallet to sign.
-              The second button is the explicit approval step. It is expected to fail for non-authority wallets.
-            </div>
-
-            <div className="border border-zinc-800 bg-zinc-950/50 p-4">
-              <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">Simulation / Preflight Logs</div>
-              <div className="max-h-56 overflow-y-auto font-mono text-[11px] leading-relaxed text-zinc-400">
-                {walletDemo.logs.length > 0 ? (
-                  walletDemo.logs.map((entry, index) => (
-                    <div key={`${entry}-${index}`} className="mb-1 break-all">
-                      {entry}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-zinc-600">
-                    Run the preview step to inspect runtime logs before any wallet signature is requested.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+          }
+        >
+          <DevnetWriteGuardDemo oracleSnapshot={oracleSnapshot} />
+        </Suspense>
       </motion.section>
     </div>
   );
+}
+
+export default function AppPage(props: {
+  globalState: RiskState;
+  oracleSnapshot: OracleSnapshot | null;
+}) {
+  return <AppPageContent {...props} />;
 }

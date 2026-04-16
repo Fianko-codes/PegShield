@@ -71,7 +71,7 @@ class CoreEngineMicroTests(unittest.TestCase):
             "history": history,
         }
 
-        payload = build_risk_payload(bridge_payload)
+        payload = build_risk_payload(bridge_payload, lst_id="mSOL-v2")
 
         self.assertEqual(payload["lst_id"], "mSOL-v2")
         self.assertIn("theta", payload)
@@ -82,6 +82,51 @@ class CoreEngineMicroTests(unittest.TestCase):
         self.assertEqual(payload["marinade_msol_sol_rate"], marinade_rate)
         self.assertGreaterEqual(payload["suggested_ltv"], 0.4)
         self.assertLessEqual(payload["suggested_ltv"], 0.8)
+        self.assertEqual(payload["asset_symbol"], "mSOL")
+        self.assertEqual(payload["reference_rate_source"], "test-fixture")
+
+    def test_pipeline_build_risk_payload_contract_for_jitosol(self) -> None:
+        reference_rate = 1.27363
+        history = []
+        for idx in range(40):
+            sol = 145.0 + idx * 0.05
+            peg_deviation = -0.0008 * np.cos(idx / 6)
+            market_ratio = reference_rate * (1 + peg_deviation)
+            asset = sol * market_ratio
+            history.append(
+                {
+                    "timestamp": 1_700_100_000 + idx * 300,
+                    "asset_usd_price": asset,
+                    "sol_usd_price": sol,
+                    "asset_confidence": 0.05,
+                    "sol_confidence": 0.03,
+                    "asset_sol_ratio": market_ratio,
+                    "asset_sol_spread_pct": (asset - sol) / sol,
+                    "peg_deviation": peg_deviation,
+                }
+            )
+
+        bridge_payload = {
+            "source": "test",
+            "lst_id": "jitoSOL-v1",
+            "asset_symbol": "jitoSOL",
+            "asset_display_name": "Jito Staked SOL",
+            "base_symbol": "SOL",
+            "bridge_timestamp": "2026-01-01T00:00:00+00:00",
+            "asset_sol_reference_rate": reference_rate,
+            "reference_rate_source": "jito-kobe-api",
+            "history": history,
+        }
+
+        payload = build_risk_payload(bridge_payload, lst_id="jitoSOL-v1")
+
+        self.assertEqual(payload["lst_id"], "jitoSOL-v1")
+        self.assertEqual(payload["asset_symbol"], "jitoSOL")
+        self.assertEqual(payload["base_symbol"], "SOL")
+        self.assertAlmostEqual(payload["reference_rate"], reference_rate, places=5)
+        self.assertEqual(payload["reference_rate_source"], "jito-kobe-api")
+        self.assertGreaterEqual(payload["asset_price"], payload["sol_price"])
+        self.assertEqual(payload["spread_signal"], "peg_deviation")
 
     def test_stress_simulation_outputs_expected_columns(self) -> None:
         marinade_rate = 1.17

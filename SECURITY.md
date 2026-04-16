@@ -41,7 +41,7 @@ PegShield is **centralised by design** at this stage:
 | Component | Trust assumption |
 |---|---|
 | Price data | Pyth Hermes is honest and timely. No cross-check against secondary oracle. |
-| Marinade rate | Fetched from Marinade's public API; fallback constant used if unreachable. A compromised Marinade API could skew peg_deviation. |
+| Reference rate | Fetched from the LST's canonical source (`Marinade` API for `mSOL`, `Jito` Kobe API for `jitoSOL`); fallback constants are used if unreachable. A compromised reference-rate API could skew peg_deviation. |
 | Updater | **One** keypair (`ORACLE_AUTHORITY`) controls all writes. Anyone with that keypair can push arbitrary risk values (within clamped ranges). |
 | Program upgrade | Upgrade authority is the deployer's keypair. Program is not currently marked immutable. |
 | Consumer | Consumers are expected to check `timestamp` freshness (see staleness below). |
@@ -87,10 +87,10 @@ Disclosed proactively so consumers don't take on hidden risk:
 
 - **Single attester.** No multi-signer or threshold scheme yet. A compromised `ORACLE_AUTHORITY` keypair can push any values within clamped ranges.
 - **No secondary price cross-check.** If Pyth publishes a bad price, PegShield will propagate it.
-- **Marinade API dependency.** If Marinade's rate endpoint is unreachable, the bridge falls back to a hardcoded rate (`FALLBACK_MARINADE_RATE = 1.17`). This is flagged in the snapshot as `marinade_rate_source: "fallback-hardcoded"`, but consumers should watch for it.
+- **Reference-rate API dependency.** If the configured LST's canonical rate endpoint is unreachable, the bridge falls back to a hardcoded rate. This is flagged in the snapshot as `reference_rate_source: "fallback-hardcoded"`, but consumers should watch for it.
 - **Short calibration window.** The rolling OU window is bootstrapped; during the first few updates, `theta`/`sigma` estimates will be noisy.
 - **Devnet-only.** No mainnet deployment. Assume all funds and state are disposable.
-- **Single LST.** Only `mSOL` is monitored. Generalising to other LSTs requires per-asset calibration baselines, not just a new PDA.
+- **Limited live deployment scope.** The codebase now supports `mSOL-v2` and `jitoSOL-v1`, but only the `mSOL-v2` devnet PDA is live by default. Each new LST still needs its own PDA, updater run, and calibration review.
 - **Upgrade authority.** The program is upgrade-mutable. A future release will mark it immutable after a stable mainnet deployment.
 
 ## Roadmap to "Production-Grade"

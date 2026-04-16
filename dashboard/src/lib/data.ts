@@ -40,6 +40,9 @@ function normalizeOracleSnapshot(
 
   return {
     lst_id: merged.lst_id ?? staticSnapshot?.lst_id ?? 'mSOL-v2',
+    asset_symbol: merged.asset_symbol ?? staticSnapshot?.asset_symbol,
+    asset_display_name: merged.asset_display_name ?? staticSnapshot?.asset_display_name,
+    base_symbol: merged.base_symbol ?? staticSnapshot?.base_symbol ?? 'SOL',
     theta: merged.theta ?? staticSnapshot?.theta ?? 0,
     sigma: merged.sigma ?? staticSnapshot?.sigma ?? 0,
     regime_flag: merged.regime_flag ?? staticSnapshot?.regime_flag ?? 0,
@@ -52,6 +55,9 @@ function normalizeOracleSnapshot(
     is_stationary: merged.is_stationary ?? staticSnapshot?.is_stationary,
     spread_signal: merged.spread_signal ?? staticSnapshot?.spread_signal,
     peg_deviation_pct: merged.peg_deviation_pct ?? staticSnapshot?.peg_deviation_pct,
+    asset_price: merged.asset_price ?? staticSnapshot?.asset_price ?? merged.msol_price ?? staticSnapshot?.msol_price,
+    reference_rate: merged.reference_rate ?? staticSnapshot?.reference_rate,
+    reference_rate_source: merged.reference_rate_source ?? staticSnapshot?.reference_rate_source,
     timestamp: merged.timestamp ?? staticSnapshot?.timestamp ?? 0,
     updated_at_iso:
       merged.updated_at_iso ??
@@ -135,6 +141,9 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
         return null;
       }
       return {
+        asset_symbol: staticSnapshot.asset_symbol,
+        base_symbol: staticSnapshot.base_symbol,
+        asset_price: staticSnapshot.asset_price ?? staticSnapshot.msol_price,
         msol_price: staticSnapshot.msol_price,
         sol_price: staticSnapshot.sol_price,
         spread_pct: staticSnapshot.spread_pct,
@@ -149,6 +158,9 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
       return null;
     }
     return {
+      asset_symbol: staticSnapshot.asset_symbol,
+      base_symbol: staticSnapshot.base_symbol,
+      asset_price: staticSnapshot.asset_price ?? staticSnapshot.msol_price,
       msol_price: staticSnapshot.msol_price,
       sol_price: staticSnapshot.sol_price,
       spread_pct: staticSnapshot.spread_pct,

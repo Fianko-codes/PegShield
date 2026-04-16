@@ -1,7 +1,7 @@
 """Ornstein-Uhlenbeck parameter estimation helpers.
 
-The OU model is applied to *peg deviation* (market mSOL/SOL ratio divided by
-Marinade's canonical exchange rate, minus 1).  That series should be roughly
+The OU model is applied to *peg deviation* (market LST/SOL ratio divided by the
+protocol's canonical staking exchange rate, minus 1).  That series should be roughly
 stationary around zero when the peg is healthy and diverge below zero during
 real de-peg events.  The legacy USD-denominated spread is still supported for
 backward compatibility but is NOT the correct risk signal because it is
@@ -23,13 +23,14 @@ def compute_spread(df: pd.DataFrame) -> pd.Series:
     Preference order:
       1. ``peg_deviation`` — the correct de-peg signal (requires Marinade rate
          to have been threaded through the bridge layer).
-      2. Legacy USD premium ``(msol_usd - sol_usd) / sol_usd`` — only used when
+      2. Legacy USD premium ``(asset_usd - sol_usd) / sol_usd`` — only used when
          peg_deviation is unavailable; produces an inflated "spread" of ~30 %+
          driven by staking yield, not by peg stress.
     """
     if "peg_deviation" in df.columns and df["peg_deviation"].notna().any():
         return df["peg_deviation"].astype(float)
-    return (df["msol_usd_price"] - df["sol_usd_price"]) / df["sol_usd_price"]
+    asset_column = "asset_usd_price" if "asset_usd_price" in df.columns else "msol_usd_price"
+    return (df[asset_column] - df["sol_usd_price"]) / df["sol_usd_price"]
 
 
 def estimate_ou_params(spread: pd.Series, dt_seconds: int) -> dict[str, Any]:

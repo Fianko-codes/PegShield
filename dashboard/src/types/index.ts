@@ -19,18 +19,25 @@ export interface RiskState {
 export interface OracleHistoryPoint {
   timestamp: number;
   spread_pct: number;
+  asset_price?: number;
   msol_price: number;
   sol_price: number;
   peg_deviation?: number | null;
 }
 
 export interface OracleSnapshot extends RiskState {
+  asset_symbol?: string;
+  asset_display_name?: string;
+  base_symbol?: string;
   spread_pct: number;
   mu?: number;
   adf_pvalue?: number;
   is_stationary?: boolean;
   spread_signal?: string;
   peg_deviation_pct?: number | null;
+  asset_price?: number;
+  reference_rate?: number | null;
+  reference_rate_source?: string;
   updated_at_iso?: string;
   status?: string;
   msol_price: number;
@@ -106,6 +113,9 @@ export interface SimulationSnapshot {
 }
 
 export interface MarketSnapshot {
+  asset_symbol?: string;
+  base_symbol?: string;
+  asset_price?: number;
   msol_price: number;
   sol_price: number;
   spread_pct: number;
