@@ -18,7 +18,12 @@ for path in (str(CORE_ENGINE), str(SIMULATION)):
 from ou_model import estimate_ou_params
 from regime_detector import detect_regime
 from pipeline import build_risk_payload
-from stress_test import evaluate_oracle, generate_stress_scenario, load_historical_replay
+from stress_test import (
+    build_simulation_bundle,
+    evaluate_oracle,
+    generate_stress_scenario,
+    load_historical_replay,
+)
 
 
 class CoreEngineMicroTests(unittest.TestCase):
@@ -191,6 +196,55 @@ class CoreEngineMicroTests(unittest.TestCase):
 
         self.assertGreater(shortfall_static_final, 0.0)
         self.assertLessEqual(shortfall_dynamic_final, 0.5 * shortfall_static_final)
+
+    def test_simulation_bundle_contains_multiple_scenarios(self) -> None:
+        marinade_rate = 1.17
+        history = [
+            {
+                "timestamp": 1_700_000_000 + idx * 300,
+                "asset_usd_price": (85 + idx * 0.02)
+                * marinade_rate
+                * (1 + 0.0012 * np.sin(idx / 7)),
+                "msol_usd_price": (85 + idx * 0.02)
+                * marinade_rate
+                * (1 + 0.0012 * np.sin(idx / 7)),
+                "sol_usd_price": 85 + idx * 0.02,
+                "asset_confidence": 0.04,
+                "msol_confidence": 0.04,
+                "sol_confidence": 0.03,
+                "asset_sol_ratio": marinade_rate * (1 + 0.0012 * np.sin(idx / 7)),
+                "msol_sol_ratio": marinade_rate * (1 + 0.0012 * np.sin(idx / 7)),
+                "asset_sol_spread_pct": marinade_rate * (1 + 0.0012 * np.sin(idx / 7)) - 1.0,
+                "msol_sol_spread_pct": marinade_rate * (1 + 0.0012 * np.sin(idx / 7)) - 1.0,
+                "peg_deviation": 0.0012 * np.sin(idx / 7),
+            }
+            for idx in range(48)
+        ]
+        bridge_payload = {
+            "source": "test",
+            "asset_symbol": "mSOL",
+            "base_symbol": "SOL",
+            "asset_sol_reference_rate": marinade_rate,
+            "reference_rate_source": "test-fixture",
+            "history": history,
+        }
+
+        with tempfile.NamedTemporaryFile("w+", suffix=".json") as bridge_file:
+            bridge_file.write(json.dumps(bridge_payload))
+            bridge_file.flush()
+
+            bundle = build_simulation_bundle(
+                input_path=Path(bridge_file.name),
+                replay_path=SIMULATION / "data" / "steth_june_2022.json",
+            )
+
+        self.assertIn("scenarios", bundle)
+        self.assertGreaterEqual(len(bundle["scenarios"]), 4)
+        self.assertEqual(bundle["default_scenario_id"], "steth_june_2022")
+        self.assertEqual(bundle["scenarios"][0]["id"], "steth_june_2022")
+        self.assertIn("tagline", bundle["scenarios"][1])
+        self.assertIn("highlights", bundle["scenarios"][2])
+        self.assertIn("max_loss_prevented", bundle["scenarios"][0]["summary"])
 
 
 if __name__ == "__main__":

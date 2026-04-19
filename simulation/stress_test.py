@@ -35,6 +35,7 @@ OUTPUT_PNG = SIM_DIR / "charts" / "stress_scenario.png"
 OUTPUT_META = SIM_DIR / "charts" / "stress_scenario.meta.json"
 
 FALLBACK_MARINADE_RATE = 1.17
+DEFAULT_SCENARIO_BUNDLE_SIZE = 20
 
 
 def load_bridge_payload(path: Path) -> dict[str, Any]:
@@ -161,6 +162,73 @@ def generate_stress_scenario(
     )
 
 
+def generate_custom_scenario(
+    bridge_payload: dict[str, Any],
+    *,
+    periods: int,
+    seed: int,
+    peg_targets: list[float],
+    peg_lengths: list[int],
+    sol_multipliers: list[float],
+    sol_lengths: list[int],
+    peg_noise_scale: float = 0.5,
+    sol_noise_scale: float = 0.003,
+) -> pd.DataFrame:
+    history = pd.DataFrame(bridge_payload["history"])
+    spread = compute_spread(history)
+    reference_rate = _marinade_rate(bridge_payload)
+    step_seconds = infer_step_seconds(bridge_payload["history"])
+    baseline = derive_baseline(spread, dt_seconds=step_seconds)
+    base_mean = float(spread.mean())
+    base_std = float(spread.std(ddof=1))
+    base_sol = float(history["sol_usd_price"].iloc[-1])
+
+    if sum(peg_lengths) != periods or sum(sol_lengths) != periods:
+        raise ValueError("Scenario segment lengths must add up to periods")
+
+    rng = np.random.default_rng(seed)
+    timestamps = [
+        pd.to_datetime(int(history["timestamp"].iloc[-1]) + step_seconds * (idx + 1), unit="s", utc=True)
+        for idx in range(periods)
+    ]
+
+    def build_segment_path(start: float, targets: list[float], lengths: list[int], noise_scale: float) -> np.ndarray:
+        # Targets are approach points, not visited points: endpoint=False means each
+        # segment stops one step short of its target so the next segment picks it up
+        # as its own starting value. The final path[-1] = targets[-1] makes sure the
+        # very last target is actually reached at the end of the run.
+        values: list[np.ndarray] = []
+        current = start
+        for target, length in zip(targets, lengths, strict=True):
+            base = np.linspace(current, target, length, endpoint=False)
+            noise = rng.normal(0, max(base_std * noise_scale, 1e-6), length)
+            values.append(base + noise)
+            current = target
+        path = np.concatenate(values)
+        path[-1] = targets[-1]
+        return path
+
+    peg_path = build_segment_path(base_mean, peg_targets, peg_lengths, peg_noise_scale)
+    sol_path = build_segment_path(base_sol, [base_sol * multiplier for multiplier in sol_multipliers], sol_lengths, sol_noise_scale)
+
+    market_ratio_path = reference_rate * (1.0 + peg_path)
+    asset_price_path = sol_path * market_ratio_path
+    legacy_spread_pct = (asset_price_path - sol_path) / sol_path
+
+    return pd.DataFrame(
+        {
+            "timestamp": timestamps,
+            "sol_usd_price": sol_path,
+            "asset_usd_price": asset_price_path,
+            "msol_usd_price": asset_price_path,
+            "spread_pct": legacy_spread_pct,
+            "peg_deviation": peg_path,
+            "baseline_theta_avg": baseline["theta_avg"],
+            "baseline_sigma_avg": baseline["sigma_avg"],
+        }
+    )
+
+
 def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.DataFrame:
     history_df = pd.DataFrame(bridge_payload["history"]).copy()
     history_df["timestamp"] = pd.to_datetime(history_df["timestamp"], unit="s", utc=True)
@@ -245,6 +313,272 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     result["bad_debt_with_oracle"] = shortfall_dynamic
     result["bad_debt_no_oracle"] = shortfall_static
     return result
+
+
+def normalize_simulation_points(df: pd.DataFrame) -> list[dict[str, Any]]:
+    points: list[dict[str, Any]] = []
+    for row in df.to_dict(orient="records"):
+        timestamp = row["timestamp"]
+        if isinstance(timestamp, pd.Timestamp):
+            timestamp_value = timestamp.isoformat()
+        else:
+            timestamp_value = str(timestamp)
+
+        points.append(
+            {
+                "timestamp": timestamp_value,
+                "spread_pct": float(row["spread_pct"]),
+                "peg_deviation": (
+                    float(row["peg_deviation"]) if row.get("peg_deviation") is not None else None
+                ),
+                "theta": float(row["theta"]),
+                "sigma": float(row["sigma"]),
+                "z_score": float(row["z_score"]),
+                "regime_flag": int(row["regime_flag"]),
+                "ltv_with_oracle": float(row["ltv_with_oracle"]),
+                "ltv_no_oracle": float(row["ltv_no_oracle"]),
+                "shortfall_dynamic": float(row["shortfall_dynamic"]),
+                "shortfall_static": float(row["shortfall_static"]),
+                "bad_debt_with_oracle": float(row["bad_debt_with_oracle"]),
+                "bad_debt_no_oracle": float(row["bad_debt_no_oracle"]),
+            }
+        )
+    return points
+
+
+def summarize_simulation(points: list[dict[str, Any]]) -> dict[str, Any]:
+    final_row = points[-1] if points else None
+    static_series = [point["shortfall_static"] for point in points]
+    dynamic_series = [point["shortfall_dynamic"] for point in points]
+    loss_prevented_series = [
+        max(0.0, point["shortfall_static"] - point["shortfall_dynamic"]) for point in points
+    ]
+    critical_indexes = [idx for idx, point in enumerate(points) if point["regime_flag"] == 1]
+    peak_ltv_cut = max(
+        ((point["ltv_no_oracle"] - point["ltv_with_oracle"]) for point in points),
+        default=0.0,
+    )
+
+    return {
+        "row_count": len(points),
+        "max_spread_pct": max((point["spread_pct"] for point in points), default=0.0),
+        "min_spread_pct": min((point["spread_pct"] for point in points), default=0.0),
+        "max_peg_deviation": max(
+            (point["peg_deviation"] for point in points if point["peg_deviation"] is not None),
+            default=0.0,
+        ),
+        "min_peg_deviation": min(
+            (point["peg_deviation"] for point in points if point["peg_deviation"] is not None),
+            default=0.0,
+        ),
+        "max_z_score": max((point["z_score"] for point in points), default=0.0),
+        "critical_rows": len(critical_indexes),
+        "critical_start_index": critical_indexes[0] if critical_indexes else None,
+        "critical_end_index": critical_indexes[-1] if critical_indexes else None,
+        "critical_duration_ratio": (len(critical_indexes) / len(points)) if points else 0.0,
+        "peak_shortfall_static": max(static_series, default=0.0),
+        "peak_shortfall_dynamic": max(dynamic_series, default=0.0),
+        "final_dynamic_ltv": final_row["ltv_with_oracle"] if final_row else 0.0,
+        "final_static_ltv": final_row["ltv_no_oracle"] if final_row else 0.0,
+        "final_loss_prevented": loss_prevented_series[-1] if loss_prevented_series else 0.0,
+        "max_loss_prevented": max(loss_prevented_series, default=0.0),
+        "peak_ltv_cut": peak_ltv_cut,
+        "recovered_to_monitoring": bool(points and final_row and final_row["regime_flag"] == 0),
+    }
+
+
+def _scenario_payload(
+    *,
+    replay: dict[str, Any],
+    evaluated: pd.DataFrame,
+) -> dict[str, Any]:
+    points = normalize_simulation_points(evaluated)
+    return {
+        **replay,
+        "initial_window": min(DEFAULT_SCENARIO_BUNDLE_SIZE, len(points)),
+        "points": points,
+        "summary": summarize_simulation(points),
+    }
+
+
+def build_simulation_bundle(
+    input_path: Path = INPUT_PATH,
+    replay_path: Path = DEFAULT_REPLAY_FIXTURE,
+) -> dict[str, Any]:
+    historical_df, historical_bridge, historical_meta = load_historical_replay(replay_path)
+    historical_eval = evaluate_oracle(historical_df, historical_bridge)
+
+    live_bridge = load_bridge_payload(input_path)
+    asset_symbol = str(live_bridge.get("asset_symbol", "mSOL"))
+    base_symbol = str(live_bridge.get("base_symbol", "SOL"))
+    reference_ratio = _marinade_rate(live_bridge)
+
+    scenarios = [
+        _scenario_payload(
+            replay={
+                **historical_meta,
+                "tagline": "Real contagion, real forced deleveraging, real historical price path.",
+                "risk_focus": "Historical collateral impairment",
+                "highlights": [
+                    "Real stETH/ETH June 2022 event data instead of a hand-drawn stress curve.",
+                    "Shows how static 80% lending would have walked straight into default risk.",
+                    "PegShield tightens early enough to keep loss prevention visible in dollars.",
+                ],
+            },
+            evaluated=historical_eval,
+        ),
+    ]
+
+    synthetic_specs = [
+        {
+            "id": "liquidity_vacuum",
+            "title": f"{asset_symbol}/{base_symbol} liquidity vacuum",
+            "description": "Depth disappears in a few intervals, the peg gaps lower, and recovery never fully repairs the damage.",
+            "tagline": "Fast gap down, shallow rebound, toxic liquidation window.",
+            "risk_focus": "Liquidity vacuum",
+            "event_window_label": "Synthetic gap event",
+            "kind": "synthetic",
+            "seed": 314,
+            "periods": 42,
+            "peg_targets": [-0.004, -0.018, -0.056, -0.083, -0.068],
+            "peg_lengths": [8, 8, 8, 8, 10],
+            "sol_multipliers": [0.995, 0.965, 0.91, 0.865, 0.89],
+            "sol_lengths": [8, 8, 8, 8, 10],
+            "highlights": [
+                "Peg stress outruns liquidity before liquidators can recycle capital.",
+                "Oracle tightening matters most during the violent first leg, not after the rebound.",
+                "Peak prevented loss happens before the path has time to stabilize.",
+            ],
+        },
+        {
+            "id": "reflexive_bank_run",
+            "title": f"{asset_symbol}/{base_symbol} reflexive bank run",
+            "description": "The market sells in waves: first panic, brief relief, then a second leg lower as confidence breaks.",
+            "tagline": "Two-leg selloff with a fake recovery in the middle.",
+            "risk_focus": "Reflexive deleveraging",
+            "event_window_label": "Synthetic cascading liquidation event",
+            "kind": "synthetic",
+            "seed": 512,
+            "periods": 48,
+            "peg_targets": [-0.003, -0.022, -0.061, -0.043, -0.091, -0.072],
+            "peg_lengths": [8, 8, 8, 6, 8, 10],
+            "sol_multipliers": [0.998, 0.98, 0.93, 0.945, 0.86, 0.875],
+            "sol_lengths": [8, 8, 8, 6, 8, 10],
+            "highlights": [
+                "The mid-event bounce is exactly where static policy creates false confidence.",
+                "A second stress leg keeps the regime detector under pressure longer.",
+                "Time spent in CRITICAL matters here almost as much as the peak drawdown.",
+            ],
+        },
+        {
+            "id": "slow_grind_depeg",
+            "title": f"{asset_symbol}/{base_symbol} slow grind depeg",
+            "description": "No single violent move — the peg drifts a little deeper every interval for days until the cumulative dislocation is dangerous.",
+            "tagline": "Death by a thousand cuts; no single candle tells the story.",
+            "risk_focus": "Slow creeping impairment",
+            "event_window_label": "Synthetic slow-drift event",
+            "kind": "synthetic",
+            "seed": 202,
+            "periods": 50,
+            "peg_targets": [-0.003, -0.010, -0.020, -0.032, -0.044],
+            "peg_lengths": [10, 10, 10, 10, 10],
+            "sol_multipliers": [0.998, 0.990, 0.978, 0.965, 0.95],
+            "sol_lengths": [10, 10, 10, 10, 10],
+            "highlights": [
+                "Tests whether the oracle catches slow impairment before any single day looks alarming.",
+                "Static 80% policy looks fine on any given day, but bleeds loss continuously.",
+                "Critical regime trips late here — detection latency is the risk being measured.",
+            ],
+        },
+        {
+            "id": "false_positive_wick",
+            "title": f"{asset_symbol}/{base_symbol} single-wick false alarm",
+            "description": "An isolated wick prints an ugly -2% peg deviation for one interval, then snaps cleanly back to baseline.",
+            "tagline": "Was that a real depeg or a bad print? The oracle has to decide.",
+            "risk_focus": "Noise resilience",
+            "event_window_label": "Synthetic single-wick event",
+            "kind": "synthetic",
+            "seed": 777,
+            "periods": 36,
+            "peg_targets": [-0.003, -0.022, -0.004, -0.002],
+            "peg_lengths": [10, 2, 12, 12],
+            "sol_multipliers": [0.999, 0.985, 0.995, 0.998],
+            "sol_lengths": [10, 2, 12, 12],
+            "highlights": [
+                "A risk oracle that panics on every wick is useless for production lending.",
+                "This path probes false-positive behavior: does CRITICAL clear once the signal reverts?",
+                "Any sustained LTV cut after the wick recovers is a regime-detector failure.",
+            ],
+        },
+        {
+            "id": "flash_crash_repricing",
+            "title": f"{asset_symbol}/{base_symbol} flash crash repricing",
+            "description": "The peg breaks violently, prints an ugly wick, then mean-reverts faster than the worst-case scenarios.",
+            "tagline": "Short, brutal dislocation with a fast snapback.",
+            "risk_focus": "Flash crash / snapback",
+            "event_window_label": "Synthetic wick event",
+            "kind": "synthetic",
+            "seed": 911,
+            "periods": 40,
+            "peg_targets": [-0.004, -0.014, -0.048, -0.018, -0.006],
+            "peg_lengths": [8, 6, 6, 10, 10],
+            "sol_multipliers": [0.998, 0.982, 0.95, 0.975, 0.992],
+            "sol_lengths": [8, 6, 6, 10, 10],
+            "highlights": [
+                "A good risk oracle should survive false positives without staying punitive forever.",
+                "This path tests whether the system can tighten hard and still exit CRITICAL cleanly.",
+                "Fast mean reversion is visible in both theta stabilization and the loss-prevented curve.",
+            ],
+        },
+    ]
+
+    for spec in synthetic_specs:
+        scenario_df = generate_custom_scenario(
+            live_bridge,
+            periods=spec["periods"],
+            seed=spec["seed"],
+            peg_targets=spec["peg_targets"],
+            peg_lengths=spec["peg_lengths"],
+            sol_multipliers=spec["sol_multipliers"],
+            sol_lengths=spec["sol_lengths"],
+        )
+        evaluated = evaluate_oracle(scenario_df, live_bridge)
+        scenarios.append(
+            _scenario_payload(
+                replay={
+                    "id": spec["id"],
+                    "kind": spec["kind"],
+                    "title": spec["title"],
+                    "description": spec["description"],
+                    "asset_symbol": asset_symbol,
+                    "base_symbol": base_symbol,
+                    "reference_ratio": reference_ratio,
+                    "event_window_label": spec["event_window_label"],
+                    "warmup_points": len(live_bridge.get("history", [])),
+                    "scenario_points": len(scenario_df),
+                    "fixture_path": None,
+                    "sources": [],
+                    "tagline": spec["tagline"],
+                    "risk_focus": spec["risk_focus"],
+                    "highlights": spec["highlights"],
+                },
+                evaluated=evaluated,
+            ),
+        )
+
+    default_scenario = scenarios[0]
+    return {
+        "default_scenario_id": default_scenario["id"],
+        "scenarios": scenarios,
+        # Backward-compatible top-level fields for older consumers.
+        "points": default_scenario["points"],
+        "replay": {
+            key: value
+            for key, value in default_scenario.items()
+            if key not in {"points", "summary", "initial_window"}
+        },
+        "summary": default_scenario["summary"],
+    }
 
 
 def run_stress_test(

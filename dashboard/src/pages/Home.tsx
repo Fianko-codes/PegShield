@@ -1,18 +1,25 @@
 import { motion, type Variants } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  ChevronRight, 
-  Zap, 
-  AlertTriangle, 
-  BarChart3, 
-  Cpu, 
+import {
+  ArrowRight,
+  ChevronRight,
+  Zap,
+  AlertTriangle,
+  BarChart3,
+  Cpu,
   Layers,
   ShieldCheck,
   Workflow,
-  Waypoints
+  Waypoints,
+  Activity,
 } from 'lucide-react';
 import { cn } from '../types';
+import type { OracleSnapshot, RiskState } from '../types';
+
+interface HomeProps {
+  riskState: RiskState;
+  oracleSnapshot: OracleSnapshot | null;
+}
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -29,7 +36,17 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
 };
 
-export default function Home() {
+export default function Home({ riskState, oracleSnapshot }: HomeProps) {
+  const isCritical = riskState.regime_flag === 1;
+  const ltvPct = `${(riskState.suggested_ltv * 100).toFixed(1)}%`;
+  const thetaLabel = Number.isFinite(riskState.theta) ? riskState.theta.toFixed(3) : '—';
+  const pegDeviationBps =
+    oracleSnapshot?.peg_deviation_pct != null
+      ? `${(oracleSnapshot.peg_deviation_pct * 10000).toFixed(1)} bps`
+      : '—';
+  const assetLabel = oracleSnapshot?.asset_symbol ?? 'mSOL';
+  const baseLabel = oracleSnapshot?.base_symbol ?? 'SOL';
+
   return (
     <div className="py-12 md:py-20">
       {/* HERO SECTION */}
@@ -62,18 +79,69 @@ export default function Home() {
         </motion.p>
         
         <motion.div variants={itemVariants} className="flex flex-col justify-center gap-4 pt-8 md:flex-row md:gap-6 md:pt-10">
-          <Link 
-            to="/app" 
+          <Link
+            to="/app"
             className="bg-solana-green px-8 py-4 text-[10px] font-bold uppercase tracking-[0.14em] text-black shadow-brutal-green transition-all hover:shadow-glow-green md:px-10 md:py-5"
           >
             Launch System App
           </Link>
-          <Link 
-            to="/sim" 
+          <Link
+            to="/sim"
             className="flex items-center justify-center gap-2 border border-zinc-800 px-8 py-4 text-[10px] font-bold uppercase tracking-[0.14em] transition-all hover:bg-zinc-900 md:px-10 md:py-5"
           >
             Enter Simulation Bridge <ChevronRight size={14} />
           </Link>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="mx-auto mt-12 w-full max-w-4xl md:mt-16">
+          <div
+            className={cn(
+              'border bg-black/60 backdrop-blur-sm transition-colors',
+              isCritical ? 'border-emergency-red/60' : 'border-zinc-800',
+            )}
+          >
+            <div className="flex items-center justify-between border-b border-zinc-900 px-4 py-2">
+              <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+                <Activity
+                  size={10}
+                  className={cn(isCritical ? 'text-emergency-red' : 'text-solana-green', 'animate-pulse')}
+                />
+                Live oracle pulse
+              </div>
+              <div className="text-[9px] uppercase tracking-[0.12em] text-zinc-600">
+                {assetLabel} / {baseLabel} // devnet
+              </div>
+            </div>
+            <div className="grid grid-cols-2 divide-zinc-900 md:grid-cols-4 md:divide-x">
+              <div className="border-b border-zinc-900 p-4 md:border-b-0">
+                <div className="text-[9px] uppercase tracking-[0.1em] text-zinc-600">Regime</div>
+                <div
+                  className={cn(
+                    'mt-2 text-sm font-bold uppercase tracking-tight md:text-base',
+                    isCritical ? 'text-emergency-red' : 'text-solana-green',
+                  )}
+                >
+                  {isCritical ? 'Critical' : 'Normal'}
+                </div>
+              </div>
+              <div className="border-b border-zinc-900 p-4 md:border-b-0">
+                <div className="text-[9px] uppercase tracking-[0.1em] text-zinc-600">Suggested LTV</div>
+                <div className="mt-2 font-mono text-sm font-bold text-white md:text-base">{ltvPct}</div>
+              </div>
+              <div className="p-4">
+                <div className="text-[9px] uppercase tracking-[0.1em] text-zinc-600">Peg deviation</div>
+                <div className="mt-2 font-mono text-sm font-bold text-zinc-300 md:text-base">
+                  {pegDeviationBps}
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="text-[9px] uppercase tracking-[0.1em] text-zinc-600">θ mean-reversion</div>
+                <div className="mt-2 font-mono text-sm font-bold text-zinc-300 md:text-base">
+                  {thetaLabel}
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </motion.section>
 
@@ -127,14 +195,14 @@ export default function Home() {
           <div className="relative flex aspect-square items-center justify-center overflow-hidden border border-zinc-800 bg-black p-5 md:p-8">
              <div className="absolute inset-0 bg-gradient-to-tr from-emergency-red/5 to-transparent"></div>
              <div className="text-center space-y-4 z-10">
-                <div className="mb-6 text-[10px] font-mono text-zinc-600 md:mb-8">[ SIMULATION: DE-PEG EVENT NOV-2022 ]</div>
+                <div className="mb-6 text-[10px] font-mono text-zinc-600 md:mb-8">[ REPLAY: stETH / ETH DEPEG // JUN-2022 ]</div>
                 <div className="flex h-28 w-full items-end gap-1 px-2 md:h-40 md:px-10">
                    {[40, 45, 42, 38, 50, 60, 85, 95, 80, 70, 65, 55].map((h, i) => (
                      <div key={i} className={cn("flex-1", i >= 5 ? "bg-emergency-red" : "bg-zinc-800")} style={{ height: `${h}%` }}></div>
                    ))}
                 </div>
                 <div className="mono-data text-2xl font-bold uppercase tracking-tighter text-emergency-red md:text-3xl">DE-PEG DETECTED</div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500">Systemic Risk Confidence: 98.4%</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-500">Real historical fixture replayed in /sim</div>
              </div>
           </div>
           <div className="absolute -bottom-3 -right-3 flex h-24 w-24 items-center justify-center border border-emergency-red bg-background shadow-brutal-red animate-pulse md:-bottom-6 md:-right-6 md:h-40 md:w-40">
@@ -322,6 +390,52 @@ export default function Home() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* SCENARIO LAB TEASER */}
+      <section className="mb-24 md:mb-40">
+        <div className="mb-10 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
+          <div className="space-y-3">
+            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green">Scenario Lab</div>
+            <h2 className="text-3xl font-bold uppercase tracking-tight md:text-5xl">
+              Six Collapse Shapes, <br />
+              One Oracle Under Pressure
+            </h2>
+            <p className="max-w-2xl text-[11px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500 md:text-xs">
+              One replay is not enough. The lab runs PegShield against a real historical depeg plus five
+              synthetic black-swan shapes so you can see how it behaves across regimes — including the
+              noise cases, where a good oracle should <span className="text-solana-green">not</span> panic.
+            </p>
+          </div>
+          <Link
+            to="/sim"
+            className="flex shrink-0 items-center gap-2 border border-solana-green px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-solana-green transition-all hover:bg-solana-green hover:text-black"
+          >
+            Open Scenario Lab <ArrowRight size={12} />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-6">
+          {[
+            { label: 'stETH Jun-2022', sub: 'Real contagion' },
+            { label: 'Liquidity Vacuum', sub: 'Fast gap down' },
+            { label: 'Bank Run', sub: 'Two-leg selloff' },
+            { label: 'Slow Grind', sub: 'Creeping drift' },
+            { label: 'False Wick', sub: 'Noise resilience' },
+            { label: 'Flash Crash', sub: 'Fast snapback' },
+          ].map((item, index) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.05 }}
+              className="border border-zinc-900 bg-zinc-950 p-4"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-white">{item.label}</div>
+              <div className="mt-2 text-[9px] uppercase tracking-[0.08em] text-zinc-500">{item.sub}</div>
+            </motion.div>
+          ))}
         </div>
       </section>
 

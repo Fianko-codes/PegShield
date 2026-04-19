@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import RootLayout from './layouts/RootLayout';
+import ScrollToTop from './components/ScrollToTop';
 import type { OracleSnapshot, RiskState } from './types';
 import { fetchOracleSnapshot, getFallbackRiskState } from './lib/data';
 
@@ -58,10 +59,14 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route element={<RootLayout riskState={riskState} />}>
-            <Route path="/" element={<Home />} />
+            <Route
+              path="/"
+              element={<Home riskState={riskState} oracleSnapshot={oracleSnapshot} />}
+            />
             <Route
               path="/app"
               element={<AppPage globalState={riskState} oracleSnapshot={oracleSnapshot} />}

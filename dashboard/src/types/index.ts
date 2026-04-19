@@ -86,30 +86,53 @@ export interface SimulationReplay {
   kind?: string;
   title?: string;
   description?: string;
+  tagline?: string;
+  risk_focus?: string;
+  highlights?: string[];
   asset_symbol?: string;
   base_symbol?: string;
   reference_ratio?: number;
   event_window_label?: string;
   warmup_points?: number;
   scenario_points?: number;
+  initial_window?: number;
   fixture_path?: string | null;
   sources?: SimulationReplaySource[];
 }
 
+export interface SimulationSummary {
+  row_count: number;
+  max_spread_pct: number;
+  min_spread_pct?: number;
+  max_peg_deviation?: number;
+  min_peg_deviation?: number;
+  max_z_score: number;
+  critical_rows: number;
+  critical_start_index?: number | null;
+  critical_end_index?: number | null;
+  critical_duration_ratio?: number;
+  peak_shortfall_static?: number;
+  peak_shortfall_dynamic?: number;
+  final_dynamic_ltv: number;
+  final_static_ltv: number;
+  final_loss_prevented?: number;
+  max_loss_prevented?: number;
+  peak_ltv_cut?: number;
+  recovered_to_monitoring?: boolean;
+}
+
+export interface SimulationScenario extends SimulationReplay {
+  id: string;
+  points: SimulationPoint[];
+  summary: SimulationSummary;
+}
+
 export interface SimulationSnapshot {
+  default_scenario_id?: string;
+  scenarios?: SimulationScenario[];
   points: SimulationPoint[];
   replay?: SimulationReplay;
-  summary: {
-    row_count: number;
-    max_spread_pct: number;
-    min_spread_pct?: number;
-    max_peg_deviation?: number;
-    min_peg_deviation?: number;
-    max_z_score: number;
-    critical_rows: number;
-    final_dynamic_ltv: number;
-    final_static_ltv: number;
-  };
+  summary: SimulationSummary;
 }
 
 export interface MarketSnapshot {
