@@ -38,12 +38,22 @@ const itemVariants: Variants = {
 
 export default function Home({ riskState, oracleSnapshot }: HomeProps) {
   const isCritical = riskState.regime_flag === 1;
-  const ltvPct = `${(riskState.suggested_ltv * 100).toFixed(1)}%`;
-  const thetaLabel = Number.isFinite(riskState.theta) ? riskState.theta.toFixed(3) : '—';
+  const hasSnapshot = oracleSnapshot != null;
+  const ltvPct = hasSnapshot ? `${(riskState.suggested_ltv * 100).toFixed(1)}%` : '—';
+  const thetaLabel = hasSnapshot && Number.isFinite(riskState.theta) ? riskState.theta.toFixed(3) : '—';
+
+  const latestHistoryDeviation = (() => {
+    const history = oracleSnapshot?.history;
+    if (!history || history.length === 0) {
+      return null;
+    }
+    const last = history[history.length - 1];
+    return last?.peg_deviation ?? null;
+  })();
+  const rawPegDeviation = oracleSnapshot?.peg_deviation_pct ?? latestHistoryDeviation;
   const pegDeviationBps =
-    oracleSnapshot?.peg_deviation_pct != null
-      ? `${(oracleSnapshot.peg_deviation_pct * 10000).toFixed(1)} bps`
-      : '—';
+    rawPegDeviation != null ? `${(rawPegDeviation * 10000).toFixed(1)} bps` : '—';
+
   const assetLabel = oracleSnapshot?.asset_symbol ?? 'mSOL';
   const baseLabel = oracleSnapshot?.base_symbol ?? 'SOL';
 
@@ -118,10 +128,10 @@ export default function Home({ riskState, oracleSnapshot }: HomeProps) {
                 <div
                   className={cn(
                     'mt-2 text-sm font-bold uppercase tracking-tight md:text-base',
-                    isCritical ? 'text-emergency-red' : 'text-solana-green',
+                    !hasSnapshot ? 'text-zinc-600' : isCritical ? 'text-emergency-red' : 'text-solana-green',
                   )}
                 >
-                  {isCritical ? 'Critical' : 'Normal'}
+                  {!hasSnapshot ? '—' : isCritical ? 'Critical' : 'Normal'}
                 </div>
               </div>
               <div className="border-b border-zinc-900 p-4 md:border-b-0">

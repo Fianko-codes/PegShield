@@ -197,6 +197,21 @@ The consumer demo prints the max borrow allowed under a fixed-80% policy vs. the
 
 Writes `simulation/charts/stress_scenario.{csv,png}` plus `stress_scenario.meta.json` — by default a replay of the June 2022 `stETH/ETH` depeg so judges can see how PegShield would have reacted to a real event. Each row includes `peg_deviation`, `theta`, `sigma`, `z_score`, `regime_flag`, and bad-debt estimates under both policies. Pass `--mode synthetic` to fall back to the old generated path.
 
+### Scenario Lab
+
+The dashboard's `/sim` page bundles six replays so the oracle is stressed across regime shapes, not just one historical path. Refreshed by [`dashboard/scripts/sync_demo_data.py`](./dashboard/scripts/sync_demo_data.py) (and by the GitHub Actions updater) into `dashboard/public/data/stress_scenario.json`:
+
+| Scenario | Kind | What it stresses |
+|---|---|---|
+| `steth_june_2022` | Historical | Real June-2022 stETH/ETH depeg — the baseline credibility fixture |
+| `liquidity_vacuum` | Synthetic | Fast gap-down with a shallow rebound — depth disappearing faster than liquidators recycle |
+| `reflexive_bank_run` | Synthetic | Two-leg selloff with a mid-event bounce — false-confidence trap for static policy |
+| `slow_grind_depeg` | Synthetic | Gradual multi-day drift with no violent candle — tests detection latency on creeping impairment |
+| `false_positive_wick` | Synthetic | Single 2-interval wick that cleanly recovers — probes whether CRITICAL exits when it should |
+| `flash_crash_repricing` | Synthetic | Short brutal dislocation with a fast snapback — tests tighten-then-release behaviour |
+
+Add new scenarios by appending a spec to `synthetic_specs` in [`simulation/stress_test.py`](./simulation/stress_test.py) (segment lengths must sum to `periods`).
+
 ## Status
 
 **Working today:**
@@ -206,13 +221,15 @@ Writes `simulation/charts/stress_scenario.{csv,png}` plus `stress_scenario.meta.
 - Deployed Anchor program with fixed-point `i64`/`u16` layout
 - On-chain PDA updates, reads, and rate-limiting
 - Authority-gated `close_oracle` instruction (layout-migration safe)
-- Stress replay + live dashboard
+- Six-scenario stress lab (1 historical + 5 synthetic shapes) served by `/sim`
+- Live dashboard with landing-page oracle pulse, system metrics, and scenario lab
+- `@pegshield/sdk` consumer client with staleness / regime guards + reference example in `examples/lending-borrow-demo`
 
 **Not production-ready:**
 - Single-attester trust model (decentralized updater set is roadmap)
 - Devnet only; no mainnet deployment
 - Long-horizon calibration baselines are bootstrapped, not historically trained
-- No protocol-side consumer integration yet (SDK is the next deliverable)
+- No protocol-side consumer integration in production (SDK + example consumer are available for integrators)
 - No operational alerting
 
 ## Safety Before Publishing
