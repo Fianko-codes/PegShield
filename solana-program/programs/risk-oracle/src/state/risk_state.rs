@@ -1,0 +1,61 @@
+use anchor_lang::prelude::*;
+use crate::constants::*;
+
+#[account]
+pub struct RiskState {
+    /// ASCII ticker of the LST (e.g. "mSOL"), max 16 bytes.
+    pub lst_id: String,
+
+    /// Mean-reversion speed θ from the OU model, stored as θ × SCALE.
+    pub theta_scaled: i64,
+
+    /// Annualised volatility σ from the OU model, stored as σ × SCALE.
+    pub sigma_scaled: i64,
+
+    /// 0 = NORMAL | 1 = CRITICAL (spread non-stationary and extreme z-score).
+    pub regime_flag: u8,
+
+    /// Suggested loan-to-value ratio in basis points (8000 = 80%).
+    pub suggested_ltv_bps: u16,
+
+    /// Z-score of the current spread vs. the rolling window mean, stored as z × SCALE.
+    pub z_score_scaled: i64,
+
+    /// Slot at which the last update was written.
+    pub slot: u64,
+
+    /// Unix timestamp (seconds) of the last update. Zero before first update.
+    pub timestamp: i64,
+
+    /// The public key allowed to call update_risk_state (single-attester mode).
+    pub authority: Pubkey,
+
+    /// Public key of the wallet that submitted the most recent update.
+    pub last_updater: Pubkey,
+
+    /// Update mode: 0 = single-attester, 1 = multi-attester.
+    pub update_mode: u8,
+
+    /// Associated attester registry (only used in multi-attester mode).
+    pub attester_registry: Pubkey,
+}
+
+impl RiskState {
+    pub const SPACE: usize = 8  // Anchor discriminator
+        + 4 + MAX_LST_ID_LEN    // String prefix (4) + data
+        + 8                      // theta_scaled i64
+        + 8                      // sigma_scaled i64
+        + 1                      // regime_flag u8
+        + 2                      // suggested_ltv_bps u16
+        + 8                      // z_score_scaled i64
+        + 8                      // slot u64
+        + 8                      // timestamp i64
+        + 32                     // authority Pubkey
+        + 32                     // last_updater Pubkey
+        + 1                      // update_mode u8
+        + 32;                    // attester_registry Pubkey
+
+    pub fn is_multi_attester(&self) -> bool {
+        self.update_mode == 1
+    }
+}

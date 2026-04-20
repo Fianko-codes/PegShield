@@ -8,11 +8,78 @@
   },
   "instructions": [
     {
+      "name": "cancel_expired",
+      "docs": [
+        "Cancel an expired pending update."
+      ],
+      "discriminator": [
+        248,
+        138,
+        112,
+        93,
+        177,
+        89,
+        249,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "pending_update",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  101,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "refund_recipient",
+          "docs": [
+            "The original proposer gets the rent back."
+          ],
+          "writable": true
+        },
+        {
+          "name": "caller",
+          "docs": [
+            "Anyone can call this to clean up expired updates."
+          ],
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "close_oracle",
       "docs": [
-        "Close the risk-state PDA and refund rent to the authority.",
-        "Intended for dev/test re-initialisation flows when the struct layout",
-        "changes; authority-only gate prevents griefing."
+        "Close a risk state PDA and refund rent."
       ],
       "discriminator": [
         74,
@@ -59,7 +126,201 @@
       "args": []
     },
     {
+      "name": "confirm_update",
+      "docs": [
+        "Confirm a pending update (multi-attester mode)."
+      ],
+      "discriminator": [
+        83,
+        2,
+        109,
+        147,
+        113,
+        152,
+        109,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "risk_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  105,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pending_update",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  101,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "confirmer",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "enable_multi_attester",
+      "docs": [
+        "Enable multi-attester mode for an existing oracle."
+      ],
+      "discriminator": [
+        107,
+        85,
+        82,
+        14,
+        145,
+        85,
+        135,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "risk_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  105,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "risk_state"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "initialize_oracle",
+      "docs": [
+        "Initialize a new risk state PDA for an LST (single-attester mode)."
+      ],
       "discriminator": [
         144,
         223,
@@ -114,7 +375,332 @@
       ]
     },
     {
+      "name": "initialize_registry",
+      "docs": [
+        "Initialize the attester registry (admin only)."
+      ],
+      "discriminator": [
+        189,
+        181,
+        20,
+        17,
+        174,
+        57,
+        249,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slash_destination",
+          "docs": [
+            "Where slashed funds will go."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "threshold",
+          "type": "u8"
+        },
+        {
+          "name": "min_bond",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initiate_unregister",
+      "docs": [
+        "Initiate unregistration (starts cooldown period)."
+      ],
+      "discriminator": [
+        14,
+        238,
+        143,
+        55,
+        44,
+        129,
+        157,
+        167
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "attester",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "propose_update",
+      "docs": [
+        "Propose a risk update (multi-attester mode)."
+      ],
+      "discriminator": [
+        161,
+        223,
+        86,
+        204,
+        80,
+        199,
+        198,
+        207
+      ],
+      "accounts": [
+        {
+          "name": "risk_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  105,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pending_update",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  101,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        },
+        {
+          "name": "theta_scaled",
+          "type": "i64"
+        },
+        {
+          "name": "sigma_scaled",
+          "type": "i64"
+        },
+        {
+          "name": "regime_flag",
+          "type": "u8"
+        },
+        {
+          "name": "suggested_ltv_bps",
+          "type": "u16"
+        },
+        {
+          "name": "z_score_scaled",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "register_attester",
+      "docs": [
+        "Register as an attester by staking a bond."
+      ],
+      "discriminator": [
+        111,
+        233,
+        124,
+        30,
+        66,
+        228,
+        125,
+        85
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "attester",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "bond_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "update_risk_state",
+      "docs": [
+        "Update risk state (single-attester mode only)."
+      ],
       "discriminator": [
         71,
         227,
@@ -157,14 +743,94 @@
           "name": "params",
           "type": {
             "defined": {
-              "name": "RiskParams"
+              "name": "UpdateRiskParams"
             }
           }
         }
       ]
+    },
+    {
+      "name": "withdraw_bond",
+      "docs": [
+        "Withdraw bond after cooldown period."
+      ],
+      "discriminator": [
+        222,
+        199,
+        141,
+        31,
+        188,
+        93,
+        155,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "attester",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "AttesterRegistry",
+      "discriminator": [
+        206,
+        1,
+        109,
+        238,
+        106,
+        23,
+        70,
+        98
+      ]
+    },
+    {
+      "name": "PendingUpdate",
+      "discriminator": [
+        24,
+        212,
+        61,
+        73,
+        130,
+        111,
+        15,
+        112
+      ]
+    },
     {
       "name": "RiskState",
       "discriminator": [
@@ -204,50 +870,336 @@
       "code": 6004,
       "name": "UpdateTooFrequent",
       "msg": "Update submitted too frequently; wait at least 30 seconds"
+    },
+    {
+      "code": 6005,
+      "name": "RegistryFull",
+      "msg": "Attester registry is full"
+    },
+    {
+      "code": 6006,
+      "name": "AlreadyRegistered",
+      "msg": "Attester is already registered"
+    },
+    {
+      "code": 6007,
+      "name": "NotRegistered",
+      "msg": "Attester is not registered"
+    },
+    {
+      "code": 6008,
+      "name": "InsufficientBond",
+      "msg": "Bond amount is below minimum required"
+    },
+    {
+      "code": 6009,
+      "name": "CooldownActive",
+      "msg": "Attester is in cooldown period, cannot withdraw yet"
+    },
+    {
+      "code": 6010,
+      "name": "NotInCooldown",
+      "msg": "Attester has not initiated unregistration"
+    },
+    {
+      "code": 6011,
+      "name": "NoPendingUpdate",
+      "msg": "No pending update exists for this LST"
+    },
+    {
+      "code": 6012,
+      "name": "PendingUpdateExpired",
+      "msg": "Pending update has expired"
+    },
+    {
+      "code": 6013,
+      "name": "AlreadyConfirmed",
+      "msg": "Attester has already confirmed this update"
+    },
+    {
+      "code": 6014,
+      "name": "ThresholdNotReached",
+      "msg": "Threshold not yet reached for finalization"
+    },
+    {
+      "code": 6015,
+      "name": "PendingUpdateNotExpired",
+      "msg": "Pending update has not expired yet"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidThreshold",
+      "msg": "Invalid threshold configuration"
+    },
+    {
+      "code": 6017,
+      "name": "DisputeWindowClosed",
+      "msg": "Cannot dispute an update from more than 1 hour ago"
+    },
+    {
+      "code": 6018,
+      "name": "DisputeAlreadyResolved",
+      "msg": "Dispute has already been resolved"
+    },
+    {
+      "code": 6019,
+      "name": "MultiAttesterModeActive",
+      "msg": "Oracle is in multi-attester mode, use propose_update instead"
+    },
+    {
+      "code": 6020,
+      "name": "SingleAttesterMode",
+      "msg": "Oracle is in single-attester mode"
     }
   ],
   "types": [
     {
-      "name": "RiskParams",
-      "docs": [
-        "Parameters submitted in every update call."
-      ],
+      "name": "AttesterEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pubkey",
+            "docs": [
+              "Attester's public key (Pubkey::default() if slot is empty)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bond",
+            "docs": [
+              "Amount of SOL bonded."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "registered_at",
+            "docs": [
+              "Timestamp when attester registered."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "unregister_initiated_at",
+            "docs": [
+              "Timestamp when unregistration was initiated (0 if not initiated)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "updates_submitted",
+            "docs": [
+              "Number of successful updates submitted."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "disputes_lost",
+            "docs": [
+              "Number of disputes lost (slashed)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "is_active",
+            "docs": [
+              "Whether this attester is active."
+            ],
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AttesterRegistry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "docs": [
+              "Admin who can manage the registry."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "attester_count",
+            "docs": [
+              "Number of active attesters."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "threshold",
+            "docs": [
+              "Minimum confirmations required to finalize an update (e.g., 2 for 2-of-3)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "total_bonded",
+            "docs": [
+              "Total SOL bonded across all attesters."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "min_bond",
+            "docs": [
+              "Minimum bond required to register."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "slash_destination",
+            "docs": [
+              "Destination for slashed funds (protocol treasury)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "attesters",
+            "docs": [
+              "Array of attester entries (fixed size for simpler account management)."
+            ],
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "AttesterEntry"
+                  }
+                },
+                5
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PendingUpdate",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "lst_id",
+            "docs": [
+              "The LST this update is for."
+            ],
             "type": "string"
+          },
+          {
+            "name": "proposer",
+            "docs": [
+              "The attester who proposed this update."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "proposed_at",
+            "docs": [
+              "Timestamp when the update was proposed."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "proposed_slot",
+            "docs": [
+              "Slot when the update was proposed."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "expires_at",
+            "docs": [
+              "Timestamp when the update expires."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "confirmation_count",
+            "docs": [
+              "Number of confirmations received."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "confirmations_bitmap",
+            "docs": [
+              "Bitmap of which attesters have confirmed (by index in registry)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "is_finalized",
+            "docs": [
+              "Whether this update has been finalized."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "params",
+            "docs": [
+              "Proposed risk parameters."
+            ],
+            "type": {
+              "defined": {
+                "name": "RiskParams"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RiskParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_id_hash",
+            "docs": [
+              "LST identifier (must match the PendingUpdate's lst_id)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "theta_scaled",
             "docs": [
-              "θ × SCALE  (non-negative)"
+              "θ × SCALE (non-negative)."
             ],
             "type": "i64"
           },
           {
             "name": "sigma_scaled",
             "docs": [
-              "σ × SCALE  (positive)"
+              "σ × SCALE (positive)."
             ],
             "type": "i64"
           },
           {
             "name": "regime_flag",
+            "docs": [
+              "0 = NORMAL, 1 = CRITICAL."
+            ],
             "type": "u8"
           },
           {
             "name": "suggested_ltv_bps",
             "docs": [
-              "LTV in basis points, 0–10_000"
+              "LTV in basis points, 0–10,000."
             ],
             "type": "u16"
           },
           {
             "name": "z_score_scaled",
             "docs": [
-              "z × SCALE  (signed)"
+              "z × SCALE (signed)."
             ],
             "type": "i64"
           }
@@ -269,39 +1221,35 @@
           {
             "name": "theta_scaled",
             "docs": [
-              "Mean-reversion speed θ from the OU model, stored as θ × SCALE.",
-              "Always non-negative; zero only before the first real update."
+              "Mean-reversion speed θ from the OU model, stored as θ × SCALE."
             ],
             "type": "i64"
           },
           {
             "name": "sigma_scaled",
             "docs": [
-              "Annualised volatility σ from the OU model, stored as σ × SCALE.",
-              "Always positive after the first real update."
+              "Annualised volatility σ from the OU model, stored as σ × SCALE."
             ],
             "type": "i64"
           },
           {
             "name": "regime_flag",
             "docs": [
-              "0 = NORMAL  |  1 = CRITICAL (spread non-stationary and extreme z-score)."
+              "0 = NORMAL | 1 = CRITICAL (spread non-stationary and extreme z-score)."
             ],
             "type": "u8"
           },
           {
             "name": "suggested_ltv_bps",
             "docs": [
-              "Suggested loan-to-value ratio in basis points.",
-              "8000 = 80 %.  Clamped to [MIN_LTV_BPS, MAX_LTV_BPS] by the engine."
+              "Suggested loan-to-value ratio in basis points (8000 = 80%)."
             ],
             "type": "u16"
           },
           {
             "name": "z_score_scaled",
             "docs": [
-              "Z-score of the current spread vs. the rolling window mean, stored as",
-              "z × SCALE.  Signed; negative means spread below the historical average."
+              "Z-score of the current spread vs. the rolling window mean, stored as z × SCALE."
             ],
             "type": "i64"
           },
@@ -315,14 +1263,14 @@
           {
             "name": "timestamp",
             "docs": [
-              "Unix timestamp (seconds) of the last update.  Zero before first update."
+              "Unix timestamp (seconds) of the last update. Zero before first update."
             ],
             "type": "i64"
           },
           {
             "name": "authority",
             "docs": [
-              "The only public key allowed to call update_risk_state."
+              "The public key allowed to call update_risk_state (single-attester mode)."
             ],
             "type": "pubkey"
           },
@@ -332,6 +1280,52 @@
               "Public key of the wallet that submitted the most recent update."
             ],
             "type": "pubkey"
+          },
+          {
+            "name": "update_mode",
+            "docs": [
+              "Update mode: 0 = single-attester, 1 = multi-attester."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "attester_registry",
+            "docs": [
+              "Associated attester registry (only used in multi-attester mode)."
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateRiskParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lst_id",
+            "type": "string"
+          },
+          {
+            "name": "theta_scaled",
+            "type": "i64"
+          },
+          {
+            "name": "sigma_scaled",
+            "type": "i64"
+          },
+          {
+            "name": "regime_flag",
+            "type": "u8"
+          },
+          {
+            "name": "suggested_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "z_score_scaled",
+            "type": "i64"
           }
         ]
       }
