@@ -489,6 +489,7 @@ function AppPageContent({
   const dataSource = oracleSnapshot?.source;
   const isLiveData = dataSource === 'LIVE_SOLANA_PDA';
   const hasData = oracleSnapshot != null && globalState.timestamp > 0;
+  const hasSupplementaryData = oracleSnapshot?.adf_pvalue != null || oracleSnapshot?.mu != null;
 
   return (
     <div className="py-6 md:py-10">
@@ -502,9 +503,13 @@ function AppPageContent({
         {!hasData ? (
           <>NO DATA - API may be down or returning errors. Check browser console.</>
         ) : isLiveData ? (
-          <>LIVE DATA from Solana Devnet PDA | Timestamp: {new Date(globalState.timestamp * 1000).toISOString()}</>
+          <>
+            LIVE: theta, sigma, z, LTV from Solana PDA |
+            {hasSupplementaryData ? ' ADF, mu from snapshot' : ' (no snapshot for ADF/mu)'} |
+            Updated: {new Date(globalState.timestamp * 1000).toLocaleTimeString()}
+          </>
         ) : (
-          <>DATA SOURCE: {dataSource ?? 'unknown'} | Timestamp: {globalState.timestamp ? new Date(globalState.timestamp * 1000).toISOString() : 'N/A'}</>
+          <>DATA SOURCE: {dataSource ?? 'unknown'}</>
         )}
       </div>
 

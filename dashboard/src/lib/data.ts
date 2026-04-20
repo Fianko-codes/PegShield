@@ -2,14 +2,13 @@ import type { MarketSnapshot, OracleSnapshot, RiskState, SimulationSnapshot } fr
 import { DEFAULT_LST_ID } from './assets';
 
 /**
- * LIVE-ONLY DATA FETCHING
+ * Data fetching with live API as primary source, static snapshot for supplementary fields.
  *
- * This module fetches data ONLY from live APIs - no static fallbacks.
- * If the API fails, null is returned and the UI shows an error state.
+ * On-chain PDA stores: theta, sigma, z_score, suggested_ltv, regime_flag, timestamp
+ * Static snapshot adds: adf_pvalue, mu, peg_deviation_pct, history, baseline, etc.
  */
 
 export function getFallbackRiskState(lstId = DEFAULT_LST_ID): RiskState {
-  // Return zeroed state - UI will show "waiting for data"
   return {
     lst_id: lstId,
     theta: 0,
@@ -22,8 +21,32 @@ export function getFallbackRiskState(lstId = DEFAULT_LST_ID): RiskState {
   };
 }
 
+async function fetchStaticSnapshot(lstId: string): Promise<Partial<OracleSnapshot> | null> {
+  try {
+    const paths = [
+      `/data/oracle_state.${lstId}.json`,
+      '/data/oracle_state.json',
+    ];
+    for (const path of paths) {
+      const response = await fetch(path, { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.lst_id === lstId || path === '/data/oracle_state.json') {
+          return data;
+        }
+      }
+    }
+  } catch {
+    // Static snapshot not available
+  }
+  return null;
+}
+
 export async function fetchOracleSnapshot(lstId = DEFAULT_LST_ID): Promise<OracleSnapshot | null> {
-  // ONLY fetch from live API - no static fallback
+  // Fetch supplementary data from static snapshot (for fields not on-chain)
+  const staticData = await fetchStaticSnapshot(lstId);
+
+  // Primary source: Live on-chain PDA
   try {
     const liveResponse = await fetch(`/api/oracle-state?lst_id=${encodeURIComponent(lstId)}`, {
       cache: 'no-store',
@@ -31,59 +54,69 @@ export async function fetchOracleSnapshot(lstId = DEFAULT_LST_ID): Promise<Oracl
     });
 
     if (!liveResponse.ok) {
-      console.error(`[fetchOracleSnapshot] API error: ${liveResponse.status} ${liveResponse.statusText}`);
+      console.error(`[fetchOracleSnapshot] API error: ${liveResponse.status}`);
       return null;
     }
 
-    const liveData = await liveResponse.json();
-    console.log('[fetchOracleSnapshot] Live API response:', {
-      timestamp: liveData.timestamp,
-      theta: liveData.theta,
-      suggested_ltv: liveData.suggested_ltv,
-      source: 'LIVE_API'
+    const live = await liveResponse.json();
+    console.log('[fetchOracleSnapshot] Live PDA data:', {
+      timestamp: live.timestamp,
+      theta: live.theta,
+      source: 'LIVE_SOLANA_PDA'
     });
 
-    // Transform API response to OracleSnapshot format
+    // Merge: live on-chain data + supplementary static data
     return {
-      lst_id: liveData.lst_id ?? lstId,
-      asset_symbol: liveData.asset_symbol,
-      asset_display_name: liveData.asset_display_name,
-      base_symbol: liveData.base_symbol ?? 'SOL',
-      theta: liveData.theta ?? 0,
-      sigma: liveData.sigma ?? 0,
-      regime_flag: liveData.regime_flag ?? 0,
-      suggested_ltv: liveData.suggested_ltv ?? 0,
-      z_score: liveData.z_score ?? 0,
-      spread: liveData.spread_pct ?? 0,
-      spread_pct: liveData.spread_pct ?? 0,
-      mu: liveData.mu,
-      adf_pvalue: liveData.adf_pvalue,
-      is_stationary: liveData.is_stationary,
-      spread_signal: liveData.spread_signal,
-      peg_deviation_pct: liveData.peg_deviation_pct,
-      asset_price: liveData.asset_price ?? liveData.msol_price,
-      reference_rate: liveData.reference_rate,
-      reference_rate_source: liveData.reference_rate_source,
-      data_timestamp: liveData.data_timestamp,
-      timestamp: liveData.timestamp ?? 0,
-      updated_at_iso: liveData.timestamp
-        ? new Date(liveData.timestamp * 1000).toISOString()
-        : undefined,
-      status: liveData.status ?? 'UNKNOWN',
-      msol_price: liveData.msol_price ?? 0,
-      sol_price: liveData.sol_price ?? 0,
+      // Core risk params from on-chain PDA
+      lst_id: live.lst_id ?? lstId,
+      theta: live.theta ?? 0,
+      sigma: live.sigma ?? 0,
+      regime_flag: live.regime_flag ?? 0,
+      suggested_ltv: live.suggested_ltv ?? 0,
+      z_score: live.z_score ?? 0,
+      timestamp: live.timestamp ?? 0,
+
+      // Supplementary fields from static snapshot (NOT on-chain)
+      mu: staticData?.mu,
+      adf_pvalue: staticData?.adf_pvalue,
+      is_stationary: staticData?.is_stationary,
+      peg_deviation_pct: staticData?.peg_deviation_pct,
+      spread_signal: staticData?.spread_signal,
+      history: staticData?.history ?? [],
+      baseline: staticData?.baseline,
+
+      // Asset metadata
+      asset_symbol: staticData?.asset_symbol ?? live.asset_symbol,
+      asset_display_name: staticData?.asset_display_name,
+      base_symbol: staticData?.base_symbol ?? 'SOL',
+
+      // Price data from static (market API is separate)
+      asset_price: staticData?.asset_price ?? staticData?.msol_price,
+      msol_price: staticData?.msol_price ?? 0,
+      sol_price: staticData?.sol_price ?? 0,
+      spread: staticData?.spread_pct ?? 0,
+      spread_pct: staticData?.spread_pct ?? 0,
+      reference_rate: staticData?.reference_rate,
+      reference_rate_source: staticData?.reference_rate_source,
+
+      // Timestamps
+      data_timestamp: staticData?.data_timestamp ?? staticData?.timestamp,
+      updated_at_iso: live.timestamp
+        ? new Date(live.timestamp * 1000).toISOString()
+        : staticData?.updated_at_iso,
+
+      // Network info from live API
+      status: live.regime_flag === 1 ? 'CRITICAL' : 'NORMAL',
       source: 'LIVE_SOLANA_PDA',
-      bridge_timestamp: liveData.bridge_timestamp,
-      history_points: 0,
-      history_source: 'none',
-      step_seconds: 0,
-      program_id: liveData.program_id,
-      risk_state_pda: liveData.risk_state,
-      authority: liveData.authority,
-      last_updater: liveData.last_updater,
-      network: liveData.network ?? 'solana-devnet',
-      history: [],
-      baseline: liveData.baseline,
+      bridge_timestamp: staticData?.bridge_timestamp,
+      history_points: staticData?.history?.length ?? 0,
+      history_source: staticData?.history_source ?? 'static_snapshot',
+      step_seconds: staticData?.step_seconds ?? 0,
+      program_id: live.program_id,
+      risk_state_pda: live.risk_state,
+      authority: live.authority,
+      last_updater: live.last_updater,
+      network: live.network ?? 'solana-devnet',
     };
   } catch (error) {
     console.error('[fetchOracleSnapshot] Fetch error:', error);
@@ -92,29 +125,30 @@ export async function fetchOracleSnapshot(lstId = DEFAULT_LST_ID): Promise<Oracl
 }
 
 export async function fetchSimulationSnapshot(): Promise<SimulationSnapshot | null> {
+  // Try API first
   try {
-    const liveResponse = await fetch('/api/simulation', { cache: 'no-store' });
-    if (liveResponse.ok) {
-      return (await liveResponse.json()) as SimulationSnapshot;
+    const response = await fetch('/api/simulation', { cache: 'no-store' });
+    if (response.ok) {
+      return await response.json();
     }
   } catch {
-    // No fallback
+    // API not available
   }
 
-  // Load from static file only for simulation (this is expected behavior)
+  // Fall back to static file
   try {
     const response = await fetch('/data/stress_scenario.json', { cache: 'no-store' });
-    if (!response.ok) {
-      return null;
+    if (response.ok) {
+      return await response.json();
     }
-    return (await response.json()) as SimulationSnapshot;
   } catch {
-    return null;
+    // Static file not available
   }
+
+  return null;
 }
 
 export async function fetchMarketSnapshot(lstId = DEFAULT_LST_ID): Promise<MarketSnapshot | null> {
-  // ONLY fetch from live Pyth API - no fallback
   try {
     const response = await fetch(`/api/market-state?lst_id=${encodeURIComponent(lstId)}`, {
       cache: 'no-store',
@@ -126,16 +160,7 @@ export async function fetchMarketSnapshot(lstId = DEFAULT_LST_ID): Promise<Marke
       return null;
     }
 
-    const data = await response.json();
-    console.log('[fetchMarketSnapshot] Live Pyth response:', {
-      asset_price: data.asset_price,
-      sol_price: data.sol_price,
-      spread_pct: data.spread_pct,
-      publish_time: data.publish_time,
-      source: data.source
-    });
-
-    return data as MarketSnapshot;
+    return await response.json();
   } catch (error) {
     console.error('[fetchMarketSnapshot] Fetch error:', error);
     return null;
