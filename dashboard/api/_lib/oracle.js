@@ -1,5 +1,5 @@
 import { Connection, PublicKey } from '@solana/web3.js';
-import { DEFAULT_LST_ID } from './assets.js';
+import { DEFAULT_LST_ID, resolveSupportedAsset } from './assets.js';
 
 const DEFAULT_RPC_URL = 'https://api.devnet.solana.com';
 const DEFAULT_PROGRAM_ID = 'DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea';
@@ -160,14 +160,15 @@ export function decodeRiskStateAccount(data) {
 export async function fetchOracleState({
   rpcUrl = process.env.SOLANA_RPC_URL || DEFAULT_RPC_URL,
   programId = process.env.PROGRAM_ID || DEFAULT_PROGRAM_ID,
-  lstId = process.env.ORACLE_LST_ID || DEFAULT_LST_ID,
+  lstId = resolveSupportedAsset(process.env.ORACLE_LST_ID || DEFAULT_LST_ID).lstId,
 } = {}) {
   const connection = new Connection(rpcUrl, 'confirmed');
-  const riskStateAddress = deriveRiskStateAddress(lstId, programId);
+  const normalizedLstId = resolveSupportedAsset(lstId).lstId;
+  const riskStateAddress = deriveRiskStateAddress(normalizedLstId, programId);
   const accountInfo = await connection.getAccountInfo(riskStateAddress, 'confirmed');
 
   if (!accountInfo) {
-    throw new Error(`Risk state account not found for ${lstId}`);
+    throw new Error(`Risk state account not found for ${normalizedLstId}`);
   }
 
   if (!accountInfo.owner.equals(new PublicKey(programId))) {
