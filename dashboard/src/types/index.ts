@@ -38,6 +38,7 @@ export interface OracleSnapshot extends RiskState {
   asset_price?: number;
   reference_rate?: number | null;
   reference_rate_source?: string;
+  data_timestamp?: number;
   updated_at_iso?: string;
   status?: string;
   msol_price: number;

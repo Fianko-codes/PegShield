@@ -58,6 +58,7 @@ function normalizeOracleSnapshot(
     reference_rate: merged.reference_rate ?? staticSnapshot?.reference_rate,
     reference_rate_source: merged.reference_rate_source ?? staticSnapshot?.reference_rate_source,
     timestamp: merged.timestamp ?? staticSnapshot?.timestamp ?? 0,
+    data_timestamp: merged.data_timestamp ?? staticSnapshot?.data_timestamp ?? merged.timestamp ?? staticSnapshot?.timestamp,
     updated_at_iso:
       merged.updated_at_iso ??
       staticSnapshot?.updated_at_iso ??

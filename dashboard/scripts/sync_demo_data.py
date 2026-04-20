@@ -111,6 +111,7 @@ def build_oracle_snapshot(
         "marinade_msol_sol_rate": oracle_payload.get("marinade_msol_sol_rate"),
         "marinade_rate_source": oracle_payload.get("marinade_rate_source", "unknown"),
         "timestamp": int(oracle_payload["timestamp"]),
+        "data_timestamp": int(oracle_payload.get("data_timestamp", oracle_payload["timestamp"])),
         "updated_at_iso": iso_from_unix(int(oracle_payload["timestamp"])),
         "status": oracle_payload.get("status", "UNKNOWN"),
         "msol_price": float(oracle_payload["msol_price"]),

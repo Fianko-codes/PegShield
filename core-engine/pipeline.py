@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +60,10 @@ def build_risk_payload(
     )
 
     latest_row = history_df.iloc[-1]
+    # Use current wall-clock time for the oracle output timestamp, not the last
+    # history point's timestamp. This ensures consumers know when the oracle
+    # computation actually ran, even if the history data is from a cache fallback.
+    oracle_run_timestamp = int(time.time())
 
     # Expose both the deprecated USD premium and the correct peg deviation so
     # the dashboard can show which signal the risk model consumed.
@@ -99,7 +104,8 @@ def build_risk_payload(
         "adf_pvalue": regime["adf_pvalue"],
         "is_stationary": regime["is_stationary"],
         "status": regime["status"],
-        "timestamp": int(latest_row["timestamp"]),
+        "timestamp": oracle_run_timestamp,
+        "data_timestamp": int(latest_row["timestamp"]),
         "asset_price": round(float(latest_row[asset_price_column]), 8),
         "msol_price": round(float(latest_row[asset_price_column]), 8),  # legacy alias
         "sol_price": round(float(latest_row["sol_usd_price"]), 8),

@@ -342,10 +342,27 @@ def fetch_historical_series(
     step_seconds: int,
     reference_rate: float | None,
     hermes_url: str = DEFAULT_HERMES_URL,
+    existing_history: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
+    """Fetch historical price data, optionally extending existing cached history.
+
+    If `existing_history` is provided, only fetch timestamps newer than the most
+    recent cached point. This minimizes API calls and avoids rate limits while
+    keeping history fresh.
+    """
     feeds = feed_map(asset_config)
     end_time = int(time.time()) // step_seconds * step_seconds
     start_time = end_time - lookback_seconds
+
+    # If we have existing history, only fetch newer points
+    if existing_history:
+        latest_cached_ts = max(int(point["timestamp"]) for point in existing_history)
+        # Start from the next step after the latest cached timestamp
+        start_time = max(start_time, latest_cached_ts + step_seconds)
+        if start_time > end_time:
+            # History is already up to date
+            return existing_history
+
     history: list[dict[str, Any]] = []
 
     for timestamp in range(start_time, end_time + 1, step_seconds):
@@ -379,6 +396,22 @@ def fetch_historical_series(
                 "peg_deviation": peg_deviation,      # PREFERRED risk signal
             }
         )
+
+    # Merge existing history with newly fetched points
+    if existing_history:
+        # Filter out old points that are outside the lookback window
+        cutoff = end_time - lookback_seconds
+        merged = [p for p in existing_history if int(p["timestamp"]) >= cutoff]
+        merged.extend(history)
+        # Sort by timestamp and deduplicate
+        seen = set()
+        result = []
+        for point in sorted(merged, key=lambda p: int(p["timestamp"])):
+            ts = int(point["timestamp"])
+            if ts not in seen:
+                seen.add(ts)
+                result.append(point)
+        return result
 
     return history
 
@@ -524,6 +557,17 @@ def main() -> None:
     asset_config = resolve_asset_config(args.asset, args.lst_id)
 
     history_source = "live"
+
+    # Try to load cached history for incremental updates
+    cached_history: list[dict[str, Any]] | None = None
+    try:
+        cached_history = load_cached_history(output_path)
+    except (FileNotFoundError, ValueError):
+        try:
+            cached_history = load_dashboard_snapshot_history()
+        except (FileNotFoundError, ValueError):
+            pass
+
     with requests.Session() as session:
         reference_rate, reference_rate_source = fetch_reference_rate(session, asset_config)
         latest_feeds = fetch_latest_price_feeds(
@@ -532,6 +576,7 @@ def main() -> None:
             hermes_url=args.hermes_url,
         )
         try:
+            # Try incremental update first - only fetch new points
             history = fetch_historical_series(
                 session,
                 asset_config,
@@ -539,14 +584,22 @@ def main() -> None:
                 step_seconds=args.step_seconds,
                 reference_rate=reference_rate,
                 hermes_url=args.hermes_url,
+                existing_history=cached_history,
             )
+            # If we used cached history as base, mark as incremental
+            if cached_history and len(history) > 0:
+                latest_cached_ts = max(int(p["timestamp"]) for p in cached_history)
+                latest_fetched_ts = max(int(p["timestamp"]) for p in history)
+                if latest_fetched_ts > latest_cached_ts:
+                    history_source = "live_incremental"
         except requests.HTTPError as exc:
             if getattr(exc.response, "status_code", None) != 429:
                 raise
-            try:
-                history = load_cached_history(output_path)
+            # Rate limited - fall back to cached history
+            if cached_history:
+                history = cached_history
                 history_source = "cache_fallback"
-            except (FileNotFoundError, ValueError):
+            else:
                 history = load_dashboard_snapshot_history()
                 history_source = "dashboard_snapshot_fallback"
             # Cached/fallback history may lack peg_deviation — backfill now.
