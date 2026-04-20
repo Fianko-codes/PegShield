@@ -2,6 +2,16 @@
 
 End-to-end view of how a Pyth tick becomes an on-chain LTV that a Solana lending protocol can read. Pairs with [`README.md`](../README.md) (overview), [`SECURITY.md`](../SECURITY.md) (trust model), and [`MULTI_ATTESTER.md`](./MULTI_ATTESTER.md) (decentralization roadmap).
 
+## Architecture At A Glance
+
+| Question | Short answer |
+|---|---|
+| What enters the system? | Pyth LST/SOL prices plus the LST's canonical staking exchange rate |
+| What is computed off-chain? | peg deviation, OU parameters, stationarity, regime, suggested LTV |
+| What is committed on-chain? | compact `RiskState` with freshness and suggested LTV |
+| What do consumers read? | one PDA per `lst_id` |
+| What happens on failure? | lenders are expected to tighten or halt via conservative fallback logic |
+
 ## System Diagram
 
 ```
@@ -65,6 +75,17 @@ GitHub Actions    bridge/fetch_pyth.py     core-engine/pipeline.py     updater/s
      │                    │                          │                                                   │
      ▼                    ▼                          ▼                                                   ▼
  repo cache refreshes                                                                     consumers fetch & guard
+```
+
+## Figure: Trust Boundary Map
+
+```text
+market data ──► bridge ──► engine ──► updater signer ──► on-chain PDA ──► lender
+    │             │          │             │                 │              │
+    │             │          │             │                 │              │
+ external      parsing    calibration   operational      canonical       protocol-
+ trust         + sanity   correctness   key custody      account         side guard
+ source        checks                                   ownership        enforcement
 ```
 
 ## Consumer Read Path

@@ -3,18 +3,108 @@
 [![Oracle Updater](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml/badge.svg)](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
-Risk oracle, not price oracle. For Solana LSTs as collateral.
+Solana-native **risk oracle** for LST collateral.
 
-PegShield is a Solana-native **risk oracle** for liquid staking token (LST) collateral. It publishes a live, statistically calibrated LTV that tightens automatically when an LST starts de-pegging, instead of leaving lenders with a fixed collateral factor and hoping liquidations keep up.
+PegShield does **not** answer "what is this token worth?"  
+PegShield answers **"how much should a lender safely lend against this collateral right now?"**
 
-The live devnet deployment currently serves `mSOL-v2`, and the bridge/engine path now also supports `jitoSOL-v1` and `bSOL-v1` so the repo demonstrates multi-LST generalization instead of a single hard-coded asset.
+## Thesis
 
-> **Price oracles answer:** what is this asset worth?
-> **PegShield answers:** how safe is this asset to use as collateral *right now*?
+> Fixed collateral factors are too slow for LST stress events.
+>
+> PegShield continuously measures **peg risk**, calibrates a statistical model over that signal, and publishes a live on-chain **suggested LTV** that a lending protocol can enforce immediately.
 
----
+## The Problem
 
-## Live Deployment (Solana Devnet)
+Static LTV policy assumes peg stability.
+
+| During stress | Static collateral factor does | Why that fails |
+|---|---|---|
+| LST starts trading below intrinsic staking rate | nothing | governance reacts too slowly |
+| Liquidity thins out | nothing | liquidation routes degrade exactly when needed most |
+| Regime breaks from mean-reverting to unstable | nothing | protocols keep lending as if conditions are normal |
+| Oracle becomes stale | often unclear fallback behavior | lenders accidentally accept blind risk |
+
+## What PegShield Changes
+
+| Layer | PegShield output | Consumer action |
+|---|---|---|
+| Market ingestion | peg deviation vs canonical staking rate | stop confusing yield accrual with de-peg risk |
+| Statistical engine | `theta`, `sigma`, `z_score`, regime | classify whether the peg still behaves normally |
+| On-chain state | `suggested_ltv_bps`, `regime_flag`, freshness | gate new borrows immediately |
+| SDK guardrail | `safeLtv()` | degrade safely on staleness or critical regime |
+
+## Figure: End-to-End System
+
+```text
+┌──────────────┐   ┌──────────┐   ┌───────────────┐   ┌──────────┐   ┌────────────┐
+│  Pyth Hermes │ → │  bridge  │ → │ core-engine   │ → │ updater  │ → │ Solana PDA │ → lenders
+│  (LST/SOL)   │   │ + rates  │   │ OU + ADF +    │   │ signed   │   │ risk_state │
+│              │   │          │   │ z + LTV map   │   │ submit   │   │  by lst_id │
+└──────────────┘   └──────────┘   └───────────────┘   └──────────┘   └────────────┘
+       ▲                  ▲
+       │                  │
+       │         Marinade / Jito / SolBlaze reference rate
+       │
+       └──────────── live market price feeds
+```
+
+## Figure: Consumer Decision Flow
+
+```text
+            read RiskState PDA
+                    │
+                    ▼
+        is owner correct / account present?
+                    │
+          no ───────┴──────► use conservative fallback LTV
+                    │ yes
+                    ▼
+              is data stale?
+                    │
+          yes ──────┴──────► use conservative fallback LTV
+                    │ no
+                    ▼
+          is regime_flag == CRITICAL?
+                    │
+          yes ──────┴──────► tighten hard or halt new borrows
+                    │ no
+                    ▼
+             apply suggested_ltv_bps
+```
+
+## Why This Is Not Just Another Price Oracle
+
+PegShield measures **peg deviation**, not raw USD premium:
+
+```text
+peg_deviation = (asset_usd / sol_usd) / reference_rate - 1
+```
+
+That matters because LSTs naturally drift upward versus `SOL` in USD terms as staking yield accrues. A naive USD spread overstates risk. PegShield instead compares market price against the LST's **canonical staking exchange rate**.
+
+Current reference-rate sources:
+
+| Asset | `lst_id` | Reference rate source |
+|---|---|---|
+| Marinade Staked SOL | `mSOL-v2` | Marinade API |
+| Jito Staked SOL | `jitoSOL-v1` | Jito stake-pool stats |
+| BlazeStake SOL | `bSOL-v1` | SolBlaze stake-pool account via Solana RPC |
+
+## Proof That Exists Today
+
+| Category | What is live or committed today |
+|---|---|
+| On-chain program | Anchor program deployed on Solana devnet |
+| On-chain output | `RiskState` PDA storing live LTV + regime + freshness |
+| Multi-asset scope | `mSOL-v2`, `jitoSOL-v1`, `bSOL-v1` supported through the bridge/engine path |
+| Consumer surface | `@pegshield/sdk` with `fetchRiskState`, `isStale`, `isCritical`, `safeLtv` |
+| CI loop | scheduled GitHub Actions updater |
+| Historical proof | replay of June 2022 `stETH/ETH` depeg |
+| Scenario breadth | 1 historical + 5 synthetic stress paths |
+| Offline reproducibility | committed `artifacts/` snapshots and bridge caches |
+
+## Live Deployment (Devnet)
 
 | Artifact | Address | Explorer |
 |---|---|---|
@@ -22,115 +112,225 @@ The live devnet deployment currently serves `mSOL-v2`, and the bridge/engine pat
 | Risk State PDA (`mSOL-v2`) | `7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo` | [view](https://explorer.solana.com/address/7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo?cluster=devnet) |
 | Updater Authority | `4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc` | [view](https://explorer.solana.com/address/4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc?cluster=devnet) |
 
-The PDA is updated on a cron by [`oracle-updater.yml`](./.github/workflows/oracle-updater.yml).
+The updater is driven by [`.github/workflows/oracle-updater.yml`](./.github/workflows/oracle-updater.yml).
 
----
+## Figure: What Lives On-Chain
 
-## How It Works
-
-```
-┌──────────────┐   ┌──────────┐   ┌───────────────┐   ┌──────────┐   ┌────────────┐
-│  Pyth Hermes │ → │  bridge  │ → │ core-engine   │ → │ updater  │ → │ Solana PDA │ → consumers
-│  (LST/SOL)   │   │  + rate  │   │ OU + regime   │   │ submit   │   │ risk_state │
-└──────────────┘   └──────────┘   └───────────────┘   └──────────┘   └────────────┘
-                Marinade / Jito API  (stat risk)         (authority)    (Anchor)
-```
-
-### Signal: peg deviation, not USD premium
-
-Naively comparing an LST and `SOL` in USD gives a large "spread" that is mostly accrued staking yield, not risk. PegShield measures **peg deviation** against the protocol's canonical staking exchange rate:
-
-```
-peg_deviation = (asset_usd / sol_usd) / reference_rate − 1
-```
-
-A healthy peg sits near zero and mean-reverts. A real de-peg drives it meaningfully negative. This is the series the OU model calibrates against.
-
-Today that reference-rate source is:
-- Marinade API for `mSOL-v2`
-- Jito stake-pool stats API for `jitoSOL-v1`
-- BlazeStake stake-pool account over Solana RPC for `bSOL-v1`
-
-### Statistical model
-
-An **Ornstein–Uhlenbeck** process over the rolling peg-deviation window:
-
-```
-dX_t = θ (μ − X_t) dt + σ dW_t
-```
-
-- `θ` — mean-reversion speed (how quickly peg snaps back)
-- `σ` — volatility
-- An ADF stationarity test + z-score ≥ 2.5σ flags a `CRITICAL` regime
-- In `CRITICAL` regime, the suggested LTV is aggressively reduced
-
-The LTV output is clamped to `[MIN_LTV_BPS, MAX_LTV_BPS]` by the on-chain program.
-
-### On-chain layout
-
-`RiskState` PDA, seeded `["risk", lst_id]`, stores fixed-point integers (no floats on-chain):
+`RiskState` PDA, seeded by `["risk", lst_id]`.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `theta_scaled` | `i64` | θ × 1,000,000 |
-| `sigma_scaled` | `i64` | σ × 1,000,000 |
-| `z_score_scaled` | `i64` | z × 1,000,000 (signed) |
-| `suggested_ltv_bps` | `u16` | LTV in basis points, 0–10,000 |
-| `regime_flag` | `u8` | 0=NORMAL, 1=CRITICAL |
-| `slot`, `timestamp` | `u64`, `i64` | freshness |
-| `authority` | `pubkey` | only signer allowed to update |
-| `last_updater` | `pubkey` | who submitted most recent update |
+| `theta_scaled` | `i64` | mean-reversion speed × `1_000_000` |
+| `sigma_scaled` | `i64` | volatility × `1_000_000` |
+| `z_score_scaled` | `i64` | signed z-score × `1_000_000` |
+| `suggested_ltv_bps` | `u16` | live LTV in basis points |
+| `regime_flag` | `u8` | `0 = NORMAL`, `1 = CRITICAL` |
+| `slot`, `timestamp` | `u64`, `i64` | freshness and observability |
+| `authority` | `Pubkey` | only writer |
+| `last_updater` | `Pubkey` | most recent submitter |
 
-Rate-limited to one update per 30 seconds; `has_one = authority` gates `update_risk_state` and `close_oracle`.
+## Statistical Core
 
----
+PegShield fits an Ornstein-Uhlenbeck process over the rolling peg-deviation window:
 
-## Repository Layout
-
-```
-bridge/         Fetches Pyth prices + protocol reference rate, writes peg_deviation
-core-engine/    OU estimator, ADF regime detector, LTV calculator
-solana-program/ Anchor program (risk_oracle)
-sdk/            @pegshield/sdk — typed TypeScript client for consumers
-updater/        init / submit / read / close / consumer-demo scripts
-simulation/     Historical replay + synthetic fallback (oracle vs fixed-LTV)
-artifacts/      Committed oracle snapshots, bridge caches, and scenario bundle
-scripts/        Artifact sync and operator utilities
-docs/           Design notes and architecture roadmap documents
-tests/          Python micro-tests for the statistical engine
+```text
+dX_t = θ (μ - X_t) dt + σ dW_t
 ```
 
-## Consumer SDK
+Interpretation:
 
-A lending protocol can integrate against the oracle in a few lines using [`@pegshield/sdk`](./sdk):
+| Symbol | Meaning | Why lenders care |
+|---|---|---|
+| `θ` | mean-reversion speed | slower snapback means weaker peg quality |
+| `μ` | long-run mean | tells you where the process wants to settle |
+| `σ` | volatility | higher volatility means less stable collateral |
+| `z_score` | distance from rolling mean | measures how abnormal current conditions are |
+| ADF stationarity test | checks regime stability | helps distinguish noise from structural break |
+
+The engine converts that into a regime flag and a suggested LTV. In `CRITICAL` regime, the recommended LTV tightens aggressively.
+
+## Why Judges Should Care
+
+| Question | PegShield answer |
+|---|---|
+| Is this actually on-chain? | Yes, program + PDA are live on devnet |
+| Is this just theory? | No, the repo includes historical replay and a runnable end-to-end demo |
+| Can a protocol integrate quickly? | Yes, via `@pegshield/sdk` or direct PDA reads |
+| Does it generalize beyond one asset? | Yes, bridge path supports `mSOL`, `jitoSOL`, `bSOL` |
+| Does it fail safely? | Yes, consumers are expected to fall back conservatively on staleness or critical regime |
+
+## Repo Structure
+
+| Path | Role |
+|---|---|
+| [`bridge/`](./bridge) | fetches Pyth prices and reference rates, writes peg-deviation series |
+| [`core-engine/`](./core-engine) | OU calibration, ADF regime detection, LTV mapping |
+| [`solana-program/`](./solana-program) | Anchor program for `RiskState` |
+| [`updater/`](./updater) | initialize / submit / read / close / consumer demo scripts |
+| [`sdk/`](./sdk) | typed TS client for integrators |
+| [`simulation/`](./simulation) | historical and synthetic stress replays |
+| [`artifacts/`](./artifacts) | committed oracle snapshots, bridge caches, scenario bundle |
+| [`scripts/`](./scripts) | artifact sync and operator utilities |
+| [`docs/`](./docs) | architecture, integration, and trust-model docs |
+| [`tests/`](./tests) | engine micro-tests |
+
+## Fastest Evaluation Path
+
+If someone wants to judge the project in under five minutes:
+
+| Step | Command | What it proves |
+|---|---|---|
+| 1 | `./demo.sh --dry-run` | the operational flow is coherent |
+| 2 | `.venv/bin/python -m unittest tests.test_core_engine -v` | the statistical core is tested |
+| 3 | `npm --prefix updater run read -- mSOL-v2` | the live devnet PDA is readable |
+| 4 | `.venv/bin/python simulation/stress_test.py` | the stress replay is reproducible |
+| 5 | `cd examples/lending-borrow-demo && npm install && npm run start -- 100 1814.63 stETH` | an external lender can consume it |
+
+## One-Command Demo
+
+```bash
+./demo.sh
+```
+
+That flow:
+
+1. verifies the engine tests
+2. fetches live bridge data
+3. runs the statistical engine
+4. submits the update on devnet
+5. reads the PDA back through the SDK
+6. replays the real June 2022 `stETH/ETH` event
+7. refreshes repo-level oracle artifacts
+
+Use `./demo.sh --dry-run` if you want to verify the path without touching devnet.
+
+## Full Local Flow
+
+```bash
+.venv/bin/python -m unittest tests.test_core_engine -v
+.venv/bin/python bridge/fetch_pyth.py
+.venv/bin/python core-engine/pipeline.py
+npm --prefix updater run submit
+npm --prefix updater run read -- mSOL-v2
+.venv/bin/python simulation/stress_test.py
+npm --prefix updater run consumer -- 1000 mSOL-v2
+```
+
+To submit multiple prepared payloads in one pass:
+
+```bash
+npm --prefix updater run submit -- ./core-engine/output/latest.mSOL-v2.json ./core-engine/output/latest.jitoSOL-v1.json
+npm --prefix updater run submit -- --all
+```
+
+## Consumer Integration
+
+Minimal integration through [`@pegshield/sdk`](./sdk):
 
 ```ts
 import { Connection } from "@solana/web3.js";
 import { fetchRiskState, safeLtv } from "@pegshield/sdk";
 
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-const { state } = await fetchRiskState(connection); // defaults to mSOL-v2 on devnet
-const ltv = safeLtv(state); // falls back to 0.4 when stale or CRITICAL
+const { state } = await fetchRiskState(connection, { lstId: "mSOL-v2" });
+const ltv = safeLtv(state, { fallbackLtv: 0.4, maxLtv: 0.85 });
 ```
 
-Full docs, guards, and types: [`sdk/README.md`](./sdk/README.md).
+Read more:
+
+- [`docs/INTEGRATION.md`](./docs/INTEGRATION.md)
+- [`sdk/README.md`](./sdk/README.md)
+- [`examples/lending-borrow-demo`](./examples/lending-borrow-demo)
+
+## CI / Operator Path
+
+The scheduled updater in [`.github/workflows/oracle-updater.yml`](./.github/workflows/oracle-updater.yml):
+
+| Step | Behavior |
+|---|---|
+| test | runs engine micro-tests |
+| bridge | fetches live prices + reference rates |
+| engine | calibrates OU parameters and risk regime |
+| cache | writes bridge caches and oracle artifacts to `artifacts/` |
+| safety gate | skips on-chain submit when history source is fallback |
+| submit | updates configured PDAs when history is trusted |
+
+Required secrets:
+
+| Secret | Purpose |
+|---|---|
+| `SOLANA_RPC_URL` | devnet RPC endpoint |
+| `SOLANA_MAINNET_RPC_URL` | optional mainnet RPC for SolBlaze account reads |
+| `PROGRAM_ID` | PegShield program id |
+| `PYTH_HTTP_URL` | Hermes endpoint |
+| `ORACLE_AUTHORITY` | updater pubkey |
+| `UPDATER_KEYPAIR_JSON` | updater keypair contents |
+| `MSOL_RISK_STATE_PDA` | devnet PDA for `mSOL-v2` |
+| `JITOSOL_RISK_STATE_PDA` | devnet PDA for `jitoSOL-v1` |
+| `BSOL_RISK_STATE_PDA` | devnet PDA for `bSOL-v1` |
+
+## Stress Evidence
+
+The repo carries both:
+
+- a **real** historical replay: June 2022 `stETH/ETH`
+- **synthetic** scenarios that stress different failure shapes
+
+Current bundle in [`artifacts/stress_scenario.json`](./artifacts/stress_scenario.json):
+
+| Scenario | Kind | What it tests |
+|---|---|---|
+| `steth_june_2022` | Historical | real de-peg credibility fixture |
+| `liquidity_vacuum` | Synthetic | fast gap-down and shallow rebound |
+| `reflexive_bank_run` | Synthetic | two-leg selloff with false recovery |
+| `slow_grind_depeg` | Synthetic | creeping impairment |
+| `false_positive_wick` | Synthetic | recovery after one-off shock |
+| `flash_crash_repricing` | Synthetic | fast dislocation then snapback |
+
+Simulation outputs:
+
+```bash
+.venv/bin/python simulation/stress_test.py
+```
+
+This writes:
+
+- `simulation/charts/stress_scenario.csv`
+- `simulation/charts/stress_scenario.png`
+- `simulation/charts/stress_scenario.meta.json`
+
+## Current Status
+
+### Working today
+
+- live Pyth ingestion + protocol-specific reference-rate normalization
+- multi-LST bridge support for `mSOL-v2`, `jitoSOL-v1`, `bSOL-v1`
+- OU estimator, ADF stationarity test, z-score regime detector
+- deployed Anchor program with fixed-point risk state
+- devnet PDA updates, reads, and rate-limiting
+- committed oracle artifacts and bridge caches for replay / fallback
+- six-scenario stress bundle
+- typed SDK and runnable lender example
+
+### Not production-ready
+
+- single-attester trust model
+- devnet only
+- no production lender integration yet
+- no decentralized updater committee yet
+- no operational alerting or mainnet deployment process yet
 
 ## Local Setup
 
 ```bash
-# Python engine
 python -m venv .venv
 .venv/bin/pip install numpy pandas scipy statsmodels requests matplotlib
-
-# Updater (Node)
 npm --prefix updater install
-
-# Solana program
 npm --prefix solana-program install
 (cd solana-program && anchor build)
 ```
 
-Copy `.env.example` to `.env` and fill in:
+Copy `.env.example` to `.env` and fill:
 
 ```bash
 SOLANA_RPC_URL=https://api.devnet.solana.com
@@ -141,137 +341,31 @@ ORACLE_AUTHORITY=<pubkey of the updater keypair>
 LST_ASSET=mSOL
 LST_ID=mSOL-v2
 MSOL_RISK_STATE_PDA=7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo
-# Optional second asset path:
+# Optional:
 # LST_ASSET=jitoSOL
 # LST_ID=jitoSOL-v1
-# JITOSOL_RISK_STATE_PDA=<your jitoSOL PDA once initialized>
-# Optional third asset path:
+# JITOSOL_RISK_STATE_PDA=<pubkey>
 # LST_ASSET=bSOL
 # LST_ID=bSOL-v1
-# BSOL_RISK_STATE_PDA=<your bSOL PDA once initialized>
+# BSOL_RISK_STATE_PDA=<pubkey>
 ```
 
-## Run The 60-Second Demo
+## Documentation
 
-For anyone evaluating the project end-to-end, the fastest path is the one-command demo:
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system design, data contracts, failure modes
+- [`docs/INTEGRATION.md`](./docs/INTEGRATION.md) — lender integration path
+- [`sdk/README.md`](./sdk/README.md) — SDK API reference
+- [`SECURITY.md`](./SECURITY.md) — trust model and disclosure process
+- [`docs/MULTI_ATTESTER.md`](./docs/MULTI_ATTESTER.md) — roadmap away from single-signer trust
 
-```bash
-./demo.sh
-```
-
-This runs the engine tests, fetches live bridge data, computes the fresh risk payload, submits it on devnet, reads the PDA back through `@pegshield/sdk`, replays the real June 2022 `stETH/ETH` depeg, and refreshes the repo's oracle artifacts. Use `./demo.sh --dry-run` to verify the command path and local prerequisites without touching devnet.
-
-## Run The Full Flow
-
-```bash
-.venv/bin/python -m unittest tests.test_core_engine -v     # 1. verify engine
-.venv/bin/python bridge/fetch_pyth.py                      # 2. fetch live data for the configured LST
-.venv/bin/python core-engine/pipeline.py                   # 3. run statistical engine
-npm --prefix updater run submit                            # 4. push on-chain
-npm --prefix updater run read -- mSOL-v2                   # 5. read PDA back
-.venv/bin/python simulation/stress_test.py                 # 6. historical replay
-npm --prefix updater run consumer -- 1000 mSOL-v2          # 7. borrow-limit comparison
-```
-
-The consumer demo prints the max borrow allowed under a fixed-80% policy vs. the live oracle LTV for a sample collateral amount, plus a staleness warning if the last update is older than 10 minutes. To run the second asset path, switch `LST_ASSET=jitoSOL`, `LST_ID=jitoSOL-v1`, initialize a second PDA, then rerun the same commands.
-
-To submit multiple prepared payloads in one pass, point the updater at explicit files or use `--all`:
-
-```bash
-npm --prefix updater run submit -- ./core-engine/output/latest.mSOL-v2.json ./core-engine/output/latest.jitoSOL-v1.json
-npm --prefix updater run submit -- --all
-```
-
-## GitHub Actions Updater
-
-[`.github/workflows/oracle-updater.yml`](./.github/workflows/oracle-updater.yml) runs on a schedule and:
-
-1. Runs the micro tests
-2. Iterates over `mSOL-v2`, `jitoSOL-v1`, and `bSOL-v1`
-3. Fetches live Pyth data + the asset-specific reference rate
-4. Runs the statistical engine for each asset
-5. Writes repo-level bridge caches and oracle artifacts under `artifacts/`
-6. Skips on-chain submission if the bridge history source is a fallback
-7. Submits a fresh update to each configured PDA when history is trusted
-8. Commits refreshed artifacts back to git so the next run has deterministic cache state
-
-**Required repo secrets:**
-
-| Secret | Purpose |
-|---|---|
-| `SOLANA_RPC_URL` | Devnet RPC endpoint |
-| `SOLANA_MAINNET_RPC_URL` | Optional mainnet RPC used for SolBlaze stake-pool reads; falls back to the public Solana mainnet endpoint if omitted |
-| `PROGRAM_ID` | `DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea` |
-| `PYTH_HTTP_URL` | `https://hermes.pyth.network` |
-| `ORACLE_AUTHORITY` | Updater pubkey (must match keypair below) |
-| `UPDATER_KEYPAIR_JSON` | Full contents of `updater/keypair.json` (JSON array) |
-| `MSOL_RISK_STATE_PDA` | Devnet PDA for `mSOL-v2` |
-| `JITOSOL_RISK_STATE_PDA` | Devnet PDA for `jitoSOL-v1` |
-| `BSOL_RISK_STATE_PDA` | Devnet PDA for `bSOL-v1` |
-
-## Simulation
-
-Writes `simulation/charts/stress_scenario.{csv,png}` plus `stress_scenario.meta.json` — by default a replay of the June 2022 `stETH/ETH` depeg so judges can see how PegShield would have reacted to a real event. Each row includes `peg_deviation`, `theta`, `sigma`, `z_score`, `regime_flag`, and bad-debt estimates under both policies. Pass `--mode synthetic` to fall back to the old generated path.
-
-### Scenario Bundle
-
-PegShield keeps six replays in the repo so the oracle is stressed across regime shapes, not just one historical path. Refreshed by [`scripts/sync_artifacts.py`](./scripts/sync_artifacts.py) (and by the GitHub Actions updater) into `artifacts/stress_scenario.json`:
-
-| Scenario | Kind | What it stresses |
-|---|---|---|
-| `steth_june_2022` | Historical | Real June-2022 stETH/ETH depeg — the baseline credibility fixture |
-| `liquidity_vacuum` | Synthetic | Fast gap-down with a shallow rebound — depth disappearing faster than liquidators recycle |
-| `reflexive_bank_run` | Synthetic | Two-leg selloff with a mid-event bounce — false-confidence trap for static policy |
-| `slow_grind_depeg` | Synthetic | Gradual multi-day drift with no violent candle — tests detection latency on creeping impairment |
-| `false_positive_wick` | Synthetic | Single 2-interval wick that cleanly recovers — probes whether CRITICAL exits when it should |
-| `flash_crash_repricing` | Synthetic | Short brutal dislocation with a fast snapback — tests tighten-then-release behaviour |
-
-Add new scenarios by appending a spec to `synthetic_specs` in [`simulation/stress_test.py`](./simulation/stress_test.py) (segment lengths must sum to `periods`).
-
-## Status
-
-**Working today:**
-- Live Pyth ingestion + Marinade-rate-corrected peg signal
-- Multi-LST bridge support for `mSOL-v2`, `jitoSOL-v1`, and `bSOL-v1`
-- OU estimator, ADF stationarity test, z-score regime detector
-- Deployed Anchor program with fixed-point `i64`/`u16` layout
-- On-chain PDA updates, reads, and rate-limiting
-- Authority-gated `close_oracle` instruction (layout-migration safe)
-- Committed oracle artifacts and bridge caches for deterministic replay / fallback
-- Six-scenario stress bundle (1 historical + 5 synthetic shapes) in `artifacts/stress_scenario.json`
-- `@pegshield/sdk` consumer client with staleness / regime guards + reference example in `examples/lending-borrow-demo`
-
-**Not production-ready:**
-- Single-attester trust model (decentralized updater set is roadmap)
-- Devnet only; no mainnet deployment
-- Long-horizon calibration baselines are bootstrapped, not historically trained
-- No protocol-side consumer integration in production (SDK + example consumer are available for integrators)
-- No operational alerting
-
-## Safety Before Publishing
-
-`.gitignore` keeps secrets and generated artifacts out. Before `git push`:
+## Safety Before Pushing
 
 ```bash
 git status --short
 git ls-files | rg 'keypair|\.env|latest_raw|latest\.json|stress_scenario|\.mplcache|\.codex'
 ```
 
-Neither should show any secrets or local operational files.
-
-## Documentation
-
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system diagram, components, update sequence, data contracts, failure modes
-- [`docs/INTEGRATION.md`](./docs/INTEGRATION.md) — step-by-step lender integration walkthrough using `@pegshield/sdk`
-- [`sdk/README.md`](./sdk/README.md) — SDK API reference + consumer safety checklist
-- [`SECURITY.md`](./SECURITY.md) — trust model, on-chain safety properties, responsible disclosure
-- [`docs/MULTI_ATTESTER.md`](./docs/MULTI_ATTESTER.md) — roadmap away from single-signer trust
-
-## Security
-
-See [SECURITY.md](./SECURITY.md) for the trust model, on-chain safety properties, consumer responsibilities, and responsible-disclosure process.
-
-The roadmap away from single-signer trust is documented in [docs/MULTI_ATTESTER.md](./docs/MULTI_ATTESTER.md).
+Neither command should expose secrets or local-only operational files.
 
 ## License
 

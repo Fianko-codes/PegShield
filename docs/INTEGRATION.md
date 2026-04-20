@@ -4,6 +4,17 @@ How a Solana lending protocol integrates the PegShield risk oracle as the LTV so
 
 > **TL;DR** — install `@pegshield/sdk`, derive the PDA with the LST id you support, decode `RiskState`, gate borrows behind `safeLtv()`. If anything goes wrong, fall back to a conservative static LTV — never a higher one.
 
+## Integration Checklist
+
+| Step | Required | Why |
+|---|---|---|
+| Read PDA | yes | oracle state must come from the on-chain account |
+| Verify owner / decode safely | yes | reject spoofed accounts |
+| Check freshness | yes | stale risk state must not loosen lending |
+| Check `regime_flag` | yes | critical regime should tighten or halt |
+| Clamp protocol-side max LTV | yes | your protocol keeps final authority |
+| Define conservative fallback LTV | yes | failures should reduce risk, not increase it |
+
 ## When To Use This Guide
 
 You're building (or operating) a lending market that accepts an LST — `mSOL`, `jitoSOL`, etc. — as collateral and you want a per-asset LTV that responds to peg risk in real time instead of a static collateral factor that you only revise during weekend governance calls.
@@ -77,6 +88,20 @@ const ltv = safeLtv(state, { fallbackLtv: 0.40, maxLtv: 0.85 });
 ```
 
 `safeLtv` returns `fallbackLtv` when `isStale(state) || isCritical(state)`, and otherwise clamps `state.suggestedLtv` to `[0, maxLtv]`.
+
+## Figure: Borrow Decision Logic
+
+```text
+RiskState read
+    │
+    ├── stale? ───────────────► use fallbackLtv
+    │
+    ├── critical regime? ─────► use fallbackLtv or halt new borrows
+    │
+    ├── bad owner / decode? ──► use fallbackLtv
+    │
+    └── otherwise ────────────► clamp suggestedLtv to your protocol cap
+```
 
 ## Step 3 — Decide
 
