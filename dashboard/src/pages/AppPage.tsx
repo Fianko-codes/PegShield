@@ -485,8 +485,29 @@ function AppPageContent({
     };
   }, [oracleSnapshot?.risk_state_pda]);
 
+  // Determine data source status
+  const dataSource = oracleSnapshot?.source;
+  const isLiveData = dataSource === 'LIVE_SOLANA_PDA';
+  const hasData = oracleSnapshot != null && globalState.timestamp > 0;
+
   return (
     <div className="py-6 md:py-10">
+      {/* ===================== DATA SOURCE BANNER ===================== */}
+      <div className={cn(
+        'mb-4 border px-4 py-2 text-center font-mono text-xs uppercase tracking-wider',
+        !hasData ? 'border-red-500 bg-red-950 text-red-400' :
+        isLiveData ? 'border-green-500 bg-green-950 text-green-400' :
+        'border-yellow-500 bg-yellow-950 text-yellow-400'
+      )}>
+        {!hasData ? (
+          <>NO DATA - API may be down or returning errors. Check browser console.</>
+        ) : isLiveData ? (
+          <>LIVE DATA from Solana Devnet PDA | Timestamp: {new Date(globalState.timestamp * 1000).toISOString()}</>
+        ) : (
+          <>DATA SOURCE: {dataSource ?? 'unknown'} | Timestamp: {globalState.timestamp ? new Date(globalState.timestamp * 1000).toISOString() : 'N/A'}</>
+        )}
+      </div>
+
       {/* ===================== HEADER ===================== */}
       <div className="mb-8 flex flex-col gap-5 border-b border-zinc-800 pb-6 sm:mb-10 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 items-start gap-3">

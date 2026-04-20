@@ -1,7 +1,15 @@
 import type { MarketSnapshot, OracleSnapshot, RiskState, SimulationSnapshot } from '../types';
 import { DEFAULT_LST_ID } from './assets';
 
+/**
+ * LIVE-ONLY DATA FETCHING
+ *
+ * This module fetches data ONLY from live APIs - no static fallbacks.
+ * If the API fails, null is returned and the UI shows an error state.
+ */
+
 export function getFallbackRiskState(lstId = DEFAULT_LST_ID): RiskState {
+  // Return zeroed state - UI will show "waiting for data"
   return {
     lst_id: lstId,
     theta: 0,
@@ -14,112 +22,73 @@ export function getFallbackRiskState(lstId = DEFAULT_LST_ID): RiskState {
   };
 }
 
-function normalizeOracleSnapshot(
-  liveSnapshot: Partial<OracleSnapshot> | null,
-  staticSnapshot: OracleSnapshot | null,
-): OracleSnapshot | null {
-  if (!liveSnapshot && !staticSnapshot) {
-    return null;
-  }
-
-  const liveRiskState = (liveSnapshot as { risk_state?: string } | null)?.risk_state;
-
-  const merged = {
-    ...(staticSnapshot ?? {}),
-    ...(liveSnapshot ?? {}),
-  } as Partial<OracleSnapshot>;
-
-  const history = Array.isArray(merged.history) ? merged.history : staticSnapshot?.history ?? [];
-  const spreadPct =
-    typeof merged.spread_pct === 'number'
-      ? merged.spread_pct
-      : typeof merged.spread === 'number'
-        ? merged.spread
-        : history[history.length - 1]?.spread_pct ?? 0;
-
-  return {
-    lst_id: merged.lst_id ?? staticSnapshot?.lst_id ?? 'mSOL-v2',
-    asset_symbol: merged.asset_symbol ?? staticSnapshot?.asset_symbol,
-    asset_display_name: merged.asset_display_name ?? staticSnapshot?.asset_display_name,
-    base_symbol: merged.base_symbol ?? staticSnapshot?.base_symbol ?? 'SOL',
-    theta: merged.theta ?? staticSnapshot?.theta ?? 0,
-    sigma: merged.sigma ?? staticSnapshot?.sigma ?? 0,
-    regime_flag: merged.regime_flag ?? staticSnapshot?.regime_flag ?? 0,
-    suggested_ltv: merged.suggested_ltv ?? staticSnapshot?.suggested_ltv ?? 0,
-    z_score: merged.z_score ?? staticSnapshot?.z_score ?? 0,
-    spread: spreadPct,
-    spread_pct: spreadPct,
-    mu: merged.mu ?? staticSnapshot?.mu,
-    adf_pvalue: merged.adf_pvalue ?? staticSnapshot?.adf_pvalue,
-    is_stationary: merged.is_stationary ?? staticSnapshot?.is_stationary,
-    spread_signal: merged.spread_signal ?? staticSnapshot?.spread_signal,
-    peg_deviation_pct: merged.peg_deviation_pct ?? staticSnapshot?.peg_deviation_pct,
-    asset_price: merged.asset_price ?? staticSnapshot?.asset_price ?? merged.msol_price ?? staticSnapshot?.msol_price,
-    reference_rate: merged.reference_rate ?? staticSnapshot?.reference_rate,
-    reference_rate_source: merged.reference_rate_source ?? staticSnapshot?.reference_rate_source,
-    timestamp: merged.timestamp ?? staticSnapshot?.timestamp ?? 0,
-    data_timestamp: merged.data_timestamp ?? staticSnapshot?.data_timestamp ?? merged.timestamp ?? staticSnapshot?.timestamp,
-    updated_at_iso:
-      merged.updated_at_iso ??
-      staticSnapshot?.updated_at_iso ??
-      (merged.timestamp
-        ? new Date(merged.timestamp * 1000).toISOString()
-        : undefined),
-    status: merged.status ?? staticSnapshot?.status ?? 'UNKNOWN',
-    msol_price: merged.msol_price ?? staticSnapshot?.msol_price ?? 0,
-    sol_price: merged.sol_price ?? staticSnapshot?.sol_price ?? 0,
-    source: merged.source ?? staticSnapshot?.source ?? 'unknown',
-    bridge_timestamp: merged.bridge_timestamp ?? staticSnapshot?.bridge_timestamp,
-    history_points: merged.history_points ?? staticSnapshot?.history_points ?? history.length,
-    history_source: merged.history_source ?? staticSnapshot?.history_source ?? 'unknown',
-    step_seconds: merged.step_seconds ?? staticSnapshot?.step_seconds ?? 0,
-    program_id: merged.program_id ?? staticSnapshot?.program_id,
-    risk_state_pda: liveRiskState ?? merged.risk_state_pda ?? staticSnapshot?.risk_state_pda,
-    authority: merged.authority ?? staticSnapshot?.authority,
-    last_updater: merged.last_updater ?? staticSnapshot?.last_updater,
-    network: merged.network ?? staticSnapshot?.network ?? 'solana-devnet',
-    history,
-    baseline: merged.baseline ?? staticSnapshot?.baseline,
-  };
-}
-
-async function fetchStaticOracleSnapshot(lstId: string): Promise<OracleSnapshot | null> {
-  try {
-    const candidatePaths = [
-      `/data/oracle_state.${lstId}.json`,
-      '/data/oracle_state.json',
-    ];
-
-    for (const candidate of candidatePaths) {
-      const response = await fetch(candidate, { cache: 'no-store' });
-      if (!response.ok) {
-        continue;
-      }
-      const snapshot = (await response.json()) as OracleSnapshot;
-      if (snapshot.lst_id === lstId) {
-        return snapshot;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 export async function fetchOracleSnapshot(lstId = DEFAULT_LST_ID): Promise<OracleSnapshot | null> {
-  const staticSnapshot = await fetchStaticOracleSnapshot(lstId);
-
+  // ONLY fetch from live API - no static fallback
   try {
-    const liveResponse = await fetch(`/api/oracle-state?lst_id=${encodeURIComponent(lstId)}`, { cache: 'no-store' });
-    if (liveResponse.ok) {
-      const liveSnapshot = (await liveResponse.json()) as Partial<OracleSnapshot>;
-      return normalizeOracleSnapshot(liveSnapshot, staticSnapshot);
-    }
-  } catch {
-    // Fall through to the static snapshot.
-  }
+    const liveResponse = await fetch(`/api/oracle-state?lst_id=${encodeURIComponent(lstId)}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
 
-  return normalizeOracleSnapshot(null, staticSnapshot);
+    if (!liveResponse.ok) {
+      console.error(`[fetchOracleSnapshot] API error: ${liveResponse.status} ${liveResponse.statusText}`);
+      return null;
+    }
+
+    const liveData = await liveResponse.json();
+    console.log('[fetchOracleSnapshot] Live API response:', {
+      timestamp: liveData.timestamp,
+      theta: liveData.theta,
+      suggested_ltv: liveData.suggested_ltv,
+      source: 'LIVE_API'
+    });
+
+    // Transform API response to OracleSnapshot format
+    return {
+      lst_id: liveData.lst_id ?? lstId,
+      asset_symbol: liveData.asset_symbol,
+      asset_display_name: liveData.asset_display_name,
+      base_symbol: liveData.base_symbol ?? 'SOL',
+      theta: liveData.theta ?? 0,
+      sigma: liveData.sigma ?? 0,
+      regime_flag: liveData.regime_flag ?? 0,
+      suggested_ltv: liveData.suggested_ltv ?? 0,
+      z_score: liveData.z_score ?? 0,
+      spread: liveData.spread_pct ?? 0,
+      spread_pct: liveData.spread_pct ?? 0,
+      mu: liveData.mu,
+      adf_pvalue: liveData.adf_pvalue,
+      is_stationary: liveData.is_stationary,
+      spread_signal: liveData.spread_signal,
+      peg_deviation_pct: liveData.peg_deviation_pct,
+      asset_price: liveData.asset_price ?? liveData.msol_price,
+      reference_rate: liveData.reference_rate,
+      reference_rate_source: liveData.reference_rate_source,
+      data_timestamp: liveData.data_timestamp,
+      timestamp: liveData.timestamp ?? 0,
+      updated_at_iso: liveData.timestamp
+        ? new Date(liveData.timestamp * 1000).toISOString()
+        : undefined,
+      status: liveData.status ?? 'UNKNOWN',
+      msol_price: liveData.msol_price ?? 0,
+      sol_price: liveData.sol_price ?? 0,
+      source: 'LIVE_SOLANA_PDA',
+      bridge_timestamp: liveData.bridge_timestamp,
+      history_points: 0,
+      history_source: 'none',
+      step_seconds: 0,
+      program_id: liveData.program_id,
+      risk_state_pda: liveData.risk_state,
+      authority: liveData.authority,
+      last_updater: liveData.last_updater,
+      network: liveData.network ?? 'solana-devnet',
+      history: [],
+      baseline: liveData.baseline,
+    };
+  } catch (error) {
+    console.error('[fetchOracleSnapshot] Fetch error:', error);
+    return null;
+  }
 }
 
 export async function fetchSimulationSnapshot(): Promise<SimulationSnapshot | null> {
@@ -129,9 +98,10 @@ export async function fetchSimulationSnapshot(): Promise<SimulationSnapshot | nu
       return (await liveResponse.json()) as SimulationSnapshot;
     }
   } catch {
-    // Fall through to the static snapshot.
+    // No fallback
   }
 
+  // Load from static file only for simulation (this is expected behavior)
   try {
     const response = await fetch('/data/stress_scenario.json', { cache: 'no-store' });
     if (!response.ok) {
@@ -144,41 +114,30 @@ export async function fetchSimulationSnapshot(): Promise<SimulationSnapshot | nu
 }
 
 export async function fetchMarketSnapshot(lstId = DEFAULT_LST_ID): Promise<MarketSnapshot | null> {
+  // ONLY fetch from live Pyth API - no fallback
   try {
-    const response = await fetch(`/api/market-state?lst_id=${encodeURIComponent(lstId)}`, { cache: 'no-store' });
+    const response = await fetch(`/api/market-state?lst_id=${encodeURIComponent(lstId)}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+
     if (!response.ok) {
-      const staticSnapshot = await fetchStaticOracleSnapshot(lstId);
-      if (!staticSnapshot) {
-        return null;
-      }
-      return {
-        lst_id: staticSnapshot.lst_id,
-        asset_symbol: staticSnapshot.asset_symbol,
-        base_symbol: staticSnapshot.base_symbol,
-        asset_price: staticSnapshot.asset_price ?? staticSnapshot.msol_price,
-        msol_price: staticSnapshot.msol_price,
-        sol_price: staticSnapshot.sol_price,
-        spread_pct: staticSnapshot.spread_pct,
-        publish_time: staticSnapshot.timestamp,
-        source: 'snapshot-fallback',
-      };
-    }
-    return (await response.json()) as MarketSnapshot;
-  } catch {
-    const staticSnapshot = await fetchStaticOracleSnapshot(lstId);
-    if (!staticSnapshot) {
+      console.error(`[fetchMarketSnapshot] API error: ${response.status}`);
       return null;
     }
-    return {
-      lst_id: staticSnapshot.lst_id,
-      asset_symbol: staticSnapshot.asset_symbol,
-      base_symbol: staticSnapshot.base_symbol,
-      asset_price: staticSnapshot.asset_price ?? staticSnapshot.msol_price,
-      msol_price: staticSnapshot.msol_price,
-      sol_price: staticSnapshot.sol_price,
-      spread_pct: staticSnapshot.spread_pct,
-      publish_time: staticSnapshot.timestamp,
-      source: 'snapshot-fallback',
-    };
+
+    const data = await response.json();
+    console.log('[fetchMarketSnapshot] Live Pyth response:', {
+      asset_price: data.asset_price,
+      sol_price: data.sol_price,
+      spread_pct: data.spread_pct,
+      publish_time: data.publish_time,
+      source: data.source
+    });
+
+    return data as MarketSnapshot;
+  } catch (error) {
+    console.error('[fetchMarketSnapshot] Fetch error:', error);
+    return null;
   }
 }

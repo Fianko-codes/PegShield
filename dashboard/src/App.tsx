@@ -30,6 +30,8 @@ export default function App() {
   });
   const [oracleSnapshot, setOracleSnapshot] = useState<OracleSnapshot | null>(null);
   const [riskState, setRiskState] = useState<RiskState>(getFallbackRiskState(selectedLstId));
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -45,13 +47,31 @@ export default function App() {
     let cancelled = false;
     setOracleSnapshot(null);
     setRiskState(getFallbackRiskState(selectedLstId));
+    setApiError(null);
 
     const load = async () => {
+      console.log(`[App] Fetching oracle data for ${selectedLstId}...`);
       const snapshot = await fetchOracleSnapshot(selectedLstId);
-      if (!snapshot || cancelled) {
+      setLastFetchTime(Date.now());
+
+      if (cancelled) {
         return;
       }
 
+      if (!snapshot) {
+        setApiError('API returned null - check console for errors');
+        console.error('[App] fetchOracleSnapshot returned null');
+        return;
+      }
+
+      console.log('[App] Got live data:', {
+        source: snapshot.source,
+        timestamp: snapshot.timestamp,
+        theta: snapshot.theta,
+        suggested_ltv: snapshot.suggested_ltv
+      });
+
+      setApiError(null);
       setOracleSnapshot(snapshot);
       setRiskState({
         lst_id: snapshot.lst_id,
@@ -76,8 +96,18 @@ export default function App() {
     };
   }, [selectedLstId]);
 
+  // Show prominent error banner if API fails
+  const errorBanner = apiError ? (
+    <div className="fixed top-0 left-0 right-0 z-50 bg-red-900 border-b-2 border-red-500 px-4 py-3 text-center">
+      <span className="font-mono text-sm text-white">
+        API ERROR: {apiError} | Last attempt: {lastFetchTime ? new Date(lastFetchTime).toLocaleTimeString() : 'never'}
+      </span>
+    </div>
+  ) : null;
+
   return (
     <BrowserRouter>
+      {errorBanner}
       <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
