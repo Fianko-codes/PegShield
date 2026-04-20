@@ -63,7 +63,7 @@ function loadIdl(): anchor.Idl {
 
 async function main(): Promise<void> {
   const collateralValueUsd = Number(process.argv[2] ?? "1000");
-  const lstId = process.argv[3] ?? "mSOL";
+  const lstId = process.argv[3] ?? "mSOL-v2";
   const fixedLtv = 0.8;
 
   const connection = new Connection(requiredEnv("SOLANA_RPC_URL"), "confirmed");

@@ -8,6 +8,7 @@ spread (which is dominated by staking-yield accrual, not de-peg risk).
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import time
@@ -32,6 +33,14 @@ MARINADE_PRICE_URL = os.getenv(
 JITO_STAKE_POOL_STATS_URL = os.getenv(
     "JITO_STAKE_POOL_STATS_URL",
     "https://kobe.mainnet.jito.network/api/v1/stake_pool_stats",
+)
+SOLBLAZE_STAKE_POOL_ACCOUNT = os.getenv(
+    "SOLBLAZE_STAKE_POOL_ACCOUNT",
+    "stk9ApL5HeVAwPLr3TLhDXdZS8ptVu7zp6ov8HFDuMi",
+)
+SOLBLAZE_RPC_URL = os.getenv(
+    "SOLBLAZE_RPC_URL",
+    os.getenv("SOLANA_MAINNET_RPC_URL", "https://api.mainnet-beta.solana.com"),
 )
 
 FEEDS = {
@@ -196,7 +205,85 @@ def fetch_reference_rate(
             session,
             fallback_rate=asset_config.reference_rate_fallback,
         )
+    if asset_config.reference_rate_kind == "solblaze":
+        return fetch_solblaze_bsol_sol_rate(
+            session,
+            fallback_rate=asset_config.reference_rate_fallback,
+        )
     raise ValueError(f"Unsupported reference rate kind: {asset_config.reference_rate_kind}")
+
+
+def _decode_borsh_u64(buffer: bytes, offset: int) -> int:
+    return int.from_bytes(buffer[offset:offset + 8], byteorder="little", signed=False)
+
+
+def fetch_solblaze_bsol_sol_rate(
+    session: requests.Session,
+    rpc_url: str = SOLBLAZE_RPC_URL,
+    stake_pool_account: str = SOLBLAZE_STAKE_POOL_ACCOUNT,
+    fallback_rate: float = 1.18,
+) -> tuple[float, str]:
+    """Fetch the live bSOL -> SOL exchange rate from the BlazeStake stake-pool account.
+
+    The official BlazeStake docs publish the stake-pool account, and SPL stake-pool
+    accounts are Borsh-serialized. We only need `total_lamports` and
+    `pool_token_supply` from the serialized `StakePool` struct to derive the
+    redemption rate.
+    """
+    last_error: Exception | None = None
+    request_body = {
+        "jsonrpc": "2.0",
+        "id": "pegshield-solblaze-stake-pool",
+        "method": "getAccountInfo",
+        "params": [
+            stake_pool_account,
+            {
+                "encoding": "base64",
+                "commitment": "confirmed",
+            },
+        ],
+    }
+
+    for attempt in range(3):
+        try:
+            response = session.post(rpc_url, json=request_body, timeout=15)
+            response.raise_for_status()
+            payload = response.json()
+            value = payload.get("result", {}).get("value")
+            if not value:
+                raise ValueError("SolBlaze stake-pool account not found")
+
+            encoded_data = value.get("data")
+            if not isinstance(encoded_data, list) or len(encoded_data) < 1:
+                raise ValueError("Unexpected SolBlaze account payload shape")
+
+            account_bytes = base64.b64decode(encoded_data[0])
+            if len(account_bytes) < 274:
+                raise ValueError("SolBlaze stake-pool account too small to decode")
+
+            account_type = account_bytes[0]
+            if account_type != 1:
+                raise ValueError(f"Unexpected stake-pool account type: {account_type}")
+
+            total_lamports = _decode_borsh_u64(account_bytes, 258)
+            pool_token_supply = _decode_borsh_u64(account_bytes, 266)
+            if pool_token_supply <= 0:
+                raise ValueError("SolBlaze pool token supply must be positive")
+
+            rate = total_lamports / pool_token_supply
+            if not (1.0 <= rate <= 2.0):
+                raise ValueError(f"SolBlaze rate {rate} outside sane bounds")
+
+            return rate, "solblaze-stake-pool-rpc"
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            time.sleep(0.5 * (attempt + 1))
+
+    print(
+        f"WARN: SolBlaze rate fetch failed ({last_error}); falling back to "
+        f"{fallback_rate}",
+    )
+    return fallback_rate, "fallback-hardcoded"
 
 
 def fetch_latest_price_feeds(

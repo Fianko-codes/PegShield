@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import sys
+import argparse
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -19,6 +20,7 @@ DASHBOARD_PUBLIC = ROOT / "dashboard" / "public" / "data"
 ORACLE_INPUT = ROOT / "core-engine" / "output" / "latest.json"
 BRIDGE_INPUT = ROOT / "bridge" / "data" / "latest_raw.json"
 ENV_INPUT = ROOT / ".env"
+DEFAULT_OUTPUT = DASHBOARD_PUBLIC / "oracle_state.json"
 
 
 def load_env(path: Path) -> dict[str, str]:
@@ -45,6 +47,8 @@ def iso_from_unix(timestamp: int) -> str:
 
 def risk_state_pda_from_env(lst_id: str, env: dict[str, str]) -> str:
     normalized = lst_id.lower()
+    if normalized.startswith("bsol"):
+        return env.get("BSOL_RISK_STATE_PDA", env.get("ORACLE_RISK_STATE_PDA", ""))
     if normalized.startswith("jitosol"):
         return env.get("JITOSOL_RISK_STATE_PDA", env.get("ORACLE_RISK_STATE_PDA", ""))
     if normalized.startswith("msol"):
@@ -55,10 +59,18 @@ def risk_state_pda_from_env(lst_id: str, env: dict[str, str]) -> str:
     return env.get("ORACLE_RISK_STATE_PDA", "")
 
 
-def build_oracle_snapshot() -> dict:
-    oracle_payload = load_json(ORACLE_INPUT)
-    bridge_payload = load_json(BRIDGE_INPUT)
-    env = load_env(ENV_INPUT)
+def snapshot_name_for_lst(lst_id: str) -> str:
+    return f"oracle_state.{lst_id}.json"
+
+
+def build_oracle_snapshot(
+    oracle_input: Path,
+    bridge_input: Path,
+    env_input: Path,
+) -> dict:
+    oracle_payload = load_json(oracle_input)
+    bridge_payload = load_json(bridge_input)
+    env = load_env(env_input)
 
     history = [
         {
@@ -123,20 +135,42 @@ def build_simulation_snapshot() -> dict:
 
 
 def main() -> None:
-    DASHBOARD_PUBLIC.mkdir(parents=True, exist_ok=True)
-    oracle_snapshot = build_oracle_snapshot()
-    simulation_snapshot = build_simulation_snapshot()
+    parser = argparse.ArgumentParser(description="Sync oracle artifacts into dashboard/public.")
+    parser.add_argument("--oracle-input", default=str(ORACLE_INPUT))
+    parser.add_argument("--bridge-input", default=str(BRIDGE_INPUT))
+    parser.add_argument("--env-input", default=str(ENV_INPUT))
+    parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
+    parser.add_argument("--write-asset-alias", action="store_true")
+    parser.add_argument("--skip-simulation", action="store_true")
+    args = parser.parse_args()
 
-    (DASHBOARD_PUBLIC / "oracle_state.json").write_text(
+    DASHBOARD_PUBLIC.mkdir(parents=True, exist_ok=True)
+    output_path = Path(args.output)
+    oracle_snapshot = build_oracle_snapshot(
+        Path(args.oracle_input),
+        Path(args.bridge_input),
+        Path(args.env_input),
+    )
+    output_path.write_text(
         json.dumps(oracle_snapshot, indent=2),
         encoding="utf-8",
     )
-    (DASHBOARD_PUBLIC / "stress_scenario.json").write_text(
-        json.dumps(simulation_snapshot, indent=2),
-        encoding="utf-8",
-    )
-    print(f"Wrote {DASHBOARD_PUBLIC / 'oracle_state.json'}")
-    print(f"Wrote {DASHBOARD_PUBLIC / 'stress_scenario.json'}")
+    if args.write_asset_alias:
+        asset_output = output_path.parent / snapshot_name_for_lst(oracle_snapshot["lst_id"])
+        if asset_output != output_path:
+            asset_output.write_text(json.dumps(oracle_snapshot, indent=2), encoding="utf-8")
+
+    if not args.skip_simulation:
+        simulation_snapshot = build_simulation_snapshot()
+        (DASHBOARD_PUBLIC / "stress_scenario.json").write_text(
+            json.dumps(simulation_snapshot, indent=2),
+            encoding="utf-8",
+        )
+    print(f"Wrote {output_path}")
+    if args.write_asset_alias:
+        print(f"Wrote {output_path.parent / snapshot_name_for_lst(oracle_snapshot['lst_id'])}")
+    if not args.skip_simulation:
+        print(f"Wrote {DASHBOARD_PUBLIC / 'stress_scenario.json'}")
 
 
 if __name__ == "__main__":

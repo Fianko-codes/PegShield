@@ -19,6 +19,7 @@ import { BlockMath } from 'react-katex';
 import { cn } from '../types';
 import type { LogEntry, MarketSnapshot, OracleSnapshot, RiskState } from '../types';
 import { fetchMarketSnapshot } from '../lib/data';
+import { SUPPORTED_LSTS, type SupportedLstId } from '../lib/assets';
 
 const AppMarketChart = lazy(() => import('../components/AppMarketChart'));
 const DevnetWriteGuardDemo = lazy(() => import('../components/DevnetWriteGuardDemo'));
@@ -260,9 +261,13 @@ function ModelCard({
 function AppPageContent({
   globalState,
   oracleSnapshot,
+  selectedLstId,
+  onSelectLstId,
 }: {
   globalState: RiskState;
   oracleSnapshot: OracleSnapshot | null;
+  selectedLstId: SupportedLstId;
+  onSelectLstId: (lstId: SupportedLstId) => void;
 }) {
   const [liveTail, setLiveTail] = useState<
     { time: string; spread: number; publishTime: number }[]
@@ -363,7 +368,7 @@ function AppPageContent({
     let cancelled = false;
 
     const loadMarket = async () => {
-      const snapshot = await fetchMarketSnapshot();
+      const snapshot = await fetchMarketSnapshot(selectedLstId);
       if (!snapshot || cancelled) {
         return;
       }
@@ -427,7 +432,7 @@ function AppPageContent({
       window.removeEventListener('pageshow', syncOnResume);
       document.removeEventListener('visibilitychange', syncOnResume);
     };
-  }, [oracleSnapshot]);
+  }, [oracleSnapshot, selectedLstId]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -542,20 +547,36 @@ function AppPageContent({
             </div>
           </div>
         </div>
-        <div
-          className={cn(
-            'shrink-0 border px-4 py-3 text-left md:text-right',
-            globalState.regime_flag === 1 ? 'border-emergency-red/40 bg-emergency-red/5' : 'border-solana-green/40 bg-solana-green/5',
-          )}
-        >
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Risk Regime</div>
+        <div className="flex shrink-0 flex-col gap-3 md:items-end">
+          <label className="min-w-[12rem] border border-zinc-800 bg-black/40 px-3 py-2 text-left">
+            <div className="text-[9px] uppercase tracking-[0.12em] text-zinc-500">Tracked LST</div>
+            <select
+              value={selectedLstId}
+              onChange={(event) => onSelectLstId(event.target.value as SupportedLstId)}
+              className="mt-2 w-full bg-transparent text-sm font-bold uppercase tracking-[0.08em] text-white outline-none"
+            >
+              {SUPPORTED_LSTS.map((asset) => (
+                <option key={asset.lstId} value={asset.lstId} className="bg-zinc-950 text-white">
+                  {asset.symbol} • {asset.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <div
             className={cn(
-              'mt-1 text-sm font-bold uppercase tracking-[0.1em] sm:text-base',
-              globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-solana-green',
+              'border px-4 py-3 text-left md:text-right',
+              globalState.regime_flag === 1 ? 'border-emergency-red/40 bg-emergency-red/5' : 'border-solana-green/40 bg-solana-green/5',
             )}
           >
-            {globalState.regime_flag === 1 ? 'CRITICAL UNSTABLE' : 'STABLE / MONITORED'}
+            <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Risk Regime</div>
+            <div
+              className={cn(
+                'mt-1 text-sm font-bold uppercase tracking-[0.1em] sm:text-base',
+                globalState.regime_flag === 1 ? 'text-emergency-red' : 'text-solana-green',
+              )}
+            >
+              {globalState.regime_flag === 1 ? 'CRITICAL UNSTABLE' : 'STABLE / MONITORED'}
+            </div>
           </div>
         </div>
       </div>
@@ -1037,6 +1058,8 @@ function AppPageContent({
 export default function AppPage(props: {
   globalState: RiskState;
   oracleSnapshot: OracleSnapshot | null;
+  selectedLstId: SupportedLstId;
+  onSelectLstId: (lstId: SupportedLstId) => void;
 }) {
   return <AppPageContent {...props} />;
 }

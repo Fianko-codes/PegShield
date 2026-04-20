@@ -64,7 +64,7 @@ function loadWallet(): anchor.Wallet {
 }
 
 async function main(): Promise<void> {
-  const lstId = process.argv[2] ?? "mSOL";
+  const lstId = process.argv[2] ?? "mSOL-v2";
   const connection = new Connection(requiredEnv("SOLANA_RPC_URL"), "confirmed");
   const idl = loadIdl();
   const wallet = loadWallet();

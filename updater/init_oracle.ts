@@ -46,7 +46,7 @@ function loadWallet(): anchor.Wallet {
 }
 
 async function main(): Promise<void> {
-  const lstId = process.argv[2] ?? "mSOL";
+  const lstId = process.argv[2] ?? "mSOL-v2";
   const authority = new PublicKey(requiredEnv("ORACLE_AUTHORITY"));
   const connection = new Connection(requiredEnv("SOLANA_RPC_URL"), "confirmed");
   const wallet = loadWallet();

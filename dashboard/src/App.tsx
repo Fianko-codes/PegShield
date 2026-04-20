@@ -5,6 +5,7 @@ import RootLayout from './layouts/RootLayout';
 import ScrollToTop from './components/ScrollToTop';
 import type { OracleSnapshot, RiskState } from './types';
 import { fetchOracleSnapshot, getFallbackRiskState } from './lib/data';
+import { DEFAULT_LST_ID, normalizeLstId } from './lib/assets';
 
 const Home = lazy(() => import('./pages/Home'));
 const AppPage = lazy(() => import('./pages/AppPage'));
@@ -21,14 +22,32 @@ function RouteFallback() {
 }
 
 export default function App() {
+  const [selectedLstId, setSelectedLstId] = useState(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_LST_ID;
+    }
+    return normalizeLstId(new URLSearchParams(window.location.search).get('lst'));
+  });
   const [oracleSnapshot, setOracleSnapshot] = useState<OracleSnapshot | null>(null);
-  const [riskState, setRiskState] = useState<RiskState>(getFallbackRiskState());
+  const [riskState, setRiskState] = useState<RiskState>(getFallbackRiskState(selectedLstId));
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('lst', selectedLstId);
+    window.history.replaceState({}, '', url);
+  }, [selectedLstId]);
 
   useEffect(() => {
     let cancelled = false;
+    setOracleSnapshot(null);
+    setRiskState(getFallbackRiskState(selectedLstId));
 
     const load = async () => {
-      const snapshot = await fetchOracleSnapshot();
+      const snapshot = await fetchOracleSnapshot(selectedLstId);
       if (!snapshot || cancelled) {
         return;
       }
@@ -55,7 +74,7 @@ export default function App() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, []);
+  }, [selectedLstId]);
 
   return (
     <BrowserRouter>
@@ -69,7 +88,14 @@ export default function App() {
             />
             <Route
               path="/app"
-              element={<AppPage globalState={riskState} oracleSnapshot={oracleSnapshot} />}
+              element={
+                <AppPage
+                  globalState={riskState}
+                  oracleSnapshot={oracleSnapshot}
+                  selectedLstId={selectedLstId}
+                  onSelectLstId={setSelectedLstId}
+                />
+              }
             />
             <Route path="/sim" element={<SimPage />} />
           </Route>

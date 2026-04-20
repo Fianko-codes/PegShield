@@ -133,6 +133,47 @@ class CoreEngineMicroTests(unittest.TestCase):
         self.assertGreaterEqual(payload["asset_price"], payload["sol_price"])
         self.assertEqual(payload["spread_signal"], "peg_deviation")
 
+    def test_pipeline_build_risk_payload_contract_for_bsol(self) -> None:
+        reference_rate = 1.1824
+        history = []
+        for idx in range(40):
+            sol = 132.0 + idx * 0.04
+            peg_deviation = 0.0006 * np.sin(idx / 4)
+            asset = sol * reference_rate * (1 + peg_deviation)
+            history.append(
+                {
+                    "timestamp": 1_700_200_000 + idx * 300,
+                    "asset_usd_price": asset,
+                    "sol_usd_price": sol,
+                    "asset_confidence": 0.04,
+                    "sol_confidence": 0.03,
+                    "asset_sol_ratio": reference_rate * (1 + peg_deviation),
+                    "asset_sol_spread_pct": (asset - sol) / sol,
+                    "peg_deviation": peg_deviation,
+                }
+            )
+
+        bridge_payload = {
+            "source": "test",
+            "lst_id": "bSOL-v1",
+            "asset_symbol": "bSOL",
+            "asset_display_name": "BlazeStake Staked SOL",
+            "base_symbol": "SOL",
+            "bridge_timestamp": "2026-01-01T00:00:00+00:00",
+            "asset_sol_reference_rate": reference_rate,
+            "reference_rate_source": "solblaze-stake-pool-rpc",
+            "history": history,
+        }
+
+        payload = build_risk_payload(bridge_payload, lst_id="bSOL-v1")
+
+        self.assertEqual(payload["lst_id"], "bSOL-v1")
+        self.assertEqual(payload["asset_symbol"], "bSOL")
+        self.assertEqual(payload["asset_display_name"], "BlazeStake Staked SOL")
+        self.assertAlmostEqual(payload["reference_rate"], reference_rate, places=5)
+        self.assertEqual(payload["reference_rate_source"], "solblaze-stake-pool-rpc")
+        self.assertEqual(payload["spread_signal"], "peg_deviation")
+
     def test_stress_simulation_outputs_expected_columns(self) -> None:
         marinade_rate = 1.17
         bridge_payload = {

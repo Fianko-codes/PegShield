@@ -63,6 +63,10 @@ jobs:
           PROGRAM_ID: ${{ secrets.PROGRAM_ID }}
           PYTH_HTTP_URL: ${{ secrets.PYTH_HTTP_URL }}
           ORACLE_AUTHORITY: ${{ secrets.ORACLE_AUTHORITY }}
+          SOLANA_MAINNET_RPC_URL: ${{ secrets.SOLANA_MAINNET_RPC_URL }}
+          MSOL_RISK_STATE_PDA: ${{ secrets.MSOL_RISK_STATE_PDA }}
+          JITOSOL_RISK_STATE_PDA: ${{ secrets.JITOSOL_RISK_STATE_PDA }}
+          BSOL_RISK_STATE_PDA: ${{ secrets.BSOL_RISK_STATE_PDA }}
         run: |
           cat > .env <<EOF
           SOLANA_RPC_URL=${SOLANA_RPC_URL}
@@ -70,28 +74,81 @@ jobs:
           UPDATER_KEYPAIR_PATH=./updater/keypair.json
           PYTH_HTTP_URL=${PYTH_HTTP_URL:-https://hermes.pyth.network}
           ORACLE_AUTHORITY=${ORACLE_AUTHORITY}
+          SOLANA_MAINNET_RPC_URL=${SOLANA_MAINNET_RPC_URL:-https://api.mainnet-beta.solana.com}
+          MSOL_RISK_STATE_PDA=${MSOL_RISK_STATE_PDA}
+          JITOSOL_RISK_STATE_PDA=${JITOSOL_RISK_STATE_PDA}
+          BSOL_RISK_STATE_PDA=${BSOL_RISK_STATE_PDA}
           EOF
 
       - name: Run micro tests
         run: python -m unittest tests.test_core_engine -v
 
-      - name: Bootstrap bridge cache
-        run: python bridge/bootstrap_cache.py
+      - name: Update all tracked LSTs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bridge/data core-engine/output dashboard/public/data
 
-      - name: Fetch live bridge payload
-        run: python bridge/fetch_pyth.py --lookback-seconds 5400 --step-seconds 300
+          PRIMARY_LST_ID="mSOL-v2"
+          while IFS=':' read -r LST_ASSET LST_ID; do
+            BRIDGE_OUT="${GITHUB_WORKSPACE}/bridge/data/latest_raw.${LST_ID}.json"
+            CORE_OUT="${GITHUB_WORKSPACE}/core-engine/output/latest.${LST_ID}.json"
+            SNAPSHOT_OUT="${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.${LST_ID}.json"
+            SNAPSHOT_CACHE="${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.${LST_ID}.json"
 
-      - name: Run statistical pipeline
-        run: python core-engine/pipeline.py
+            if [[ "${LST_ID}" == "${PRIMARY_LST_ID}" && ! -f "${SNAPSHOT_CACHE}" && -f "${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json" ]]; then
+              SNAPSHOT_CACHE="${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json"
+            fi
 
-      - name: Submit live oracle update
-        run: npm --prefix updater run submit -- "${GITHUB_WORKSPACE}/core-engine/output/latest.json"
+            if [[ -f "${SNAPSHOT_CACHE}" ]]; then
+              python bridge/bootstrap_cache.py \
+                --snapshot "${SNAPSHOT_CACHE}" \
+                --output "${BRIDGE_OUT}"
+            fi
+
+            python bridge/fetch_pyth.py \
+              --asset "${LST_ASSET}" \
+              --lst-id "${LST_ID}" \
+              --lookback-seconds 5400 \
+              --step-seconds 300 \
+              --output "${BRIDGE_OUT}"
+
+            python core-engine/pipeline.py \
+              --input "${BRIDGE_OUT}" \
+              --output "${CORE_OUT}"
+
+            npm --prefix updater run submit -- "${CORE_OUT}"
+
+            if [[ "${LST_ID}" == "${PRIMARY_LST_ID}" ]]; then
+              python dashboard/scripts/sync_demo_data.py \
+                --oracle-input "${CORE_OUT}" \
+                --bridge-input "${BRIDGE_OUT}" \
+                --output "${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json" \
+                --write-asset-alias \
+                --skip-simulation
+            else
+              python dashboard/scripts/sync_demo_data.py \
+                --oracle-input "${CORE_OUT}" \
+                --bridge-input "${BRIDGE_OUT}" \
+                --output "${SNAPSHOT_OUT}" \
+                --skip-simulation
+            fi
+          done <<'EOF'
+          mSOL:mSOL-v2
+          jitoSOL:jitoSOL-v1
+          bSOL:bSOL-v1
+          EOF
 
       - name: Regenerate simulation outputs
         run: python simulation/stress_test.py
 
-      - name: Sync dashboard snapshots
-        run: npm --prefix dashboard run sync:data
+      - name: Refresh primary dashboard snapshot metadata
+        run: |
+          python dashboard/scripts/sync_demo_data.py \
+            --oracle-input "${GITHUB_WORKSPACE}/core-engine/output/latest.mSOL-v2.json" \
+            --bridge-input "${GITHUB_WORKSPACE}/bridge/data/latest_raw.mSOL-v2.json" \
+            --output "${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json" \
+            --write-asset-alias
 
       - name: Commit refreshed public snapshots
         continue-on-error: true
@@ -99,7 +156,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f dashboard/public/data/oracle_state.json dashboard/public/data/stress_scenario.json
+          git add -f dashboard/public/data/oracle_state.json dashboard/public/data/oracle_state.*.json dashboard/public/data/stress_scenario.json
           if git diff --cached --quiet; then
             echo "No public snapshot changes to commit."
             exit 0

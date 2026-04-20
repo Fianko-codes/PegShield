@@ -1,8 +1,9 @@
 import { fetchOracleState } from './_lib/oracle.js';
 
-export default async function handler(_req, res) {
+export default async function handler(req, res) {
   try {
-    const payload = await fetchOracleState();
+    const lstId = req?.query?.lst_id ?? req?.query?.lst ?? undefined;
+    const payload = await fetchOracleState({ lstId });
     res.setHeader('Cache-Control', 's-maxage=15, stale-while-revalidate=60');
     res.status(200).json(payload);
   } catch (error) {
@@ -12,4 +13,3 @@ export default async function handler(_req, res) {
     });
   }
 }
-

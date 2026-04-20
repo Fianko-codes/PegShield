@@ -5,7 +5,8 @@ Snapshot-backed frontend plus read-only Vercel API for the PegShield Solana LST 
 ## What it does
 
 - Serves the React dashboard for `PegShield`
-- Exposes `GET /api/oracle-state` to read the live `mSOL` oracle PDA from Solana devnet
+- Exposes `GET /api/oracle-state?lst_id=<lst>` to read the selected oracle PDA from Solana devnet
+- Exposes `GET /api/market-state?lst_id=<lst>` to read the selected LST/SOL market premium from Hermes
 - Exposes `GET /api/simulation` to serve the historical replay snapshot
 - Falls back to `public/data/*.json` if the API is unavailable
 
@@ -24,10 +25,15 @@ Set these in the Vercel project:
 ```bash
 SOLANA_RPC_URL=https://api.devnet.solana.com
 PROGRAM_ID=DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea
-ORACLE_LST_ID=mSOL
+ORACLE_LST_ID=mSOL-v2
 ```
 
 `PROGRAM_ID` and `ORACLE_LST_ID` are public. No private key is required for the API because it is read-only.
+
+Supported asset ids today:
+- `mSOL-v2`
+- `jitoSOL-v1`
+- `bSOL-v1`
 
 ## Deploy on Vercel
 
@@ -57,4 +63,6 @@ npm run build
 - `/app` live oracle dashboard
 - `/sim` historical replay view
 - `/api/oracle-state` live PDA reader
+- `/api/oracle-state?lst_id=jitoSOL-v1` selected PDA reader
+- `/api/market-state?lst_id=bSOL-v1` selected market feed reader
 - `/api/simulation` simulation snapshot API

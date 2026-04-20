@@ -237,7 +237,7 @@ export default function Home({ riskState, oracleSnapshot }: HomeProps) {
             {
               title: 'Pyth Market Data',
               icon: Zap,
-              desc: 'Live LST and SOL prices arrive from Hermes with recent spread history. Current repo support covers mSOL and jitoSOL.',
+              desc: 'Live LST and SOL prices arrive from Hermes with recent spread history. Current repo support covers mSOL, jitoSOL, and bSOL.',
             },
             {
               title: 'Statistical Engine',

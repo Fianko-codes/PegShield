@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -21,7 +22,16 @@ FALLBACK_MARINADE_RATE = 1.17
 
 
 def main() -> None:
-    snapshot = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
+    parser = argparse.ArgumentParser(description="Bootstrap a bridge cache from a saved oracle snapshot.")
+    parser.add_argument("--snapshot", default=str(SNAPSHOT_PATH))
+    parser.add_argument("--output", default=str(OUTPUT_PATH))
+    args = parser.parse_args()
+
+    snapshot_path = Path(args.snapshot)
+    output_path = Path(args.output)
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+
+    asset_price_key = "asset_price" if snapshot.get("asset_price") is not None else "msol_price"
 
     marinade_rate = float(
         snapshot.get("marinade_msol_sol_rate") or FALLBACK_MARINADE_RATE
@@ -34,38 +44,51 @@ def main() -> None:
     history = []
     for point in snapshot.get("history", []):
         sol_price = float(point["sol_price"])
-        msol_price = float(point["msol_price"])
+        asset_price = float(point.get("asset_price", point["msol_price"]))
         if sol_price and marinade_rate:
-            peg_deviation = (msol_price / sol_price) / marinade_rate - 1.0
+            peg_deviation = (asset_price / sol_price) / marinade_rate - 1.0
         else:
             peg_deviation = None
         history.append(
             {
                 "timestamp": int(point["timestamp"]),
-                "msol_usd_price": msol_price,
+                "asset_usd_price": asset_price,
+                "msol_usd_price": asset_price,
                 "sol_usd_price": sol_price,
+                "asset_confidence": 0.0,
                 "msol_confidence": 0.0,
                 "sol_confidence": 0.0,
-                "msol_sol_ratio": msol_price / sol_price if sol_price else None,
+                "asset_sol_ratio": asset_price / sol_price if sol_price else None,
+                "msol_sol_ratio": asset_price / sol_price if sol_price else None,
+                "asset_sol_spread_pct": float(point["spread_pct"]),
                 "msol_sol_spread_pct": float(point["spread_pct"]),
                 "peg_deviation": peg_deviation,
             }
         )
 
-    msol_price_latest = float(snapshot.get("msol_price", 0.0))
+    asset_price_latest = float(snapshot.get(asset_price_key, snapshot.get("msol_price", 0.0)))
     sol_price_latest = float(snapshot.get("sol_price", 0.0))
     peg_deviation_latest = (
-        (msol_price_latest / sol_price_latest) / marinade_rate - 1.0
+        (asset_price_latest / sol_price_latest) / marinade_rate - 1.0
         if sol_price_latest and marinade_rate
         else None
     )
 
     payload = {
         "source": snapshot.get("source", "dashboard-snapshot"),
+        "lst_id": snapshot.get("lst_id"),
+        "asset_symbol": snapshot.get("asset_symbol"),
+        "asset_display_name": snapshot.get("asset_display_name"),
+        "base_symbol": snapshot.get("base_symbol", "SOL"),
         "bridge_timestamp": snapshot.get("bridge_timestamp", snapshot.get("updated_at_iso")),
         "feeds": FEEDS,
+        "asset_usd": {
+            "price": asset_price_latest,
+            "confidence": 0.0,
+            "publish_time": int(snapshot.get("timestamp", 0)),
+        },
         "msol_usd": {
-            "price": msol_price_latest,
+            "price": asset_price_latest,
             "confidence": 0.0,
             "publish_time": int(snapshot.get("timestamp", 0)),
         },
@@ -78,18 +101,22 @@ def main() -> None:
         "marinade_rate_source": marinade_source,
         "derived": {
             "msol_sol_ratio": (
-                msol_price_latest / sol_price_latest if sol_price_latest else None
+                asset_price_latest / sol_price_latest if sol_price_latest else None
+            ),
+            "asset_sol_ratio": (
+                asset_price_latest / sol_price_latest if sol_price_latest else None
             ),
             "msol_sol_spread_pct": float(snapshot.get("spread_pct", 0.0)),
+            "asset_sol_spread_pct": float(snapshot.get("spread_pct", 0.0)),
             "peg_deviation_pct": peg_deviation_latest,
         },
         "history": history,
         "history_source": "dashboard_bootstrap",
     }
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    print(f"Wrote bootstrap bridge cache to {OUTPUT_PATH}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"Wrote bootstrap bridge cache to {output_path}")
 
 
 if __name__ == "__main__":

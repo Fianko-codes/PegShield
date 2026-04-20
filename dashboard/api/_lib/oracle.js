@@ -1,8 +1,8 @@
 import { Connection, PublicKey } from '@solana/web3.js';
+import { DEFAULT_LST_ID } from './assets.js';
 
 const DEFAULT_RPC_URL = 'https://api.devnet.solana.com';
 const DEFAULT_PROGRAM_ID = 'DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea';
-const DEFAULT_LST_ID = 'mSOL-v2';
 
 /** Matches SCALE in lib.rs.  All i64 risk fields are multiplied by this. */
 const SCALE = 1_000_000;

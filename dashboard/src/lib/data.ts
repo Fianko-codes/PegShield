@@ -1,18 +1,17 @@
 import type { MarketSnapshot, OracleSnapshot, RiskState, SimulationSnapshot } from '../types';
+import { DEFAULT_LST_ID } from './assets';
 
-const fallbackRiskState: RiskState = {
-  lst_id: 'mSOL-v2',
-  theta: 0,
-  sigma: 0,
-  regime_flag: 0,
-  suggested_ltv: 0,
-  z_score: 0,
-  spread: 0,
-  timestamp: 0,
-};
-
-export function getFallbackRiskState(): RiskState {
-  return fallbackRiskState;
+export function getFallbackRiskState(lstId = DEFAULT_LST_ID): RiskState {
+  return {
+    lst_id: lstId,
+    theta: 0,
+    sigma: 0,
+    regime_flag: 0,
+    suggested_ltv: 0,
+    z_score: 0,
+    spread: 0,
+    timestamp: 0,
+  };
 }
 
 function normalizeOracleSnapshot(
@@ -83,23 +82,34 @@ function normalizeOracleSnapshot(
   };
 }
 
-async function fetchStaticOracleSnapshot(): Promise<OracleSnapshot | null> {
+async function fetchStaticOracleSnapshot(lstId: string): Promise<OracleSnapshot | null> {
   try {
-    const response = await fetch('/data/oracle_state.json', { cache: 'no-store' });
-    if (!response.ok) {
-      return null;
+    const candidatePaths = [
+      `/data/oracle_state.${lstId}.json`,
+      '/data/oracle_state.json',
+    ];
+
+    for (const candidate of candidatePaths) {
+      const response = await fetch(candidate, { cache: 'no-store' });
+      if (!response.ok) {
+        continue;
+      }
+      const snapshot = (await response.json()) as OracleSnapshot;
+      if (snapshot.lst_id === lstId) {
+        return snapshot;
+      }
     }
-    return (await response.json()) as OracleSnapshot;
+    return null;
   } catch {
     return null;
   }
 }
 
-export async function fetchOracleSnapshot(): Promise<OracleSnapshot | null> {
-  const staticSnapshot = await fetchStaticOracleSnapshot();
+export async function fetchOracleSnapshot(lstId = DEFAULT_LST_ID): Promise<OracleSnapshot | null> {
+  const staticSnapshot = await fetchStaticOracleSnapshot(lstId);
 
   try {
-    const liveResponse = await fetch('/api/oracle-state', { cache: 'no-store' });
+    const liveResponse = await fetch(`/api/oracle-state?lst_id=${encodeURIComponent(lstId)}`, { cache: 'no-store' });
     if (liveResponse.ok) {
       const liveSnapshot = (await liveResponse.json()) as Partial<OracleSnapshot>;
       return normalizeOracleSnapshot(liveSnapshot, staticSnapshot);
@@ -132,15 +142,16 @@ export async function fetchSimulationSnapshot(): Promise<SimulationSnapshot | nu
   }
 }
 
-export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
+export async function fetchMarketSnapshot(lstId = DEFAULT_LST_ID): Promise<MarketSnapshot | null> {
   try {
-    const response = await fetch('/api/market-state', { cache: 'no-store' });
+    const response = await fetch(`/api/market-state?lst_id=${encodeURIComponent(lstId)}`, { cache: 'no-store' });
     if (!response.ok) {
-      const staticSnapshot = await fetchStaticOracleSnapshot();
+      const staticSnapshot = await fetchStaticOracleSnapshot(lstId);
       if (!staticSnapshot) {
         return null;
       }
       return {
+        lst_id: staticSnapshot.lst_id,
         asset_symbol: staticSnapshot.asset_symbol,
         base_symbol: staticSnapshot.base_symbol,
         asset_price: staticSnapshot.asset_price ?? staticSnapshot.msol_price,
@@ -153,11 +164,12 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot | null> {
     }
     return (await response.json()) as MarketSnapshot;
   } catch {
-    const staticSnapshot = await fetchStaticOracleSnapshot();
+    const staticSnapshot = await fetchStaticOracleSnapshot(lstId);
     if (!staticSnapshot) {
       return null;
     }
     return {
+      lst_id: staticSnapshot.lst_id,
       asset_symbol: staticSnapshot.asset_symbol,
       base_symbol: staticSnapshot.base_symbol,
       asset_price: staticSnapshot.asset_price ?? staticSnapshot.msol_price,

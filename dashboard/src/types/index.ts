@@ -138,6 +138,7 @@ export interface SimulationSnapshot {
 }
 
 export interface MarketSnapshot {
+  lst_id?: string;
   asset_symbol?: string;
   base_symbol?: string;
   asset_price?: number;

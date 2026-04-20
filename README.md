@@ -7,7 +7,7 @@ Risk oracle, not price oracle. For Solana LSTs as collateral.
 
 PegShield is a Solana-native **risk oracle** for liquid staking token (LST) collateral. It publishes a live, statistically calibrated LTV that tightens automatically when an LST starts de-pegging, instead of leaving lenders with a fixed collateral factor and hoping liquidations keep up.
 
-The live devnet deployment currently serves `mSOL-v2`, and the bridge/engine path now also supports `jitoSOL-v1` so the repo demonstrates multi-LST generalization instead of a single hard-coded asset.
+The live devnet deployment currently serves `mSOL-v2`, and the bridge/engine path now also supports `jitoSOL-v1` and `bSOL-v1` so the repo demonstrates multi-LST generalization instead of a single hard-coded asset.
 
 > **Price oracles answer:** what is this asset worth?
 > **PegShield answers:** how safe is this asset to use as collateral *right now*?
@@ -52,6 +52,7 @@ A healthy peg sits near zero and mean-reverts. A real de-peg drives it meaningfu
 Today that reference-rate source is:
 - Marinade API for `mSOL-v2`
 - Jito stake-pool stats API for `jitoSOL-v1`
+- BlazeStake stake-pool account over Solana RPC for `bSOL-v1`
 
 ### Statistical model
 
@@ -146,6 +147,10 @@ MSOL_RISK_STATE_PDA=7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo
 # LST_ASSET=jitoSOL
 # LST_ID=jitoSOL-v1
 # JITOSOL_RISK_STATE_PDA=<your jitoSOL PDA once initialized>
+# Optional third asset path:
+# LST_ASSET=bSOL
+# LST_ID=bSOL-v1
+# BSOL_RISK_STATE_PDA=<your bSOL PDA once initialized>
 ```
 
 ## Run The 60-Second Demo
@@ -172,26 +177,38 @@ npm --prefix updater run consumer -- 1000 mSOL-v2          # 7. borrow-limit com
 
 The consumer demo prints the max borrow allowed under a fixed-80% policy vs. the live oracle LTV for a sample collateral amount, plus a staleness warning if the last update is older than 10 minutes. To run the second asset path, switch `LST_ASSET=jitoSOL`, `LST_ID=jitoSOL-v1`, initialize a second PDA, then rerun the same commands.
 
+To submit multiple prepared payloads in one pass, point the updater at explicit files or use `--all`:
+
+```bash
+npm --prefix updater run submit -- ./core-engine/output/latest.mSOL-v2.json ./core-engine/output/latest.jitoSOL-v1.json
+npm --prefix updater run submit -- --all
+```
+
 ## GitHub Actions Updater
 
 [`.github/workflows/oracle-updater.yml`](./.github/workflows/oracle-updater.yml) runs on a schedule and:
 
 1. Runs the micro tests
-2. Fetches live Pyth data + the configured LST reference rate
-3. Runs the statistical engine
-4. Submits a fresh update to the configured `lst_id` PDA
-5. Regenerates `dashboard/public/data/*.json`
-6. Commits the snapshot back so Vercel redeploys
+2. Iterates over `mSOL-v2`, `jitoSOL-v1`, and `bSOL-v1`
+3. Fetches live Pyth data + the asset-specific reference rate
+4. Runs the statistical engine for each asset
+5. Submits a fresh update to each configured PDA
+6. Regenerates `dashboard/public/data/oracle_state*.json` plus the scenario bundle
+7. Commits the public snapshots back so Vercel redeploys
 
 **Required repo secrets:**
 
 | Secret | Purpose |
 |---|---|
 | `SOLANA_RPC_URL` | Devnet RPC endpoint |
+| `SOLANA_MAINNET_RPC_URL` | Optional mainnet RPC used for SolBlaze stake-pool reads; falls back to the public Solana mainnet endpoint if omitted |
 | `PROGRAM_ID` | `DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea` |
 | `PYTH_HTTP_URL` | `https://hermes.pyth.network` |
 | `ORACLE_AUTHORITY` | Updater pubkey (must match keypair below) |
 | `UPDATER_KEYPAIR_JSON` | Full contents of `updater/keypair.json` (JSON array) |
+| `MSOL_RISK_STATE_PDA` | Devnet PDA for `mSOL-v2` |
+| `JITOSOL_RISK_STATE_PDA` | Devnet PDA for `jitoSOL-v1` |
+| `BSOL_RISK_STATE_PDA` | Devnet PDA for `bSOL-v1` |
 
 ## Simulation
 
@@ -216,13 +233,14 @@ Add new scenarios by appending a spec to `synthetic_specs` in [`simulation/stres
 
 **Working today:**
 - Live Pyth ingestion + Marinade-rate-corrected peg signal
-- Second asset path wired for `jitoSOL-v1` with Jito stake-pool reference-rate support
+- Multi-LST bridge support for `mSOL-v2`, `jitoSOL-v1`, and `bSOL-v1`
 - OU estimator, ADF stationarity test, z-score regime detector
 - Deployed Anchor program with fixed-point `i64`/`u16` layout
 - On-chain PDA updates, reads, and rate-limiting
 - Authority-gated `close_oracle` instruction (layout-migration safe)
 - Six-scenario stress lab (1 historical + 5 synthetic shapes) served by `/sim`
 - Live dashboard with landing-page oracle pulse, system metrics, and scenario lab
+- Dashboard/API asset selection via `?lst_id=<lst>` query param
 - `@pegshield/sdk` consumer client with staleness / regime guards + reference example in `examples/lending-borrow-demo`
 
 **Not production-ready:**

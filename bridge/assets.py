@@ -38,9 +38,21 @@ JITOSOL = AssetConfig(
     reference_rate_label="Jito stake-pool exchange rate",
 )
 
+BSOL = AssetConfig(
+    key="bsol",
+    lst_id="bSOL-v1",
+    asset_symbol="bSOL",
+    asset_name="BlazeStake Staked SOL",
+    market_feed_id="0x89875379e70f8fbadc17aef315adf3a8d5d160b811435537e03c97e8aac97d9c",
+    reference_rate_kind="solblaze",
+    reference_rate_fallback=1.18,
+    reference_rate_label="BlazeStake stake-pool exchange rate",
+)
+
 SUPPORTED_ASSETS = {
     MSOL.key: MSOL,
     JITOSOL.key: JITOSOL,
+    BSOL.key: BSOL,
 }
 
 
