@@ -28,7 +28,9 @@ from ou_model import compute_spread, estimate_ou_params
 from regime_detector import detect_regime
 from plot import plot_stress_scenario
 
-INPUT_PATH = ROOT_DIR / "bridge" / "data" / "latest_raw.json"
+LEGACY_INPUT_PATH = ROOT_DIR / "bridge" / "data" / "latest_raw.json"
+PRIMARY_INPUT_PATH = ROOT_DIR / "bridge" / "data" / "latest_raw.mSOL-v2.json"
+INPUT_PATH = LEGACY_INPUT_PATH
 DEFAULT_REPLAY_FIXTURE = SIM_DIR / "data" / "steth_june_2022.json"
 OUTPUT_CSV = SIM_DIR / "charts" / "stress_scenario.csv"
 OUTPUT_PNG = SIM_DIR / "charts" / "stress_scenario.png"
@@ -38,8 +40,17 @@ FALLBACK_MARINADE_RATE = 1.17
 DEFAULT_SCENARIO_BUNDLE_SIZE = 20
 
 
+def resolve_bridge_payload_path(path: Path) -> Path:
+    if path.exists():
+        return path
+    if path == LEGACY_INPUT_PATH and PRIMARY_INPUT_PATH.exists():
+        return PRIMARY_INPUT_PATH
+    raise FileNotFoundError(f"Bridge payload not found at {path}")
+
+
 def load_bridge_payload(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    resolved = resolve_bridge_payload_path(path)
+    return json.loads(resolved.read_text(encoding="utf-8"))
 
 
 def load_historical_replay(
