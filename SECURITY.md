@@ -11,7 +11,7 @@ Use GitHub's private vulnerability reporting:
 
 Please do **not** file public issues or PRs for security-sensitive findings. Expected acknowledgement: within 72 hours. Please include:
 
-- Affected component (`solana-program`, `updater`, `bridge`, `core-engine`, `dashboard`, CI)
+- Affected component (`solana-program`, `updater`, `bridge`, `core-engine`, `artifacts`, CI)
 - Reproduction steps, expected vs. observed behaviour
 - Impact (funds-at-risk, data-integrity, DoS, information-disclosure, etc.)
 - Suggested fix, if any
@@ -25,7 +25,7 @@ Please do **not** file public issues or PRs for security-sensitive findings. Exp
 - Updater scripts in `updater/`
 - Statistical engine in `core-engine/` (calibration / LTV bounds that could be exploited)
 - CI workflow `.github/workflows/oracle-updater.yml`
-- Read-only dashboard API in `dashboard/api/`
+- Artifact sync path in `scripts/sync_artifacts.py` and committed `artifacts/`
 
 ### Out of scope
 

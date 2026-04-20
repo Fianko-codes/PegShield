@@ -29,4 +29,4 @@ Use the repo snapshot if you want deterministic local output without a live RPC 
 npm run start:snapshot -- 100 1814.63 stETH
 ```
 
-This mode reads `dashboard/public/data/oracle_state.json`, maps it into the SDK state shape, and runs the same lending decision logic.
+This mode reads `artifacts/oracle_state.json`, maps it into the SDK state shape, and runs the same lending decision logic.

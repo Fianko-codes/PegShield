@@ -66,7 +66,7 @@ def build_risk_payload(
     oracle_run_timestamp = int(time.time())
 
     # Expose both the deprecated USD premium and the correct peg deviation so
-    # the dashboard can show which signal the risk model consumed.
+    # downstream tooling can show which signal the risk model consumed.
     reference_rate = bridge_payload.get(
         "asset_sol_reference_rate",
         bridge_payload.get("marinade_msol_sol_rate"),
@@ -109,7 +109,7 @@ def build_risk_payload(
         "asset_price": round(float(latest_row[asset_price_column]), 8),
         "msol_price": round(float(latest_row[asset_price_column]), 8),  # legacy alias
         "sol_price": round(float(latest_row["sol_usd_price"]), 8),
-        # Deprecated — kept so older dashboard builds do not crash
+        # Deprecated — kept so existing snapshots and tooling do not crash
         "spread_pct": round(float(latest_row[spread_column]), 8),
         # Canonical de-peg signal
         "peg_deviation_pct": (

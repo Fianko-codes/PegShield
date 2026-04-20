@@ -30,8 +30,8 @@ End-to-end view of how a Pyth tick becomes an on-chain LTV that a Solana lending
                                                                                           │
                                                                                           ▼
                                                                                    ┌──────────────┐
-                                                                                   │  Dashboard   │
-                                                                                   │  (Vercel)    │
+                                                                                   │  Consumers    │
+                                                                                   │  / operators  │
                                                                                    └──────────────┘
 ```
 
@@ -44,8 +44,8 @@ End-to-end view of how a Pyth tick becomes an on-chain LTV that a Solana lending
 | Updater | [`updater/`](../updater) | Anchor client that submits `update_risk_state(theta, sigma, z_score, ltv_bps, regime, lst_id)` signed by the authority keypair |
 | On-chain program | [`solana-program/`](../solana-program) | `risk_oracle` Anchor program: PDA seeded `["risk", lst_id]`, fixed-point `i64` storage, 30 s rate limit, `has_one = authority` on writes and `close_oracle` |
 | SDK | [`sdk/`](../sdk) | `@pegshield/sdk` typed client + guards (`isStale`, `isCritical`, `safeLtv`) — what consumers depend on |
-| Dashboard + API | [`dashboard/`](../dashboard) | Vite/React UI plus read-only Vercel serverless routes (`/api/oracle-state`, `/api/market-state`) |
-| Updater CI | [`.github/workflows/oracle-updater.yml`](../.github/workflows/oracle-updater.yml) | Scheduled cron that reproduces the full local flow and commits a fresh dashboard snapshot |
+| Artifact sync | [`scripts/sync_artifacts.py`](../scripts/sync_artifacts.py) | Serializes trusted oracle snapshots, bridge caches, and the scenario bundle into `artifacts/` |
+| Updater CI | [`.github/workflows/oracle-updater.yml`](../.github/workflows/oracle-updater.yml) | Scheduled cron that reproduces the full local flow, persists bridge caches, and commits fresh oracle artifacts |
 | Simulation | [`simulation/`](../simulation) | Replays the June-2022 stETH/ETH depeg through both the live oracle policy and a fixed-LTV baseline; reports bad-debt deltas |
 
 ## Update Sequence (Steady State)
@@ -61,10 +61,10 @@ GitHub Actions    bridge/fetch_pyth.py     core-engine/pipeline.py     updater/s
      │                    │                          │── write pipeline.json ──▶│                       │
      │                    │                          │                           │── update_risk_state ─▶│
      │                    │                          │                           │◀── tx signature ─────│
-     │── commit snapshot ◀┼──────────────────────────┼───────────────────────────┘                       │
+     │── commit artifacts ◀┼─────────────────────────┼───────────────────────────┘                       │
      │                    │                          │                                                   │
      ▼                    ▼                          ▼                                                   ▼
- Vercel redeploys                                                                          consumers fetch & guard
+ repo cache refreshes                                                                     consumers fetch & guard
 ```
 
 ## Consumer Read Path
@@ -88,7 +88,7 @@ If staleness > `MAX_STALENESS_SECS` (600s), or `regimeFlag === 1`, or any RPC fa
 |---|---|---|
 | Pyth → bridge | Pyth Hermes price feed honesty | Single dependency; `bridge/fetch_pyth.py` rejects stale or zero prices |
 | Bridge → engine | Local I/O integrity | Engine recomputes from raw `latest.json` each run; no side state |
-| Engine → updater | The off-chain pipeline is correct | Snapshot is committed back to git so any reviewer can replay |
+| Engine → updater | The off-chain pipeline is correct | Oracle artifacts and bridge caches are committed back to git so any reviewer can replay |
 | Updater → PDA | Single authority keypair signs | `has_one = authority` on the Anchor account; `MIN_UPDATE_INTERVAL_SECS = 30` rate limits |
 | PDA → consumer | On-chain account is canonical | Account is owned by `DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea`; SDK rejects accounts owned by anything else |
 

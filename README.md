@@ -21,9 +21,6 @@ The live devnet deployment currently serves `mSOL-v2`, and the bridge/engine pat
 | Program | `DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea` | [view](https://explorer.solana.com/address/DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea?cluster=devnet) |
 | Risk State PDA (`mSOL-v2`) | `7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo` | [view](https://explorer.solana.com/address/7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo?cluster=devnet) |
 | Updater Authority | `4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc` | [view](https://explorer.solana.com/address/4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc?cluster=devnet) |
-| Dashboard | [pegshield.anubhavprasai.com.np](https://pegshield.anubhavprasai.com.np/) | — |
-| Live oracle API | `https://pegshield.anubhavprasai.com.np/api/oracle-state` | — |
-| Live market API | `https://pegshield.anubhavprasai.com.np/api/market-state` | — |
 
 The PDA is updated on a cron by [`oracle-updater.yml`](./.github/workflows/oracle-updater.yml).
 
@@ -97,7 +94,8 @@ solana-program/ Anchor program (risk_oracle)
 sdk/            @pegshield/sdk — typed TypeScript client for consumers
 updater/        init / submit / read / close / consumer-demo scripts
 simulation/     Historical replay + synthetic fallback (oracle vs fixed-LTV)
-dashboard/      Vite + React dashboard and read-only Vercel API
+artifacts/      Committed oracle snapshots, bridge caches, and scenario bundle
+scripts/        Artifact sync and operator utilities
 docs/           Design notes and architecture roadmap documents
 tests/          Python micro-tests for the statistical engine
 ```
@@ -161,7 +159,7 @@ For anyone evaluating the project end-to-end, the fastest path is the one-comman
 ./demo.sh
 ```
 
-This runs the engine tests, fetches live bridge data, computes the fresh risk payload, submits it on devnet, reads the PDA back through `@pegshield/sdk`, replays the real June 2022 `stETH/ETH` depeg, and refreshes the dashboard snapshot. Use `./demo.sh --dry-run` to verify the command path and local prerequisites without touching devnet.
+This runs the engine tests, fetches live bridge data, computes the fresh risk payload, submits it on devnet, reads the PDA back through `@pegshield/sdk`, replays the real June 2022 `stETH/ETH` depeg, and refreshes the repo's oracle artifacts. Use `./demo.sh --dry-run` to verify the command path and local prerequisites without touching devnet.
 
 ## Run The Full Flow
 
@@ -192,9 +190,10 @@ npm --prefix updater run submit -- --all
 2. Iterates over `mSOL-v2`, `jitoSOL-v1`, and `bSOL-v1`
 3. Fetches live Pyth data + the asset-specific reference rate
 4. Runs the statistical engine for each asset
-5. Submits a fresh update to each configured PDA
-6. Regenerates `dashboard/public/data/oracle_state*.json` plus the scenario bundle
-7. Commits the public snapshots back so Vercel redeploys
+5. Writes repo-level bridge caches and oracle artifacts under `artifacts/`
+6. Skips on-chain submission if the bridge history source is a fallback
+7. Submits a fresh update to each configured PDA when history is trusted
+8. Commits refreshed artifacts back to git so the next run has deterministic cache state
 
 **Required repo secrets:**
 
@@ -214,9 +213,9 @@ npm --prefix updater run submit -- --all
 
 Writes `simulation/charts/stress_scenario.{csv,png}` plus `stress_scenario.meta.json` — by default a replay of the June 2022 `stETH/ETH` depeg so judges can see how PegShield would have reacted to a real event. Each row includes `peg_deviation`, `theta`, `sigma`, `z_score`, `regime_flag`, and bad-debt estimates under both policies. Pass `--mode synthetic` to fall back to the old generated path.
 
-### Scenario Lab
+### Scenario Bundle
 
-The dashboard's `/sim` page bundles six replays so the oracle is stressed across regime shapes, not just one historical path. Refreshed by [`dashboard/scripts/sync_demo_data.py`](./dashboard/scripts/sync_demo_data.py) (and by the GitHub Actions updater) into `dashboard/public/data/stress_scenario.json`:
+PegShield keeps six replays in the repo so the oracle is stressed across regime shapes, not just one historical path. Refreshed by [`scripts/sync_artifacts.py`](./scripts/sync_artifacts.py) (and by the GitHub Actions updater) into `artifacts/stress_scenario.json`:
 
 | Scenario | Kind | What it stresses |
 |---|---|---|
@@ -238,9 +237,8 @@ Add new scenarios by appending a spec to `synthetic_specs` in [`simulation/stres
 - Deployed Anchor program with fixed-point `i64`/`u16` layout
 - On-chain PDA updates, reads, and rate-limiting
 - Authority-gated `close_oracle` instruction (layout-migration safe)
-- Six-scenario stress lab (1 historical + 5 synthetic shapes) served by `/sim`
-- Live dashboard with landing-page oracle pulse, system metrics, and scenario lab
-- Dashboard/API asset selection via `?lst_id=<lst>` query param
+- Committed oracle artifacts and bridge caches for deterministic replay / fallback
+- Six-scenario stress bundle (1 historical + 5 synthetic shapes) in `artifacts/stress_scenario.json`
 - `@pegshield/sdk` consumer client with staleness / regime guards + reference example in `examples/lending-borrow-demo`
 
 **Not production-ready:**

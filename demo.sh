@@ -81,12 +81,12 @@ const { fetchRiskState } = require("./sdk/dist");
 run_step "▶ 6/7  replay real stETH depeg" \
   "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/simulation/stress_test.py"
 
-run_step "▶ 7/7  sync dashboard snapshot" \
-  "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/dashboard/scripts/sync_demo_data.py"
+run_step "▶ 7/7  sync oracle artifacts" \
+  "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/scripts/sync_artifacts.py"
 
 echo
 if (( DRY_RUN )); then
-  echo "✅ dry run passed. live dashboard: https://pegshield.anubhavprasai.com.np/app  |  replay: /sim"
+  echo "✅ dry run passed. oracle artifacts written to ./artifacts/"
 else
-  echo "✅ done. live dashboard: https://pegshield.anubhavprasai.com.np/app  |  replay: /sim"
+  echo "✅ done. oracle artifacts written to ./artifacts/"
 fi

@@ -21,9 +21,6 @@ from assets import AssetConfig, resolve_asset_config
 
 DEFAULT_HERMES_URL = os.getenv("PYTH_HTTP_URL", "https://hermes.pyth.network")
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "data" / "latest_raw.json"
-DEFAULT_DASHBOARD_SNAPSHOT = (
-    Path(__file__).resolve().parent.parent / "dashboard" / "public" / "data" / "oracle_state.json"
-)
 DEFAULT_ASSET = os.getenv("LST_ASSET", "mSOL")
 
 MARINADE_PRICE_URL = os.getenv(
@@ -96,7 +93,7 @@ def fetch_marinade_msol_sol_rate(
 
     Returns (rate, source_label).  On failure falls back to a conservative
     hardcoded rate so the pipeline stays functional — but the caller should
-    record the source so the dashboard can flag when we are on fallback.
+    record the source so downstream consumers can flag when we are on fallback.
     """
     last_error: Exception | None = None
     for attempt in range(3):
@@ -508,38 +505,6 @@ def load_cached_history(path: Path) -> list[dict[str, Any]]:
     return history
 
 
-def load_dashboard_snapshot_history(path: Path = DEFAULT_DASHBOARD_SNAPSHOT) -> list[dict[str, Any]]:
-    if not path.exists():
-        raise FileNotFoundError(f"No dashboard snapshot history available at {path}")
-
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    history = payload.get("history", [])
-    if len(history) < 20:
-        raise ValueError("Dashboard snapshot does not contain enough historical samples")
-
-    converted = []
-    for point in history:
-        sol_price = float(point["sol_price"])
-        asset_price = float(point.get("asset_price", point["msol_price"]))
-        converted.append(
-            {
-                "timestamp": int(point["timestamp"]),
-                "asset_usd_price": asset_price,
-                "sol_usd_price": sol_price,
-                "asset_confidence": 0.0,
-                "sol_confidence": 0.0,
-                "asset_sol_ratio": asset_price / sol_price if sol_price else None,
-                "asset_sol_spread_pct": float(point["spread_pct"]),
-                "msol_usd_price": asset_price,
-                "msol_confidence": 0.0,
-                "msol_sol_ratio": asset_price / sol_price if sol_price else None,
-                "msol_sol_spread_pct": float(point["spread_pct"]),
-            }
-        )
-
-    return converted
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Fetch live and recent Pyth prices for a supported Solana LST and SOL.",
@@ -563,10 +528,7 @@ def main() -> None:
     try:
         cached_history = load_cached_history(output_path)
     except (FileNotFoundError, ValueError):
-        try:
-            cached_history = load_dashboard_snapshot_history()
-        except (FileNotFoundError, ValueError):
-            pass
+        pass
 
     with requests.Session() as session:
         reference_rate, reference_rate_source = fetch_reference_rate(session, asset_config)
@@ -600,8 +562,7 @@ def main() -> None:
                 history = cached_history
                 history_source = "cache_fallback"
             else:
-                history = load_dashboard_snapshot_history()
-                history_source = "dashboard_snapshot_fallback"
+                raise
             # Cached/fallback history may lack peg_deviation — backfill now.
             history = _enrich_history_with_peg_deviation(history, reference_rate)
 

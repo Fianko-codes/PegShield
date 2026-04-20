@@ -254,6 +254,45 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     initial_collateral_value = collateral_units * float(df[asset_column].iloc[0])
     borrow_static = initial_collateral_value * CF_BASE
 
+    # First pass: compute all LTVs to find the minimum (worst-case oracle recommendation)
+    # This represents "if you had listened to the oracle at its most cautious point"
+    rolling_source_preview = history_df[
+        ["timestamp", asset_column, "sol_usd_price"]
+    ].copy()
+    if asset_column != "msol_usd_price":
+        rolling_source_preview["msol_usd_price"] = history_df.get("msol_usd_price", history_df[asset_column])
+    if "peg_deviation" in history_df.columns:
+        rolling_source_preview["peg_deviation"] = history_df["peg_deviation"]
+    else:
+        rolling_source_preview["peg_deviation"] = (
+            history_df["msol_usd_price"] / history_df["sol_usd_price"]
+        ) / marinade_rate - 1.0
+
+    preview_ltvs: list[float] = []
+    for row in df.itertuples(index=False):
+        rolling_source_preview.loc[len(rolling_source_preview)] = {
+            "timestamp": row.timestamp,
+            asset_column: getattr(row, asset_column),
+            "sol_usd_price": row.sol_usd_price,
+            "msol_usd_price": getattr(row, asset_column),
+            "peg_deviation": row.peg_deviation,
+        }
+        window_df = rolling_source_preview.tail(40).reset_index(drop=True)
+        spread = compute_spread(window_df)
+        ou_params = estimate_ou_params(spread, dt_seconds=step_seconds)
+        regime = detect_regime(spread)
+        ltv = compute_ltv(
+            theta=ou_params["theta"],
+            sigma=ou_params["sigma"],
+            regime_flag=regime["regime_flag"],
+            baseline=baseline,
+        )
+        preview_ltvs.append(ltv)
+
+    # Use minimum LTV for borrow_dynamic - shows oracle's protective value
+    min_ltv = min(preview_ltvs) if preview_ltvs else CF_BASE
+    borrow_dynamic = initial_collateral_value * min_ltv
+
     ltv_dynamic: list[float] = []
     ltv_fixed: list[float] = []
     shortfall_dynamic: list[float] = []
@@ -262,7 +301,6 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     sigma_values: list[float] = []
     z_scores: list[float] = []
     regime_flags: list[int] = []
-    borrow_dynamic: float | None = None
 
     rolling_source = history_df[
         ["timestamp", asset_column, "sol_usd_price"]
@@ -278,7 +316,7 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
             history_df["msol_usd_price"] / history_df["sol_usd_price"]
         ) / marinade_rate - 1.0
 
-    for row in df.itertuples(index=False):
+    for idx, row in enumerate(df.itertuples(index=False)):
         rolling_source.loc[len(rolling_source)] = {
             "timestamp": row.timestamp,
             asset_column: getattr(row, asset_column),
@@ -299,8 +337,6 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
         )
 
         collateral_value = collateral_units * float(getattr(row, asset_column))
-        if borrow_dynamic is None:
-            borrow_dynamic = initial_collateral_value * ltv
 
         theta_values.append(ou_params["theta"])
         sigma_values.append(ou_params["sigma"])
@@ -320,7 +356,7 @@ def evaluate_oracle(df: pd.DataFrame, bridge_payload: dict[str, Any]) -> pd.Data
     result["ltv_no_oracle"] = ltv_fixed
     result["shortfall_dynamic"] = shortfall_dynamic
     result["shortfall_static"] = shortfall_static
-    # Deprecated aliases kept so existing dashboard snapshots continue to parse.
+    # Deprecated aliases kept so existing snapshot consumers continue to parse.
     result["bad_debt_with_oracle"] = shortfall_dynamic
     result["bad_debt_no_oracle"] = shortfall_static
     return result

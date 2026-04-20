@@ -336,7 +336,7 @@ This is the intended safety behavior.
 
 - add new instruction: `submit_threshold_update`
 - keep old instruction disabled for production use but available on devnet if needed
-- update dashboard and SDK metadata to expose committee mode
+- update artifact metadata and SDK output to expose committee mode
 
 ### Phase 3: Challenge and slashing
 

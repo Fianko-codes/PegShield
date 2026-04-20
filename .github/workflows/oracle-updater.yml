@@ -35,9 +35,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: |
-            updater/package-lock.json
-            dashboard/package-lock.json
+          cache-dependency-path: updater/package-lock.json
 
       - name: Install Python dependencies
         run: python -m pip install -r requirements.txt
@@ -45,10 +43,6 @@ jobs:
       - name: Install updater dependencies
         run: npm ci
         working-directory: updater
-
-      - name: Install dashboard dependencies
-        run: npm ci
-        working-directory: dashboard
 
       - name: Write updater keypair
         env:
@@ -87,29 +81,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p bridge/data core-engine/output dashboard/public/data
+          mkdir -p bridge/data core-engine/output artifacts
 
           PRIMARY_LST_ID="mSOL-v2"
           while IFS=':' read -r LST_ASSET LST_ID; do
             BRIDGE_OUT="${GITHUB_WORKSPACE}/bridge/data/latest_raw.${LST_ID}.json"
             CORE_OUT="${GITHUB_WORKSPACE}/core-engine/output/latest.${LST_ID}.json"
-            SNAPSHOT_OUT="${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.${LST_ID}.json"
-            SNAPSHOT_CACHE="${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.${LST_ID}.json"
+            SNAPSHOT_OUT="${GITHUB_WORKSPACE}/artifacts/oracle_state.${LST_ID}.json"
+            BRIDGE_CACHE="${GITHUB_WORKSPACE}/artifacts/bridge_cache.${LST_ID}.json"
 
-            if [[ "${LST_ID}" == "${PRIMARY_LST_ID}" && ! -f "${SNAPSHOT_CACHE}" && -f "${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json" ]]; then
-              SNAPSHOT_CACHE="${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json"
-            fi
-
-            if [[ -f "${SNAPSHOT_CACHE}" ]]; then
-              python bridge/bootstrap_cache.py \
-                --snapshot "${SNAPSHOT_CACHE}" \
-                --output "${BRIDGE_OUT}"
+            if [[ -f "${BRIDGE_CACHE}" ]]; then
+              cp "${BRIDGE_CACHE}" "${BRIDGE_OUT}"
             fi
 
             python bridge/fetch_pyth.py \
               --asset "${LST_ASSET}" \
               --lst-id "${LST_ID}" \
-              --lookback-seconds 5400 \
+              --lookback-seconds 6000 \
               --step-seconds 300 \
               --output "${BRIDGE_OUT}"
 
@@ -117,22 +105,30 @@ jobs:
               --input "${BRIDGE_OUT}" \
               --output "${CORE_OUT}"
 
-            npm --prefix updater run submit -- "${CORE_OUT}"
+            cp "${BRIDGE_OUT}" "${BRIDGE_CACHE}"
 
             if [[ "${LST_ID}" == "${PRIMARY_LST_ID}" ]]; then
-              python dashboard/scripts/sync_demo_data.py \
+              python scripts/sync_artifacts.py \
                 --oracle-input "${CORE_OUT}" \
                 --bridge-input "${BRIDGE_OUT}" \
-                --output "${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json" \
+                --output "${GITHUB_WORKSPACE}/artifacts/oracle_state.json" \
                 --write-asset-alias \
                 --skip-simulation
             else
-              python dashboard/scripts/sync_demo_data.py \
+              python scripts/sync_artifacts.py \
                 --oracle-input "${CORE_OUT}" \
                 --bridge-input "${BRIDGE_OUT}" \
                 --output "${SNAPSHOT_OUT}" \
                 --skip-simulation
             fi
+
+            BRIDGE_HISTORY_SOURCE="$(python -c 'import json, sys; from pathlib import Path; print(json.loads(Path(sys.argv[1]).read_text(encoding="utf-8")).get("history_source", "unknown"))' "${BRIDGE_OUT}")"
+            if [[ "${BRIDGE_HISTORY_SOURCE}" == *fallback* ]]; then
+              echo "Skipping on-chain submit for ${LST_ID}: history source ${BRIDGE_HISTORY_SOURCE} is not trusted."
+              continue
+            fi
+
+            npm --prefix updater run submit -- "${CORE_OUT}"
           done <<'EOF'
           mSOL:mSOL-v2
           jitoSOL:jitoSOL-v1
@@ -142,26 +138,26 @@ jobs:
       - name: Regenerate simulation outputs
         run: python simulation/stress_test.py
 
-      - name: Refresh primary dashboard snapshot metadata
+      - name: Refresh primary oracle artifacts
         run: |
-          python dashboard/scripts/sync_demo_data.py \
+          python scripts/sync_artifacts.py \
             --oracle-input "${GITHUB_WORKSPACE}/core-engine/output/latest.mSOL-v2.json" \
             --bridge-input "${GITHUB_WORKSPACE}/bridge/data/latest_raw.mSOL-v2.json" \
-            --output "${GITHUB_WORKSPACE}/dashboard/public/data/oracle_state.json" \
+            --output "${GITHUB_WORKSPACE}/artifacts/oracle_state.json" \
             --write-asset-alias
 
-      - name: Commit refreshed public snapshots
+      - name: Commit refreshed oracle artifacts
         continue-on-error: true
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f dashboard/public/data/oracle_state.json dashboard/public/data/oracle_state.*.json dashboard/public/data/stress_scenario.json
+          git add -f artifacts/oracle_state.json artifacts/oracle_state.*.json artifacts/bridge_cache.*.json artifacts/stress_scenario.json
           if git diff --cached --quiet; then
-            echo "No public snapshot changes to commit."
+            echo "No oracle artifact changes to commit."
             exit 0
           fi
-          git commit -m "chore: refresh oracle dashboard snapshots"
+          git commit -m "chore: refresh oracle artifacts"
           for attempt in 1 2 3; do
             git pull --rebase --autostash origin main
             if git push origin HEAD:main; then
@@ -170,4 +166,4 @@ jobs:
             echo "Push rejected on attempt ${attempt}; retrying after rebase."
             sleep 5
           done
-          echo "Failed to push refreshed snapshots after 3 attempts; leaving workflow green because oracle update already completed."
+          echo "Failed to push refreshed artifacts after 3 attempts; leaving workflow green because oracle update already completed."
