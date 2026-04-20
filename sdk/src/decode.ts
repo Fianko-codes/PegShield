@@ -18,6 +18,8 @@ import type { RegimeFlag, RiskState } from "./types";
  *    8  bytes  — timestamp          i64
  *   32  bytes  — authority          Pubkey
  *   32  bytes  — last_updater       Pubkey
+ *    1  byte   — update_mode        u8          (optional on legacy accounts)
+ *   32  bytes  — attester_registry  Pubkey      (optional on legacy accounts)
  * ```
  */
 export function decodeRiskState(data: Uint8Array | Buffer): RiskState {
@@ -54,6 +56,15 @@ export function decodeRiskState(data: Uint8Array | Buffer): RiskState {
   offset += 32;
 
   const lastUpdater = new PublicKey(buf.subarray(offset, offset + 32)).toBase58();
+  offset += 32;
+
+  const updateMode = offset < buf.length ? buf.readUInt8(offset) : 0;
+  offset += offset < buf.length ? 1 : 0;
+
+  const attesterRegistry =
+    offset + 32 <= buf.length
+      ? new PublicKey(buf.subarray(offset, offset + 32)).toBase58()
+      : new PublicKey(new Uint8Array(32)).toBase58();
 
   return {
     lstId,
@@ -70,5 +81,7 @@ export function decodeRiskState(data: Uint8Array | Buffer): RiskState {
     timestamp,
     authority,
     lastUpdater,
+    updateMode,
+    attesterRegistry,
   };
 }

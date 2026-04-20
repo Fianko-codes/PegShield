@@ -76,6 +76,7 @@ pub mod risk_oracle {
     pub fn propose_update(
         ctx: Context<ProposeUpdate>,
         lst_id: String,
+        round_id: u64,
         theta_scaled: i64,
         sigma_scaled: i64,
         regime_flag: u8,
@@ -85,6 +86,7 @@ pub mod risk_oracle {
         instructions::propose_update::handler(
             ctx,
             lst_id,
+            round_id,
             theta_scaled,
             sigma_scaled,
             regime_flag,
@@ -94,12 +96,52 @@ pub mod risk_oracle {
     }
 
     /// Confirm a pending update (multi-attester mode).
-    pub fn confirm_update(ctx: Context<ConfirmUpdate>, lst_id: String) -> Result<()> {
-        instructions::confirm_update::handler(ctx, lst_id)
+    pub fn confirm_update(ctx: Context<ConfirmUpdate>, lst_id: String, round_id: u64) -> Result<()> {
+        instructions::confirm_update::handler(ctx, lst_id, round_id)
     }
 
     /// Cancel an expired pending update.
-    pub fn cancel_expired(ctx: Context<CancelExpired>, lst_id: String) -> Result<()> {
-        instructions::cancel_expired::handler(ctx, lst_id)
+    pub fn cancel_expired(ctx: Context<CancelExpired>, lst_id: String, round_id: u64) -> Result<()> {
+        instructions::cancel_expired::handler(ctx, lst_id, round_id)
+    }
+
+    /// Migrate a legacy RiskState account to the current layout.
+    pub fn migrate_risk_state(
+        ctx: Context<MigrateRiskState>,
+        lst_id: String,
+    ) -> Result<()> {
+        instructions::migrate_risk_state::handler(ctx, lst_id)
+    }
+
+    /// File a dispute against a recent risk update.
+    pub fn dispute_update(
+        ctx: Context<DisputeUpdate>,
+        lst_id: String,
+        round_id: u64,
+        disputed_attester: Pubkey,
+        evidence_hash: [u8; 32],
+    ) -> Result<()> {
+        instructions::dispute_update::handler(ctx, lst_id, round_id, disputed_attester, evidence_hash)
+    }
+
+    /// Resolve a dispute (admin only). Slashes attester if slash_attester is true.
+    pub fn resolve_dispute(
+        ctx: Context<ResolveDispute>,
+        lst_id: String,
+        disputed_slot: u64,
+        disputed_attester: Pubkey,
+        slash_attester: bool,
+    ) -> Result<()> {
+        instructions::resolve_dispute::handler(ctx, lst_id, disputed_slot, disputed_attester, slash_attester)
+    }
+
+    /// Close an expired, unresolved dispute and refund rent to disputer.
+    pub fn close_expired_dispute(
+        ctx: Context<CloseExpiredDispute>,
+        lst_id: String,
+        disputed_slot: u64,
+        disputed_attester: Pubkey,
+    ) -> Result<()> {
+        instructions::close_expired_dispute::handler(ctx, lst_id, disputed_slot, disputed_attester)
     }
 }

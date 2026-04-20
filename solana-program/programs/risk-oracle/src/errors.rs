@@ -50,6 +50,9 @@ pub enum OracleError {
     #[msg("Pending update has not expired yet")]
     PendingUpdateNotExpired,
 
+    #[msg("Withdrawal would drop the registry below its required threshold")]
+    CannotDropBelowThreshold,
+
     #[msg("Invalid threshold configuration")]
     InvalidThreshold,
 
@@ -59,9 +62,27 @@ pub enum OracleError {
     #[msg("Dispute has already been resolved")]
     DisputeAlreadyResolved,
 
+    #[msg("Dispute resolution deadline has passed")]
+    DisputeDeadlinePassed,
+
+    #[msg("Attester has insufficient bond for slashing")]
+    AttesterNotSlashable,
+
+    #[msg("Dispute resolution deadline has not passed yet")]
+    DisputeNotExpired,
+
+    #[msg("The referenced update has not been finalized yet")]
+    UpdateNotFinalized,
+
+    #[msg("The disputed attester did not participate in this round")]
+    AttesterDidNotParticipate,
+
     #[msg("Oracle is in multi-attester mode, use propose_update instead")]
     MultiAttesterModeActive,
 
     #[msg("Oracle is in single-attester mode")]
     SingleAttesterMode,
+
+    #[msg("RiskState account could not be decoded for migration")]
+    InvalidRiskStateAccount,
 }

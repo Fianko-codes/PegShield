@@ -51,6 +51,8 @@ export interface OracleSnapshot extends RiskState {
   risk_state_pda?: string;
   authority?: string;
   last_updater?: string;
+  update_mode?: number;
+  attester_registry?: string;
   network?: string;
   history: OracleHistoryPoint[];
   baseline?: {

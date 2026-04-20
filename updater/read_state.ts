@@ -21,6 +21,8 @@ type RiskStateAccount = {
   timestamp: anchor.BN;
   authority: PublicKey;
   lastUpdater: PublicKey;
+  updateMode: number;
+  attesterRegistry: PublicKey;
 };
 
 function requiredEnv(name: string): string {
@@ -104,6 +106,8 @@ async function main(): Promise<void> {
         timestamp: state.timestamp.toNumber(),
         authority: state.authority.toBase58(),
         last_updater: state.lastUpdater.toBase58(),
+        update_mode: state.updateMode,
+        attester_registry: state.attesterRegistry.toBase58(),
       },
       null,
       2,

@@ -40,4 +40,8 @@ export interface RiskState {
   authority: string;
   /** Pubkey that submitted the most recent update. */
   lastUpdater: string;
+  /** 0 = single-attester, 1 = multi-attester. */
+  updateMode: number;
+  /** Registry backing multi-attester mode. Default pubkey in single-attester mode. */
+  attesterRegistry: string;
 }

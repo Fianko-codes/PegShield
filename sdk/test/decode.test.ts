@@ -25,8 +25,8 @@ import {
 function buildBuffer(): Buffer {
   const lstId = "mSOL-v2";
   const lstIdBytes = Buffer.from(lstId, "utf8");
-  // 8 disc + 4 len + n + 8 + 8 + 1 + 2 + 8 + 8 + 8 + 32 + 32
-  const size = 8 + 4 + lstIdBytes.length + 8 + 8 + 1 + 2 + 8 + 8 + 8 + 32 + 32;
+  // 8 disc + 4 len + n + 8 + 8 + 1 + 2 + 8 + 8 + 8 + 32 + 32 + 1 + 32
+  const size = 8 + 4 + lstIdBytes.length + 8 + 8 + 1 + 2 + 8 + 8 + 8 + 32 + 32 + 1 + 32;
   const buf = Buffer.alloc(size);
   let o = 0;
 
@@ -65,6 +65,12 @@ function buildBuffer(): Buffer {
   o += 32;
   buf.fill(0x22, o, o + 32);
   o += 32;
+  // update_mode = 1 (multi-attester)
+  buf.writeUInt8(1, o);
+  o += 1;
+  // attester_registry (0x33)
+  buf.fill(0x33, o, o + 32);
+  o += 32;
 
   return buf;
 }
@@ -84,6 +90,12 @@ function main() {
   assert.equal(s.timestamp, 1_776_236_494n, "timestamp");
   assert.equal(s.authority, new PublicKey(Buffer.alloc(32, 0x11)).toBase58());
   assert.equal(s.lastUpdater, new PublicKey(Buffer.alloc(32, 0x22)).toBase58());
+  assert.equal(s.updateMode, 1, "updateMode");
+  assert.equal(
+    s.attesterRegistry,
+    new PublicKey(Buffer.alloc(32, 0x33)).toBase58(),
+    "attesterRegistry",
+  );
 
   // Guards
   assert.equal(isCritical(s), false, "isCritical(NORMAL)");

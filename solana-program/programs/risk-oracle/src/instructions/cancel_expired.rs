@@ -4,12 +4,12 @@ use crate::errors::OracleError;
 use crate::constants::*;
 
 #[derive(Accounts)]
-#[instruction(lst_id: String)]
+#[instruction(lst_id: String, round_id: u64)]
 pub struct CancelExpired<'info> {
     #[account(
         mut,
         close = refund_recipient,
-        seeds = [PENDING_UPDATE_SEED, lst_id.as_bytes()],
+        seeds = [PENDING_UPDATE_SEED, lst_id.as_bytes(), &round_id.to_le_bytes()],
         bump,
     )]
     pub pending_update: Account<'info, PendingUpdate>,
@@ -25,7 +25,7 @@ pub struct CancelExpired<'info> {
     pub caller: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<CancelExpired>, _lst_id: String) -> Result<()> {
+pub fn handler(ctx: Context<CancelExpired>, _lst_id: String, _round_id: u64) -> Result<()> {
     let pending = &ctx.accounts.pending_update;
     let now = Clock::get()?.unix_timestamp;
 

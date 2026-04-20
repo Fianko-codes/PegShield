@@ -50,6 +50,10 @@
               {
                 "kind": "arg",
                 "path": "lst_id"
+              },
+              {
+                "kind": "arg",
+                "path": "round_id"
               }
             ]
           }
@@ -73,6 +77,94 @@
         {
           "name": "lst_id",
           "type": "string"
+        },
+        {
+          "name": "round_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "close_expired_dispute",
+      "docs": [
+        "Close an expired, unresolved dispute and refund rent to disputer."
+      ],
+      "discriminator": [
+        189,
+        168,
+        207,
+        187,
+        146,
+        218,
+        118,
+        236
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dispute_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  117,
+                  116,
+                  101,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              },
+              {
+                "kind": "arg",
+                "path": "disputed_slot"
+              },
+              {
+                "kind": "arg",
+                "path": "disputed_attester"
+              }
+            ]
+          }
+        },
+        {
+          "name": "disputer",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        },
+        {
+          "name": "disputed_slot",
+          "type": "u64"
+        },
+        {
+          "name": "disputed_attester",
+          "type": "pubkey"
         }
       ]
     },
@@ -219,6 +311,10 @@
               {
                 "kind": "arg",
                 "path": "lst_id"
+              },
+              {
+                "kind": "arg",
+                "path": "round_id"
               }
             ]
           }
@@ -232,6 +328,162 @@
         {
           "name": "lst_id",
           "type": "string"
+        },
+        {
+          "name": "round_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "dispute_update",
+      "docs": [
+        "File a dispute against a recent risk update."
+      ],
+      "discriminator": [
+        68,
+        61,
+        57,
+        8,
+        16,
+        245,
+        44,
+        238
+      ],
+      "accounts": [
+        {
+          "name": "disputer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "registry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pending_update",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  101,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  95,
+                  117,
+                  112,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              },
+              {
+                "kind": "arg",
+                "path": "round_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "dispute_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  117,
+                  116,
+                  101,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              },
+              {
+                "kind": "arg",
+                "path": "round_id"
+              },
+              {
+                "kind": "arg",
+                "path": "disputed_attester"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        },
+        {
+          "name": "round_id",
+          "type": "u64"
+        },
+        {
+          "name": "disputed_attester",
+          "type": "pubkey"
+        },
+        {
+          "name": "evidence_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -501,6 +753,67 @@
       "args": []
     },
     {
+      "name": "migrate_risk_state",
+      "docs": [
+        "Migrate a legacy RiskState account to the current layout."
+      ],
+      "discriminator": [
+        22,
+        170,
+        234,
+        44,
+        218,
+        58,
+        143,
+        69
+      ],
+      "accounts": [
+        {
+          "name": "risk_state",
+          "docs": [
+            "and current layouts."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  105,
+                  115,
+                  107
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "propose_update",
       "docs": [
         "Propose a risk update (multi-attester mode)."
@@ -592,6 +905,10 @@
               {
                 "kind": "arg",
                 "path": "lst_id"
+              },
+              {
+                "kind": "arg",
+                "path": "round_id"
               }
             ]
           }
@@ -610,6 +927,10 @@
         {
           "name": "lst_id",
           "type": "string"
+        },
+        {
+          "name": "round_id",
+          "type": "u64"
         },
         {
           "name": "theta_scaled",
@@ -693,6 +1014,131 @@
         {
           "name": "bond_amount",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "resolve_dispute",
+      "docs": [
+        "Resolve a dispute (admin only). Slashes attester if slash_attester is true."
+      ],
+      "discriminator": [
+        231,
+        6,
+        202,
+        6,
+        96,
+        103,
+        12,
+        230
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "registry"
+          ]
+        },
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  116,
+                  116,
+                  101,
+                  115,
+                  116,
+                  101,
+                  114,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "dispute_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  105,
+                  115,
+                  112,
+                  117,
+                  116,
+                  101,
+                  95,
+                  114,
+                  101,
+                  99,
+                  111,
+                  114,
+                  100
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "lst_id"
+              },
+              {
+                "kind": "arg",
+                "path": "disputed_slot"
+              },
+              {
+                "kind": "arg",
+                "path": "disputed_attester"
+              }
+            ]
+          }
+        },
+        {
+          "name": "disputer",
+          "writable": true
+        },
+        {
+          "name": "slash_destination",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lst_id",
+          "type": "string"
+        },
+        {
+          "name": "disputed_slot",
+          "type": "u64"
+        },
+        {
+          "name": "disputed_attester",
+          "type": "pubkey"
+        },
+        {
+          "name": "slash_attester",
+          "type": "bool"
         }
       ]
     },
@@ -819,6 +1265,19 @@
       ]
     },
     {
+      "name": "DisputeRecord",
+      "discriminator": [
+        198,
+        199,
+        79,
+        209,
+        12,
+        215,
+        34,
+        47
+      ]
+    },
+    {
       "name": "PendingUpdate",
       "discriminator": [
         24,
@@ -928,28 +1387,63 @@
     },
     {
       "code": 6016,
+      "name": "CannotDropBelowThreshold",
+      "msg": "Withdrawal would drop the registry below its required threshold"
+    },
+    {
+      "code": 6017,
       "name": "InvalidThreshold",
       "msg": "Invalid threshold configuration"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "DisputeWindowClosed",
       "msg": "Cannot dispute an update from more than 1 hour ago"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "DisputeAlreadyResolved",
       "msg": "Dispute has already been resolved"
     },
     {
-      "code": 6019,
+      "code": 6020,
+      "name": "DisputeDeadlinePassed",
+      "msg": "Dispute resolution deadline has passed"
+    },
+    {
+      "code": 6021,
+      "name": "AttesterNotSlashable",
+      "msg": "Attester has insufficient bond for slashing"
+    },
+    {
+      "code": 6022,
+      "name": "DisputeNotExpired",
+      "msg": "Dispute resolution deadline has not passed yet"
+    },
+    {
+      "code": 6023,
+      "name": "UpdateNotFinalized",
+      "msg": "The referenced update has not been finalized yet"
+    },
+    {
+      "code": 6024,
+      "name": "AttesterDidNotParticipate",
+      "msg": "The disputed attester did not participate in this round"
+    },
+    {
+      "code": 6025,
       "name": "MultiAttesterModeActive",
       "msg": "Oracle is in multi-attester mode, use propose_update instead"
     },
     {
-      "code": 6020,
+      "code": 6026,
       "name": "SingleAttesterMode",
       "msg": "Oracle is in single-attester mode"
+    },
+    {
+      "code": 6027,
+      "name": "InvalidRiskStateAccount",
+      "msg": "RiskState account could not be decoded for migration"
     }
   ],
   "types": [
@@ -1077,16 +1571,150 @@
       }
     },
     {
-      "name": "PendingUpdate",
+      "name": "DisputeRecord",
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "lst_id",
             "docs": [
+              "The LST this dispute is for."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "disputed_slot",
+            "docs": [
+              "The slot when the disputed update was finalized."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "finalized_slot",
+            "docs": [
+              "The canonical slot where the disputed round was written to RiskState."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "disputed_attester",
+            "docs": [
+              "The attester who submitted the disputed update."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "disputer",
+            "docs": [
+              "The person who filed the dispute."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "evidence_hash",
+            "docs": [
+              "Hash of off-chain evidence (e.g., IPFS CID, Arweave tx)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "filed_at",
+            "docs": [
+              "Timestamp when dispute was filed."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "resolution_deadline",
+            "docs": [
+              "Deadline for resolution (filed_at + 24 hours)."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "is_resolved",
+            "docs": [
+              "Whether this dispute has been resolved."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "attester_slashed",
+            "docs": [
+              "Outcome: true = attester slashed, false = dispute rejected."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "slash_amount",
+            "docs": [
+              "Amount slashed from attester (0 if not slashed)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "disputer_reward",
+            "docs": [
+              "Amount rewarded to disputer (0 if dispute rejected)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "disputed_theta_scaled",
+            "docs": [
+              "The disputed risk parameters for the record."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "disputed_sigma_scaled",
+            "type": "i64"
+          },
+          {
+            "name": "disputed_regime_flag",
+            "type": "u8"
+          },
+          {
+            "name": "disputed_ltv_bps",
+            "type": "u16"
+          },
+          {
+            "name": "disputed_z_score_scaled",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PendingUpdate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "round_id",
+            "docs": [
+              "Client-chosen round identifier used to make each update record unique."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "lst_id",
+            "docs": [
               "The LST this update is for."
             ],
             "type": "string"
+          },
+          {
+            "name": "attester_registry",
+            "docs": [
+              "Registry that authorized the attesters for this round."
+            ],
+            "type": "pubkey"
           },
           {
             "name": "proposer",
@@ -1136,6 +1764,20 @@
               "Whether this update has been finalized."
             ],
             "type": "bool"
+          },
+          {
+            "name": "finalized_at",
+            "docs": [
+              "Timestamp when the update reached threshold and became canonical."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "finalized_slot",
+            "docs": [
+              "Slot when the update reached threshold and became canonical."
+            ],
+            "type": "u64"
           },
           {
             "name": "params",

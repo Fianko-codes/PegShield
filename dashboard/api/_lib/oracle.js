@@ -84,6 +84,8 @@ export function deriveRiskStateAddress(lstId = DEFAULT_LST_ID, programId = DEFAU
  *   8   bytes  — timestamp      i64
  *   32  bytes  — authority      Pubkey
  *   32  bytes  — last_updater   Pubkey
+ *   1   byte   — update_mode    u8 (optional on legacy accounts)
+ *   32  bytes  — attester_registry Pubkey (optional on legacy accounts)
  */
 export function decodeRiskStateAccount(data) {
   let offset = 8; // skip discriminator
@@ -116,6 +118,16 @@ export function decodeRiskStateAccount(data) {
   offset = authority.offset;
 
   const lastUpdater = readPubkey(data, offset);
+  offset = lastUpdater.offset;
+
+  const hasUpdateMode = offset < data.length;
+  const updateMode = hasUpdateMode ? readU8(data, offset) : { value: 0, offset };
+  offset = updateMode.offset;
+
+  const hasAttesterRegistry = offset + 32 <= data.length;
+  const attesterRegistry = hasAttesterRegistry
+    ? readPubkey(data, offset)
+    : { value: new PublicKey(new Uint8Array(32)).toBase58(), offset };
 
   // Decode fixed-point back to floats for API consumers
   const theta = Number((thetaScaled.value / SCALE).toFixed(6));
@@ -140,6 +152,8 @@ export function decodeRiskStateAccount(data) {
     timestamp: timestamp.value,
     authority: authority.value,
     last_updater: lastUpdater.value,
+    update_mode: updateMode.value,
+    attester_registry: attesterRegistry.value,
   };
 }
 

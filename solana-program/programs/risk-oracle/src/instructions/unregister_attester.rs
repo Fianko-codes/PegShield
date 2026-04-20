@@ -79,6 +79,12 @@ pub fn withdraw_handler(ctx: Context<WithdrawBond>) -> Result<()> {
         OracleError::CooldownActive
     );
 
+    // Prevent withdrawals that would make the registry unable to reach threshold.
+    require!(
+        registry.can_remove_attester(),
+        OracleError::CannotDropBelowThreshold
+    );
+
     let bond_amount = entry.bond;
 
     // Transfer bond back to attester

@@ -36,3 +36,12 @@ pub const ATTESTER_REGISTRY_SEED: &[u8] = b"attester_registry";
 
 /// Seed for PendingUpdate PDA.
 pub const PENDING_UPDATE_SEED: &[u8] = b"pending_update";
+
+/// Seed for DisputeRecord PDA.
+pub const DISPUTE_RECORD_SEED: &[u8] = b"dispute_record";
+
+/// Time window after finalization during which a dispute can be filed (1 hour).
+pub const DISPUTE_WINDOW_SECS: i64 = 60 * 60;
+
+/// Deadline for admin to resolve a dispute after filing (24 hours).
+pub const RESOLUTION_DEADLINE_SECS: i64 = 24 * 60 * 60;

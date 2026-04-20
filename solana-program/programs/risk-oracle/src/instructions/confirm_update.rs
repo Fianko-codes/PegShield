@@ -4,7 +4,7 @@ use crate::errors::OracleError;
 use crate::constants::*;
 
 #[derive(Accounts)]
-#[instruction(lst_id: String)]
+#[instruction(lst_id: String, round_id: u64)]
 pub struct ConfirmUpdate<'info> {
     #[account(
         mut,
@@ -17,26 +17,29 @@ pub struct ConfirmUpdate<'info> {
     #[account(
         mut,
         seeds = [ATTESTER_REGISTRY_SEED],
-        bump
+        bump,
+        constraint = risk_state.attester_registry == registry.key() @ OracleError::Unauthorized,
     )]
     pub registry: Account<'info, AttesterRegistry>,
 
     #[account(
         mut,
-        seeds = [PENDING_UPDATE_SEED, lst_id.as_bytes()],
+        seeds = [PENDING_UPDATE_SEED, lst_id.as_bytes(), &round_id.to_le_bytes()],
         bump,
         constraint = !pending_update.is_finalized @ OracleError::NoPendingUpdate,
+        constraint = pending_update.attester_registry == registry.key() @ OracleError::Unauthorized,
     )]
     pub pending_update: Account<'info, PendingUpdate>,
 
     pub confirmer: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<ConfirmUpdate>, lst_id: String) -> Result<()> {
+pub fn handler(ctx: Context<ConfirmUpdate>, lst_id: String, round_id: u64) -> Result<()> {
     let registry = &mut ctx.accounts.registry;
     let pending = &mut ctx.accounts.pending_update;
     let confirmer_key = ctx.accounts.confirmer.key();
     let now = Clock::get()?.unix_timestamp;
+    let slot = Clock::get()?.slot;
 
     // Check not expired
     require!(!pending.is_expired(now), OracleError::PendingUpdateExpired);
@@ -73,11 +76,13 @@ pub fn handler(ctx: Context<ConfirmUpdate>, lst_id: String) -> Result<()> {
         state.regime_flag = params.regime_flag;
         state.suggested_ltv_bps = params.suggested_ltv_bps;
         state.z_score_scaled = params.z_score_scaled;
-        state.slot = Clock::get()?.slot;
+        state.slot = slot;
         state.timestamp = now;
         state.last_updater = confirmer_key;
 
         pending.is_finalized = true;
+        pending.finalized_at = now;
+        pending.finalized_slot = slot;
 
         // Increment updates_submitted for proposer
         if let Some(proposer_idx) = registry.find_attester(&pending.proposer) {
@@ -85,8 +90,9 @@ pub fn handler(ctx: Context<ConfirmUpdate>, lst_id: String) -> Result<()> {
         }
 
         msg!(
-            "Update finalized for LST {} at slot {}",
+            "Update finalized for LST {} round {} at slot {}",
             lst_id,
+            round_id,
             state.slot
         );
     }

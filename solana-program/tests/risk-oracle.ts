@@ -207,22 +207,50 @@ describe("risk-oracle", () => {
     const attester1 = Keypair.generate();
     const attester2 = Keypair.generate();
     const attester3 = Keypair.generate();
+    const disputer = Keypair.generate();
     const slashDestination = Keypair.generate();
     const multiLstId = "jitoSOL";
+    const round1 = new anchor.BN(1);
+    const round2 = new anchor.BN(2);
 
     const [multiRiskStatePda] = PublicKey.findProgramAddressSync(
       [Buffer.from("risk"), Buffer.from(multiLstId)],
       program.programId,
     );
 
-    const [pendingUpdatePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("pending_update"), Buffer.from(multiLstId)],
+    const [pendingUpdateRound1Pda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("pending_update"), Buffer.from(multiLstId), Buffer.from(round1.toArrayLike(Buffer, "le", 8))],
+      program.programId,
+    );
+
+    const [pendingUpdateRound2Pda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("pending_update"), Buffer.from(multiLstId), Buffer.from(round2.toArrayLike(Buffer, "le", 8))],
+      program.programId,
+    );
+
+    const [disputeRound2Attester3Pda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("dispute_record"),
+        Buffer.from(multiLstId),
+        Buffer.from(round2.toArrayLike(Buffer, "le", 8)),
+        attester3.publicKey.toBuffer(),
+      ],
+      program.programId,
+    );
+
+    const [disputeRound2Attester2Pda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("dispute_record"),
+        Buffer.from(multiLstId),
+        Buffer.from(round2.toArrayLike(Buffer, "le", 8)),
+        attester2.publicKey.toBuffer(),
+      ],
       program.programId,
     );
 
     before(async () => {
       // Airdrop to attesters
-      for (const attester of [attester1, attester2, attester3]) {
+      for (const attester of [attester1, attester2, attester3, disputer]) {
         const sig = await provider.connection.requestAirdrop(
           attester.publicKey,
           5 * LAMPORTS_PER_SOL,
@@ -368,6 +396,7 @@ describe("risk-oracle", () => {
       await program.methods
         .proposeUpdate(
           multiLstId,
+          round1,
           toScaled(0.05),    // theta
           toScaled(0.015),   // sigma
           0,                  // regime_flag
@@ -377,35 +406,38 @@ describe("risk-oracle", () => {
         .accounts({
           riskState: multiRiskStatePda,
           registry: registryPda,
-          pendingUpdate: pendingUpdatePda,
+          pendingUpdate: pendingUpdateRound1Pda,
           proposer: attester1.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([attester1])
         .rpc();
 
-      const pending = await (program.account as any).pendingUpdate.fetch(pendingUpdatePda);
+      const pending = await (program.account as any).pendingUpdate.fetch(pendingUpdateRound1Pda);
       assert.equal(pending.lstId, multiLstId);
+      assert.equal(pending.roundId.toNumber(), round1.toNumber());
       assert.equal(pending.confirmationCount, 1); // proposer auto-confirms
       assert.equal(pending.isFinalized, false);
     });
 
     it("attester 2 confirms and finalizes the update (threshold reached)", async () => {
       await program.methods
-        .confirmUpdate(multiLstId)
+        .confirmUpdate(multiLstId, round1)
         .accounts({
           riskState: multiRiskStatePda,
           registry: registryPda,
-          pendingUpdate: pendingUpdatePda,
+          pendingUpdate: pendingUpdateRound1Pda,
           confirmer: attester2.publicKey,
         })
         .signers([attester2])
         .rpc();
 
       // Check pending update is finalized
-      const pending = await (program.account as any).pendingUpdate.fetch(pendingUpdatePda);
+      const pending = await (program.account as any).pendingUpdate.fetch(pendingUpdateRound1Pda);
       assert.equal(pending.confirmationCount, 2);
       assert.equal(pending.isFinalized, true);
+      assert.isAbove(pending.finalizedAt.toNumber(), 0);
+      assert.isAbove(pending.finalizedSlot.toNumber(), 0);
 
       // Check risk state was updated
       const state = await (program.account as any).riskState.fetch(multiRiskStatePda);
@@ -413,6 +445,136 @@ describe("risk-oracle", () => {
       assert.equal(state.sigmaScaled.toNumber(), Math.round(0.015 * SCALE));
       assert.equal(state.suggestedLtvBps, 7200);
       assert.isAbove(state.timestamp.toNumber(), 0);
+    });
+
+    it("can process a second update for the same LST after the first one closes", async () => {
+      await program.methods
+        .proposeUpdate(
+          multiLstId,
+          round2,
+          toScaled(0.08),
+          toScaled(0.02),
+          1,
+          toLtvBps(0.55),
+          toScaled(-2.7),
+        )
+        .accounts({
+          riskState: multiRiskStatePda,
+          registry: registryPda,
+          pendingUpdate: pendingUpdateRound2Pda,
+          proposer: attester3.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([attester3])
+        .rpc();
+
+      await program.methods
+        .confirmUpdate(multiLstId, round2)
+        .accounts({
+          riskState: multiRiskStatePda,
+          registry: registryPda,
+          pendingUpdate: pendingUpdateRound2Pda,
+          confirmer: attester1.publicKey,
+        })
+        .signers([attester1])
+        .rpc();
+
+      const state = await (program.account as any).riskState.fetch(multiRiskStatePda);
+      assert.equal(state.thetaScaled.toNumber(), Math.round(0.08 * SCALE));
+      assert.equal(state.sigmaScaled.toNumber(), Math.round(0.02 * SCALE));
+      assert.equal(state.regimeFlag, 1);
+      assert.equal(state.suggestedLtvBps, 5500);
+      assert.equal(state.zScoreScaled.toNumber(), Math.round(-2.7 * SCALE));
+    });
+
+    it("rejects disputes against registered attesters that did not sign the round", async () => {
+      try {
+        await program.methods
+          .disputeUpdate(
+            multiLstId,
+            round2,
+            attester2.publicKey,
+            Array(32).fill(7),
+          )
+          .accounts({
+            disputer: disputer.publicKey,
+            registry: registryPda,
+            pendingUpdate: pendingUpdateRound2Pda,
+            disputeRecord: disputeRound2Attester2Pda,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([disputer])
+          .rpc();
+
+        assert.fail("Expected AttesterDidNotParticipate error");
+      } catch (err: any) {
+        assert.include(err.message, "AttesterDidNotParticipate");
+      }
+    });
+
+    it("files and resolves a dispute against a signer from a finalized round", async () => {
+      const evidenceHash = Array.from({ length: 32 }, (_, index) => index + 1);
+      const disputerBalanceBeforeResolve = await provider.connection.getBalance(disputer.publicKey);
+      const treasuryBalanceBeforeResolve = await provider.connection.getBalance(slashDestination.publicKey);
+
+      await program.methods
+        .disputeUpdate(
+          multiLstId,
+          round2,
+          attester3.publicKey,
+          evidenceHash,
+        )
+        .accounts({
+          disputer: disputer.publicKey,
+          registry: registryPda,
+          pendingUpdate: pendingUpdateRound2Pda,
+          disputeRecord: disputeRound2Attester3Pda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([disputer])
+        .rpc();
+
+      const dispute = await (program.account as any).disputeRecord.fetch(disputeRound2Attester3Pda);
+      assert.equal(dispute.disputedAttester.toBase58(), attester3.publicKey.toBase58());
+      assert.equal(dispute.disputedSlot.toNumber(), round2.toNumber());
+      assert.equal(dispute.finalizedSlot.toNumber() > 0, true);
+      assert.equal(dispute.isResolved, false);
+
+      await program.methods
+        .resolveDispute(
+          multiLstId,
+          round2,
+          attester3.publicKey,
+          true,
+        )
+        .accounts({
+          admin: provider.wallet.publicKey,
+          registry: registryPda,
+          disputeRecord: disputeRound2Attester3Pda,
+          disputer: disputer.publicKey,
+          slashDestination: slashDestination.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .rpc();
+
+      const registry = await (program.account as any).attesterRegistry.fetch(registryPda);
+      const attester3Entry = registry.attesters.find(
+        (entry: any) => entry.pubkey.toBase58() === attester3.publicKey.toBase58(),
+      );
+      assert.equal(attester3Entry.bond.toNumber(), 500_000_000);
+      assert.equal(attester3Entry.disputesLost.toNumber(), 1);
+      assert.equal(registry.totalBonded.toNumber(), 3_000_000_000);
+
+      const resolvedDispute = await (program.account as any).disputeRecord.fetch(disputeRound2Attester3Pda);
+      assert.equal(resolvedDispute.isResolved, true);
+      assert.equal(resolvedDispute.attesterSlashed, true);
+      assert.equal(resolvedDispute.slashAmount.toNumber(), 500_000_000);
+      assert.equal(resolvedDispute.disputerReward.toNumber(), 250_000_000);
+
+      const disputerBalanceAfterResolve = await provider.connection.getBalance(disputer.publicKey);
+      const treasuryBalanceAfterResolve = await provider.connection.getBalance(slashDestination.publicKey);
+      assert.equal(disputerBalanceAfterResolve - disputerBalanceBeforeResolve, 250_000_000);
+      assert.equal(treasuryBalanceAfterResolve - treasuryBalanceBeforeResolve, 250_000_000);
     });
   });
 });

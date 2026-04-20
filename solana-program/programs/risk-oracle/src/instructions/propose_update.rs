@@ -4,7 +4,7 @@ use crate::errors::OracleError;
 use crate::constants::*;
 
 #[derive(Accounts)]
-#[instruction(lst_id: String)]
+#[instruction(lst_id: String, round_id: u64)]
 pub struct ProposeUpdate<'info> {
     #[account(
         seeds = [b"risk", lst_id.as_bytes()],
@@ -24,7 +24,7 @@ pub struct ProposeUpdate<'info> {
         init,
         payer = proposer,
         space = PendingUpdate::SPACE,
-        seeds = [PENDING_UPDATE_SEED, lst_id.as_bytes()],
+        seeds = [PENDING_UPDATE_SEED, lst_id.as_bytes(), &round_id.to_le_bytes()],
         bump
     )]
     pub pending_update: Account<'info, PendingUpdate>,
@@ -38,6 +38,7 @@ pub struct ProposeUpdate<'info> {
 pub fn handler(
     ctx: Context<ProposeUpdate>,
     lst_id: String,
+    round_id: u64,
     theta_scaled: i64,
     sigma_scaled: i64,
     regime_flag: u8,
@@ -68,7 +69,9 @@ pub fn handler(
 
     // Initialize the pending update
     let pending = &mut ctx.accounts.pending_update;
+    pending.round_id = round_id;
     pending.lst_id = lst_id.clone();
+    pending.attester_registry = registry.key();
     pending.proposer = proposer_key;
     pending.proposed_at = now;
     pending.proposed_slot = slot;
@@ -76,12 +79,15 @@ pub fn handler(
     pending.confirmation_count = 1; // Proposer auto-confirms
     pending.confirmations_bitmap = 1 << attester_index;
     pending.is_finalized = false;
+    pending.finalized_at = 0;
+    pending.finalized_slot = 0;
     pending.params = params;
 
     msg!(
-        "Update proposed by attester {} for LST {}, expires at {}",
+        "Update proposed by attester {} for LST {} round {}, expires at {}",
         proposer_key,
         lst_id,
+        round_id,
         pending.expires_at
     );
 

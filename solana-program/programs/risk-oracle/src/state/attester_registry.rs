@@ -74,6 +74,10 @@ impl AttesterRegistry {
             .map(|a| a.pubkey)
             .collect()
     }
+
+    pub fn can_remove_attester(&self) -> bool {
+        self.attester_count > self.threshold
+    }
 }
 
 impl AttesterEntry {
@@ -84,4 +88,27 @@ impl AttesterEntry {
         + 8                       // updates_submitted u64
         + 8                       // disputes_lost u64
         + 1;                      // is_active bool
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preserves_threshold_when_removing_attesters() {
+        let mut registry = AttesterRegistry {
+            admin: Pubkey::default(),
+            attester_count: 3,
+            threshold: 2,
+            total_bonded: 0,
+            min_bond: 0,
+            slash_destination: Pubkey::default(),
+            attesters: [AttesterEntry::default(); MAX_ATTESTERS],
+        };
+
+        assert!(registry.can_remove_attester());
+
+        registry.attester_count = 2;
+        assert!(!registry.can_remove_attester());
+    }
 }

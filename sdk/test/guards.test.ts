@@ -18,6 +18,8 @@ function buildState(overrides: Partial<RiskState> = {}): RiskState {
     timestamp: 1_700_000_000n,
     authority: "11111111111111111111111111111111",
     lastUpdater: "11111111111111111111111111111111",
+    updateMode: 0,
+    attesterRegistry: "11111111111111111111111111111111",
     ...overrides,
   };
 }

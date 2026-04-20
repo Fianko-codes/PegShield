@@ -8,6 +8,10 @@ pub mod propose_update;
 pub mod confirm_update;
 pub mod cancel_expired;
 pub mod enable_multi_attester;
+pub mod migrate_risk_state;
+pub mod dispute_update;
+pub mod resolve_dispute;
+pub mod close_expired_dispute;
 
 pub use initialize_oracle::*;
 pub use update_risk_state::*;
@@ -19,3 +23,7 @@ pub use propose_update::*;
 pub use confirm_update::*;
 pub use cancel_expired::*;
 pub use enable_multi_attester::*;
+pub use migrate_risk_state::*;
+pub use dispute_update::*;
+pub use resolve_dispute::*;
+pub use close_expired_dispute::*;
