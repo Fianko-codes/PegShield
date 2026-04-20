@@ -2,6 +2,8 @@
 
 Reference consumer for PegShield. This simulates how a lending protocol would turn the on-chain oracle state into a borrow decision for LST collateral.
 
+If you want the on-chain counterpart instead of this script-level example, see [`solana-program/programs/mock-lender`](../../solana-program/programs/mock-lender).
+
 ## What It Shows
 
 - Reads the live PegShield PDA from Solana devnet by default

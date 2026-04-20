@@ -1,0 +1,24 @@
+{
+  "name": "@pegshield/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Unified operator CLI for the PegShield Solana risk oracle.",
+  "license": "Apache-2.0",
+  "bin": {
+    "pegshield": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.95.3",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

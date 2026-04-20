@@ -1,0 +1,21 @@
+[package]
+name = "mock-lender"
+version = "0.1.0"
+description = "Mock lending consumer for the PegShield risk oracle"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "mock_lender"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+idl-build = ["anchor-lang/idl-build", "risk-oracle/idl-build"]
+default = []
+
+[dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+risk-oracle = { path = "../risk-oracle", features = ["cpi"] }

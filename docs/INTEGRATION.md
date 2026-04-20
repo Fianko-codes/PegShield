@@ -1,6 +1,6 @@
 # Lender Integration Guide
 
-How a Solana lending protocol integrates the PegShield risk oracle as the LTV source for LST collateral. Bridges the high-level [`README.md`](../README.md), the API reference in [`sdk/README.md`](../sdk/README.md), and the runnable [`examples/lending-borrow-demo`](../examples/lending-borrow-demo).
+How a Solana lending protocol integrates the PegShield risk oracle as the LTV source for LST collateral. Bridges the high-level [`README.md`](../README.md), the API reference in [`sdk/README.md`](../sdk/README.md), the runnable [`examples/lending-borrow-demo`](../examples/lending-borrow-demo), and the on-chain [`mock-lender`](../solana-program/programs/mock-lender) consumer program.
 
 > **TL;DR** — install `@pegshield/sdk`, derive the PDA with the LST id you support, decode `RiskState`, gate borrows behind `safeLtv()`. If anything goes wrong, fall back to a conservative static LTV — never a higher one.
 
@@ -123,6 +123,8 @@ npm run start -- 100 1814.63 stETH       # live devnet read
 npm run start:snapshot -- 100 1814.63 stETH  # offline, uses repo snapshot
 ```
 
+If you want an on-chain reference instead of a TypeScript consumer, inspect [`solana-program/programs/mock-lender/src/lib.rs`](../solana-program/programs/mock-lender/src/lib.rs). That program reads PegShield's `RiskState`, applies freshness / regime / LTV checks, and stores a `BorrowDecision` PDA for auditability.
+
 ## Step 4 — Treat failure as the common case
 
 | Failure | What you do |
@@ -193,4 +195,5 @@ Track that work via the project's GitHub issues.
 - [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) — system diagram + data contracts
 - [`SECURITY.md`](../SECURITY.md) — trust model & disclosure
 - [`docs/MULTI_ATTESTER.md`](./MULTI_ATTESTER.md) — decentralization roadmap
+- [`cli/`](../cli) — operator commands for registry and consensus flow
 - [`examples/lending-borrow-demo`](../examples/lending-borrow-demo) — runnable reference consumer

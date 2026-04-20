@@ -98,10 +98,12 @@ Current reference-rate sources:
 | On-chain program | Anchor program deployed on Solana devnet |
 | On-chain output | `RiskState` PDA storing live LTV + regime + freshness |
 | Multi-asset scope | `mSOL-v2`, `jitoSOL-v1`, `bSOL-v1` supported through the bridge/engine path |
+| Operator surface | unified `pegshield` CLI for init / read / propose / confirm / dispute flows |
 | Consumer surface | `@pegshield/sdk` with `fetchRiskState`, `isStale`, `isCritical`, `safeLtv` |
+| On-chain integration proof | `mock-lender` Anchor program that reads PegShield and records borrow decisions |
 | CI loop | scheduled GitHub Actions updater |
 | Historical proof | replay of June 2022 `stETH/ETH` depeg |
-| Scenario breadth | 1 historical + 5 synthetic stress paths |
+| Scenario breadth | 1 historical + 8 synthetic / scenario-lab stress paths |
 | Offline reproducibility | committed `artifacts/` snapshots and bridge caches |
 
 ## Live Deployment (Devnet)
@@ -165,8 +167,9 @@ The engine converts that into a regime flag and a suggested LTV. In `CRITICAL` r
 |---|---|
 | [`bridge/`](./bridge) | fetches Pyth prices and reference rates, writes peg-deviation series |
 | [`core-engine/`](./core-engine) | OU calibration, ADF regime detection, LTV mapping |
-| [`solana-program/`](./solana-program) | Anchor program for `RiskState` |
+| [`solana-program/`](./solana-program) | Anchor programs for `RiskState` and the mock lender consumer |
 | [`updater/`](./updater) | initialize / submit / read / close / consumer demo scripts |
+| [`cli/`](./cli) | unified `pegshield` operator CLI |
 | [`sdk/`](./sdk) | typed TS client for integrators |
 | [`simulation/`](./simulation) | historical and synthetic stress replays |
 | [`artifacts/`](./artifacts) | committed oracle snapshots, bridge caches, scenario bundle |
@@ -182,7 +185,7 @@ If someone wants to judge the project in under five minutes:
 |---|---|---|
 | 1 | `./demo.sh --dry-run` | the operational flow is coherent |
 | 2 | `.venv/bin/python -m unittest tests.test_core_engine -v` | the statistical core is tested |
-| 3 | `npm --prefix updater run read -- mSOL-v2` | the live devnet PDA is readable |
+| 3 | `npm --prefix cli run start -- read mSOL-v2` | the unified operator CLI can read the live devnet PDA |
 | 4 | `.venv/bin/python simulation/stress_test.py` | the stress replay is reproducible |
 | 5 | `cd examples/lending-borrow-demo && npm install && npm run start -- 100 1814.63 stETH` | an external lender can consume it |
 
@@ -210,8 +213,9 @@ Use `./demo.sh --dry-run` if you want to verify the path without touching devnet
 .venv/bin/python -m unittest tests.test_core_engine -v
 .venv/bin/python bridge/fetch_pyth.py
 .venv/bin/python core-engine/pipeline.py
+npm --prefix cli run start -- status mSOL-v2
 npm --prefix updater run submit
-npm --prefix updater run read -- mSOL-v2
+npm --prefix cli run start -- read mSOL-v2
 .venv/bin/python simulation/stress_test.py
 npm --prefix updater run consumer -- 1000 mSOL-v2
 ```
