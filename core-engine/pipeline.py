@@ -14,7 +14,7 @@ import pandas as pd
 DEFAULT_LST_ID = os.environ.get("LST_ID", "mSOL-v2")
 
 from calibration import derive_baseline
-from ltv_calculator import compute_ltv
+from ltv_calculator import compute_liquidity_risk, compute_ltv
 from ou_model import compute_spread, estimate_ou_params
 from regime_detector import detect_regime
 
@@ -52,11 +52,20 @@ def build_risk_payload(
     ou_params = estimate_ou_params(spread, dt_seconds=step_seconds)
     regime = detect_regime(spread)
     baseline = derive_baseline(spread, dt_seconds=step_seconds)
+    liquidity_metrics = bridge_payload.get("liquidity_metrics", bridge_payload.get("liquidity"))
+    liquidity_risk = compute_liquidity_risk(liquidity_metrics)
+    statistical_ltv = compute_ltv(
+        theta=ou_params["theta"],
+        sigma=ou_params["sigma"],
+        regime_flag=regime["regime_flag"],
+        baseline=baseline,
+    )
     suggested_ltv = compute_ltv(
         theta=ou_params["theta"],
         sigma=ou_params["sigma"],
         regime_flag=regime["regime_flag"],
         baseline=baseline,
+        liquidity_risk=liquidity_risk,
     )
 
     latest_row = history_df.iloc[-1]
@@ -98,7 +107,9 @@ def build_risk_payload(
         "theta": ou_params["theta"],
         "sigma": ou_params["sigma"],
         "regime_flag": regime["regime_flag"],
+        "statistical_ltv": statistical_ltv,
         "suggested_ltv": suggested_ltv,
+        "liquidity_risk": liquidity_risk,
         "z_score": regime["z_score"],
         "mu": ou_params["mu"],
         "adf_pvalue": regime["adf_pvalue"],

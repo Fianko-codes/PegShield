@@ -17,6 +17,7 @@ for path in (str(CORE_ENGINE), str(SIMULATION)):
 
 from ou_model import estimate_ou_params
 from regime_detector import detect_regime
+from ltv_calculator import compute_liquidity_risk, compute_ltv
 from pipeline import build_risk_payload
 from stress_test import (
     build_simulation_bundle,
@@ -87,8 +88,92 @@ class CoreEngineMicroTests(unittest.TestCase):
         self.assertEqual(payload["marinade_msol_sol_rate"], marinade_rate)
         self.assertGreaterEqual(payload["suggested_ltv"], 0.4)
         self.assertLessEqual(payload["suggested_ltv"], 0.8)
+        self.assertEqual(payload["statistical_ltv"], payload["suggested_ltv"])
+        self.assertEqual(payload["liquidity_risk"]["status"], "UNKNOWN")
+        self.assertEqual(payload["liquidity_risk"]["haircut"], 0.0)
         self.assertEqual(payload["asset_symbol"], "mSOL")
         self.assertEqual(payload["reference_rate_source"], "test-fixture")
+
+    def test_compute_liquidity_risk_maps_stress_to_bounded_haircut(self) -> None:
+        liquidity_risk = compute_liquidity_risk(
+            {
+                "exit_liquidity_usd": 250_000,
+                "target_exit_usd": 1_000_000,
+                "slippage_bps": 800,
+                "pool_imbalance_pct": 0.88,
+                "withdrawal_delay_seconds": 7 * 86_400,
+                "top_holder_concentration_pct": 0.55,
+            }
+        )
+
+        self.assertEqual(liquidity_risk["status"], "STRESSED")
+        self.assertGreater(liquidity_risk["score"], 0.35)
+        self.assertGreater(liquidity_risk["haircut"], 0.10)
+        self.assertLessEqual(liquidity_risk["haircut"], 0.30)
+
+    def test_compute_ltv_applies_liquidity_haircut_after_statistical_model(self) -> None:
+        baseline = {"theta_avg": 1.0, "sigma_avg": 1.0}
+        statistical_ltv = compute_ltv(
+            theta=1.0,
+            sigma=1.0,
+            regime_flag=0,
+            baseline=baseline,
+        )
+        liquidity_ltv = compute_ltv(
+            theta=1.0,
+            sigma=1.0,
+            regime_flag=0,
+            baseline=baseline,
+            liquidity_risk={"haircut": 0.18},
+        )
+
+        self.assertEqual(statistical_ltv, 0.8)
+        self.assertEqual(liquidity_ltv, 0.62)
+
+    def test_pipeline_build_risk_payload_includes_liquidity_haircut(self) -> None:
+        reference_rate = 1.17
+        history = []
+        for idx in range(40):
+            sol = 80.0 + idx * 0.02
+            peg_deviation = 0.001 * np.sin(idx / 5)
+            asset = sol * reference_rate * (1 + peg_deviation)
+            history.append(
+                {
+                    "timestamp": 1_700_300_000 + idx * 180,
+                    "asset_usd_price": asset,
+                    "sol_usd_price": sol,
+                    "asset_confidence": 0.04,
+                    "sol_confidence": 0.03,
+                    "asset_sol_ratio": reference_rate * (1 + peg_deviation),
+                    "asset_sol_spread_pct": (asset - sol) / sol,
+                    "peg_deviation": peg_deviation,
+                }
+            )
+
+        payload = build_risk_payload(
+            {
+                "source": "test",
+                "lst_id": "mSOL-v2",
+                "asset_symbol": "mSOL",
+                "bridge_timestamp": "2026-01-01T00:00:00+00:00",
+                "asset_sol_reference_rate": reference_rate,
+                "reference_rate_source": "test-fixture",
+                "history": history,
+                "liquidity_metrics": {
+                    "exit_liquidity_usd": 200_000,
+                    "target_exit_usd": 1_000_000,
+                    "slippage_bps": 900,
+                    "pool_imbalance_pct": 0.90,
+                    "withdrawal_delay_seconds": 10 * 86_400,
+                    "top_holder_concentration_pct": 0.60,
+                },
+            },
+            lst_id="mSOL-v2",
+        )
+
+        self.assertGreater(payload["statistical_ltv"], payload["suggested_ltv"])
+        self.assertEqual(payload["liquidity_risk"]["status"], "SEVERE")
+        self.assertGreater(payload["liquidity_risk"]["haircut"], 0.10)
 
     def test_pipeline_build_risk_payload_contract_for_jitosol(self) -> None:
         reference_rate = 1.27363
