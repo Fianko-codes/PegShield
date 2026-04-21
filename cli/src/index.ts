@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { createHash } from "crypto";
 import { evaluateMultiAttesterReadiness } from "./multi_attester_readiness";
+import { buildArtifactStatus, OracleSnapshot } from "./artifact_status";
 
 dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env") });
 
@@ -373,7 +374,7 @@ function discoverLstIds(): string[] {
 
   const discovered = fs
     .readdirSync(artifactsDir)
-    .filter((entry) => entry.startsWith("oracle_state.") && entry.endsWith(".json"))
+    .filter((entry) => entry.startsWith("oracle_state.") && entry.endsWith(".json") && entry !== "oracle_state.json")
     .map((entry) => entry.replace("oracle_state.", "").replace(".json", ""))
     .sort();
 
@@ -411,7 +412,7 @@ function loadArtifactHistory(lstId: string) {
     if (!fs.existsSync(candidate)) {
       continue;
     }
-    const payload = JSON.parse(fs.readFileSync(candidate, "utf-8")) as {
+    const payload = JSON.parse(fs.readFileSync(candidate, "utf-8")) as OracleSnapshot & {
       lst_id?: string;
       history?: Array<{ timestamp: number; asset_price?: number; sol_price?: number; peg_deviation_pct?: number }>;
       history_source?: string;
@@ -899,6 +900,12 @@ async function commandHistory(args: ReturnType<typeof parseArgs>) {
   );
 }
 
+async function commandSnapshotStatus(args: ReturnType<typeof parseArgs>) {
+  const lstIds = flagBoolean(args.flags, "all") ? discoverLstIds() : [args.positional[0] ?? "mSOL-v2"];
+  const items = lstIds.map((lstId) => buildArtifactStatus(loadArtifactHistory(lstId)));
+  console.log(JSON.stringify(flagBoolean(args.flags, "all") ? { items } : items[0], null, 2));
+}
+
 function printHelp() {
   console.log(`PegShield CLI
 
@@ -924,6 +931,8 @@ Commands:
   dispute-status <lst-id> --round <n> --attester <pubkey>
   status [lst-id]
   multi-status [lst-id] [--round <n>]
+  snapshot-status [lst-id]
+  snapshot-status --all
   history [lst-id] [--days 7]
   dispute <lst-id> --round <n> --attester <pubkey> --evidence <hex-or-string>
   resolve <lst-id> --round <n> --attester <pubkey> --disputer <pubkey> [--reject]
@@ -989,6 +998,9 @@ async function main() {
       return;
     case "multi-status":
       await commandMultiStatus(args);
+      return;
+    case "snapshot-status":
+      await commandSnapshotStatus(args);
       return;
     case "history":
       await commandHistory(args);

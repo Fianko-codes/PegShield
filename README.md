@@ -139,15 +139,15 @@ Consumers are expected to fall back conservatively on staleness or critical regi
 | [`docs/`](./docs) | architecture, integration, and multi-attester design |
 | [`tests/`](./tests) | engine micro-tests |
 
-## Operator Dashboard
+## Operator Status
 
-Build the static status surface from committed oracle artifacts:
+Read the committed oracle snapshots through the CLI:
 
 ```bash
-.venv/bin/python scripts/build_status_dashboard.py
+npm --prefix cli run start -- snapshot-status --all
 ```
 
-Open [`artifacts/status_dashboard.html`](./artifacts/status_dashboard.html) to inspect current peg deviation, statistical LTV, suggested LTV, liquidity haircut, freshness, regime, and the plain-English reason each LTV moved.
+This prints current peg deviation, statistical LTV, suggested LTV, liquidity haircut, freshness/source status, regime, and the plain-English reason each LTV moved for every committed LST artifact.
 
 The historical validation write-up lives at [`docs/case-studies/steth-june-2022.md`](./docs/case-studies/steth-june-2022.md) and is generated from [`artifacts/stress_scenario.json`](./artifacts/stress_scenario.json).
 

@@ -62,7 +62,6 @@ check_artifacts() {
   need_file artifacts/oracle_state.jitoSOL-v1.json
   need_file artifacts/oracle_state.bSOL-v1.json
   need_file artifacts/stress_scenario.json
-  need_file artifacts/status_dashboard.html
   need_file docs/case-studies/steth-june-2022.md
   need_dir solana-program/programs/mock-lender
   need_dir cli
@@ -84,7 +83,6 @@ need_file demo.sh
 run "engine micro-tests" "$ROOT_DIR/.venv/bin/python" -m unittest tests.test_core_engine -v
 run "sdk tests" npm --prefix sdk test
 run "cli tests" npm --prefix cli test
-run "status dashboard build" "$ROOT_DIR/.venv/bin/python" scripts/build_status_dashboard.py --output /tmp/pegshield-status-dashboard.html
 run "stETH case study build" "$ROOT_DIR/.venv/bin/python" scripts/build_steth_case_study.py --output /tmp/pegshield-steth-case-study.md
 run "sdk build" npm --prefix sdk run build
 run "cli build" npm --prefix cli run build

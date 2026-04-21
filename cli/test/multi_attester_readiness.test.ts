@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { buildArtifactStatus } from "../src/artifact_status";
 import { evaluateMultiAttesterReadiness } from "../src/multi_attester_readiness";
 
 const healthyOracle = {
@@ -65,3 +66,32 @@ const healthyRegistry = {
 }
 
 console.log("multi-attester readiness tests passed");
+
+{
+  const status = buildArtifactStatus(
+    {
+      lst_id: "mSOL-v2",
+      asset_symbol: "mSOL",
+      suggested_ltv: 0.62,
+      statistical_ltv: 0.8,
+      peg_deviation_pct: -0.02,
+      z_score: -1.2,
+      regime_flag: 0,
+      timestamp: 100,
+      liquidity_risk: {
+        status: "STRESSED",
+        score: 0.6,
+        haircut: 0.18,
+        components: {},
+        inputs: {},
+      },
+    },
+    160,
+  );
+
+  assert.equal(status.age_seconds, 60);
+  assert.equal(status.suggested_ltv, 0.62);
+  assert.ok(status.why_ltv_moved.some((reason) => reason.includes("Liquidity haircut")));
+}
+
+console.log("artifact status tests passed");
