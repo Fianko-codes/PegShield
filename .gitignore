@@ -4,6 +4,22 @@
 .venv/
 .codex
 
+# AI / tooling session logs and scratch files
+claude-session.jsonl
+codex-session.jsonl
+*-session.jsonl
+.tmp_*.json
+.superstack/
+
+# Internal planning documents (not for submission)
+plan.md
+LST_DePeg_Oracle_BuildPlan.md
+
+# Competitive research scratch
+artifacts/copilot_*.json
+artifacts/*.copilot_project.json
+artifacts/pegshield-copilot-report.*
+
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -12,8 +28,10 @@ node_modules/
 cli/dist/
 target/
 .anchor/
+test-ledger/
 .DS_Store
 /win*/
+dashboard/
 
 updater/keypair.json
 
