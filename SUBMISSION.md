@@ -39,6 +39,42 @@ peg_deviation = (asset_usd / sol_usd) / reference_rate - 1
 
 That avoids punishing normal LST exchange-rate accrual and focuses on actual peg stress. The engine then fits OU parameters, checks stationarity, computes a z-score, and maps the result to an on-chain LTV recommendation.
 
+## Business Case
+
+### Market
+
+Solana LSTs represent multi-billion dollars of on-chain collateral. Jito alone ([stake-pool stats](https://www.jito.network/stats/)) exceeds $3B in deposits; Marinade mSOL and BlazeStake bSOL add further billions. A meaningful fraction — **conservatively $1–3B on Solana today** — flows into lending markets (Kamino, marginfi, Save, Drift) as collateral. Every dollar of that collateral is currently gated by a **static, governance-set LTV table** that nobody updates when a peg starts slipping. That is the exact market PegShield addresses.
+
+The problem generalizes beyond Solana: every chain with LSTs (Ethereum, EigenLayer restaking, Aptos, Sei) has the same structural gap between price oracles and live collateral policy. Solana is the wedge.
+
+### Revenue Model
+
+Two complementary paths, both sustainable on-chain:
+
+| Path | How it works | Who pays | Attester share |
+|---|---|---|---|
+| **Per-loan fee** | Lending protocol pays `N` bps of loan notional at origination when the loan was gated by a PegShield read | The lending protocol (absorbs from borrower or eats from spread) | 50% of fees to attester pool, 50% to protocol treasury |
+| **Subscription / SLA tier** | Protocols subscribe for guaranteed feed SLA, priority lanes, custom LSTs, historical data | The lending protocol, flat monthly | Same split |
+
+Slashing (50% of bond on proven bad update) creates a second pressure on the attester pool, deflating bad actors and compensating good ones. Revenue flows: protocol → treasury + attester pool → honest attesters.
+
+Illustrative back-of-envelope at 5 bps of originations on $2B LST-backed lending TVL with ~2× annual churn: **~$2M ARR on Solana alone**. Scaling the same model across Ethereum LSTs ($30B+ market) is the natural expansion path.
+
+### Competitive Positioning
+
+PegShield is **not** competing with price oracles. It consumes them.
+
+| | Pyth | Switchboard | Chaos Labs / Gauntlet | Protocol-internal LTV tables | PegShield |
+|---|---|---|---|---|---|
+| Publishes | Prices | Prices + custom feeds | Risk recommendations (off-chain reports) | Hardcoded collateral factors | **Live LTV + regime flag** |
+| On-chain output | Yes | Yes | No | N/A (hardcoded constants) | Yes |
+| Real-time | Yes (sub-second) | Yes | No (governance cycle, weeks) | No (governance, months) | Yes (30-second cadence) |
+| Crypto-economic security | Pull + staked publishers | Staked feed operators | None (SaaS) | N/A | Bonded attesters + slashing |
+| Answers "what is it worth" | ✅ | ✅ | ❌ | ❌ | ❌ (reads from Pyth) |
+| Answers "how much to lend" | ❌ | ❌ | ✅ (offline, stale) | ✅ (very stale) | ✅ (live, on-chain) |
+
+In one sentence: **Pyth and Switchboard price assets. Chaos and Gauntlet advise protocols. PegShield enforces collateral policy, on-chain and in real time.**
+
 ## Demo Storyboard
 
 1. Show `README.md` thesis: risk oracle, not price oracle.

@@ -157,6 +157,103 @@ git status --short artifacts simulation/charts
 
 Commit only the intended artifact updates. Do not commit `.env`, keypairs, raw bridge working files, or generated `dist/` folders.
 
+## Mainnet Deployment
+
+Devnet is the current primary environment. Everything in the previous steps targets devnet. This section documents the path to a **minimal mainnet presence** so the program and one PDA can be read on `mainnet-beta` as a credibility signal ahead of full production rollout.
+
+### What "minimal mainnet" means
+
+One `risk_oracle` program deployed, one `RiskState` PDA initialized for `mSOL-v2`, single-attester mode with the updater keypair as authority, the same GitHub Actions cron updating it. No mainnet multi-attester set, no real lender integration yet — just a reachable mainnet account that lenders can `getAccountInfo` against.
+
+### Costs
+
+| Item | Approx SOL | Why |
+|---|---|---|
+| Program deploy (one-time) | 3.5–5 SOL | Program binary rent (size-dependent) |
+| Each `RiskState` PDA rent-exempt reserve | ~0.002 SOL | Fixed-size account |
+| Updater per-tx fees (ongoing) | ~5000 lamports × ~288 tx/day | ~0.0015 SOL/day at 5-min cadence |
+
+Budget: **have 6 SOL funded** before starting, with 2–3 SOL kept as buffer in the updater wallet for ongoing fees.
+
+### Step M1: Fund a mainnet deployer
+
+```bash
+solana-keygen new -o ./mainnet-deployer.json   # or reuse an existing funded keypair
+solana config set --url mainnet-beta
+solana balance -k ./mainnet-deployer.json
+```
+
+Do **not** reuse `updater/keypair.json` as the mainnet deployer unless it's already funded and you explicitly want the updater to also own upgrade authority. Separating deployer from updater is safer; you can set upgrade authority after deploy.
+
+### Step M2: Generate a mainnet program keypair
+
+The current `declare_id!("DMR3rXBh…")` in `programs/risk-oracle/src/lib.rs` is the devnet program ID. For mainnet, generate a fresh one to keep environments separated:
+
+```bash
+solana-keygen new --no-bip39-passphrase -o ./target/deploy/risk_oracle-mainnet-keypair.json
+solana-keygen pubkey ./target/deploy/risk_oracle-mainnet-keypair.json
+```
+
+Update `declare_id!(...)` in `programs/risk-oracle/src/lib.rs` **and** in `Anchor.toml` under `[programs.mainnet]`, then rebuild:
+
+```bash
+anchor build
+```
+
+### Step M3: Deploy
+
+```bash
+anchor deploy \
+  --provider.cluster mainnet-beta \
+  --provider.wallet ./mainnet-deployer.json \
+  --program-name risk_oracle \
+  --program-keypair ./target/deploy/risk_oracle-mainnet-keypair.json
+```
+
+Confirm on the explorer:
+
+```bash
+solana program show <MAINNET_PROGRAM_ID> --url mainnet-beta
+```
+
+### Step M4: Initialize one `RiskState`
+
+Point `.env.mainnet` at mainnet RPC, the new program ID, and the updater keypair. Then:
+
+```bash
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com \
+PROGRAM_ID=<MAINNET_PROGRAM_ID> \
+UPDATER_KEYPAIR_PATH=./updater/keypair.json \
+npm --prefix cli run start -- init-oracle mSOL-v2
+```
+
+Record the resulting PDA. Read it to confirm:
+
+```bash
+npm --prefix cli run start -- read mSOL-v2
+```
+
+### Step M5: Wire the updater cron
+
+Add mainnet secrets to the GitHub Actions workflow as a separate job (don't replace the devnet job — run both in parallel):
+
+- `SOLANA_MAINNET_RPC_URL`
+- `MAINNET_PROGRAM_ID`
+- `MAINNET_MSOL_RISK_STATE_PDA`
+- reuse `UPDATER_KEYPAIR_JSON` (same keypair, different env)
+
+Use a reputable paid RPC (Helius, Triton, QuickNode) — public mainnet RPCs throttle hard.
+
+### Step M6: Lock down upgrade authority
+
+Once the program is deployed and one PDA is live, decide whether to keep upgrade authority hot, rotate to a multisig, or set it to `None` (immutable). For hackathon credibility, keep it on the deployer keypair so judges see a reachable, working account; document your plan in `docs/MULTI_ATTESTER.md` for rotating to a Squads multisig post-submission.
+
+### Risks to flag to yourself before pressing deploy
+
+- **Program ID divergence**: if you forget to update `declare_id!` and `Anchor.toml`, you'll deploy a program that thinks it's the devnet one. The runtime catches this but you'll waste a deploy.
+- **Rent cost**: `anchor deploy` mainnet failures mid-deploy can still debit SOL. Don't deploy with the exact minimum balance; keep headroom.
+- **RPC rate limits**: public mainnet RPC will rate-limit `anchor deploy`. Use a dedicated RPC endpoint for the deploy itself.
+
 ## Step 9: Final Judge Demo
 
 ```bash

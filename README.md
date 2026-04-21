@@ -14,6 +14,8 @@ PegShield does not answer "what is this token worth?" It answers **"how much sho
 >
 > PegShield continuously measures **peg risk**, calibrates a statistical model over that signal, and publishes a live on-chain **suggested LTV** that a lending protocol can enforce immediately.
 
+Solana LSTs represent multi-billion dollars of on-chain collateral today, and every dollar of it is still gated by static, governance-set LTV tables. PegShield replaces those tables with live, bonded, slashable risk state. Market, revenue model, and competitive positioning are in [`SUBMISSION.md`](./SUBMISSION.md#business-case).
+
 ## What's Different From a Price Oracle
 
 PegShield measures **peg deviation**, not raw USD premium:
