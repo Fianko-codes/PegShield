@@ -2,18 +2,18 @@
 
 Risk oracle, not price oracle. For Solana LSTs as collateral.
 
-This document describes how PegShield can evolve from the current single-authority updater into a threshold-attested oracle with explicit signer accountability, replay protection, and slashable operator bonds.
+This document describes PegShield's threshold-attested oracle path: bonded attester registry, pending-update confirmations, disputes, and slashable operator bonds. The code now includes the core on-chain accounts and instructions; the remaining work is production operation with independent attesters.
 
 ## Why This Exists
 
-Today, PegShield is intentionally simple:
+PegShield started as a single-authority updater:
 
 - one off-chain bridge fetches prices and reference rates
 - one engine computes the risk payload
 - one authority signs `update_risk_state`
 - one on-chain PDA stores the latest suggested LTV and diagnostics
 
-That is acceptable for devnet, but it is not the long-term trust model. The next production step is not "more math." It is removing the single-key failure mode.
+That compatibility path remains for devnet and migration. The protocol path now adds an `AttesterRegistry`, bonded attesters, `PendingUpdate` rounds, threshold `confirm_update`, and dispute/slash flow. The next production step is not more math; it is running this path with independent operators and disciplined key custody.
 
 ## Design Goals
 
@@ -34,9 +34,9 @@ That is acceptable for devnet, but it is not the long-term trust model. The next
 
 | Property | Current | Target |
 |---|---|---|
-| Writers | 1 authority key | `m-of-n` attester approvals |
-| On-chain acceptance | `has_one = authority` | threshold-verified round submission |
-| Accountability | social / operational only | slashable bond + signed round evidence |
+| Writers | 1 authority key in compatibility mode | `m-of-n` bonded attester approvals |
+| On-chain acceptance | `has_one = authority` | threshold-confirmed pending update |
+| Accountability | social / operational only | slashable bond + dispute record |
 | Liveness | one keypair must be online | any sufficiently large subset can progress |
 | Consumer read path | single PDA | unchanged single PDA |
 

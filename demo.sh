@@ -40,9 +40,12 @@ run_step() {
 require_command npm
 require_command node
 require_file ".venv/bin/python"
-require_file ".env"
-require_file "sdk/dist/index.js"
 require_file "updater/package.json"
+
+if (( ! DRY_RUN )); then
+  require_file ".env"
+  require_file "sdk/dist/index.js"
+fi
 
 run_step "▶ 1/7  verify engine tests" \
   "$ROOT_DIR/.venv/bin/python" -m unittest tests.test_core_engine -v

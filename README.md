@@ -1,6 +1,7 @@
 # PegShield
 
 [![Oracle Updater](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml/badge.svg)](https://github.com/Fianko-codes/PegShield/actions/workflows/oracle-updater.yml)
+[![CI](https://github.com/Fianko-codes/PegShield/actions/workflows/ci.yml/badge.svg)](https://github.com/Fianko-codes/PegShield/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
 Solana-native **risk oracle** for LST collateral.
@@ -183,11 +184,13 @@ If someone wants to judge the project in under five minutes:
 
 | Step | Command | What it proves |
 |---|---|---|
-| 1 | `./demo.sh --dry-run` | the operational flow is coherent |
-| 2 | `.venv/bin/python -m unittest tests.test_core_engine -v` | the statistical core is tested |
+| 1 | `make verify-offline` | tests, SDK, CLI build, Rust compile, demo wiring, artifact presence |
+| 2 | `./demo.sh --dry-run` | the operational flow is coherent |
 | 3 | `npm --prefix cli run start -- read mSOL-v2` | the unified operator CLI can read the live devnet PDA |
 | 4 | `.venv/bin/python simulation/stress_test.py` | the stress replay is reproducible |
 | 5 | `cd examples/lending-borrow-demo && npm install && npm run start -- 100 1814.63 stETH` | an external lender can consume it |
+
+For a judge-facing walkthrough, use [`SUBMISSION.md`](./SUBMISSION.md). For deployment and upgrade steps, use [`DEPLOY.md`](./DEPLOY.md).
 
 ## One-Command Demo
 
@@ -210,6 +213,8 @@ Use `./demo.sh --dry-run` if you want to verify the path without touching devnet
 ## Full Local Flow
 
 ```bash
+make install
+make verify-offline
 .venv/bin/python -m unittest tests.test_core_engine -v
 .venv/bin/python bridge/fetch_pyth.py
 .venv/bin/python core-engine/pipeline.py
@@ -311,17 +316,18 @@ This writes:
 - multi-LST bridge support for `mSOL-v2`, `jitoSOL-v1`, `bSOL-v1`
 - OU estimator, ADF stationarity test, z-score regime detector
 - deployed Anchor program with fixed-point risk state
+- multi-attester registry / propose / confirm / dispute / slash flow in code
 - devnet PDA updates, reads, and rate-limiting
 - committed oracle artifacts and bridge caches for replay / fallback
-- six-scenario stress bundle
+- nine-scenario stress bundle
 - typed SDK and runnable lender example
 
 ### Not production-ready
 
-- single-attester trust model
+- independent production attester set is not yet live
 - devnet only
 - no production lender integration yet
-- no decentralized updater committee yet
+- no mainnet updater committee operations yet
 - no operational alerting or mainnet deployment process yet
 
 ## Local Setup
@@ -358,6 +364,8 @@ MSOL_RISK_STATE_PDA=7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo
 
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system design, data contracts, failure modes
 - [`docs/INTEGRATION.md`](./docs/INTEGRATION.md) — lender integration path
+- [`SUBMISSION.md`](./SUBMISSION.md) — judge-facing proof path and demo checklist
+- [`DEPLOY.md`](./DEPLOY.md) — deployment and upgrade runbook
 - [`sdk/README.md`](./sdk/README.md) — SDK API reference
 - [`SECURITY.md`](./SECURITY.md) — trust model and disclosure process
 - [`docs/MULTI_ATTESTER.md`](./docs/MULTI_ATTESTER.md) — roadmap away from single-signer trust

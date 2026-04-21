@@ -36,17 +36,23 @@ Please do **not** file public issues or PRs for security-sensitive findings. Exp
 
 ## Trust Model (current)
 
-PegShield is **centralised by design** at this stage:
+PegShield now supports two update modes:
+
+- `update_mode = 0`: single-attester compatibility mode, where the stored `authority` key can write directly.
+- `update_mode = 1`: multi-attester mode, where bonded attesters propose and confirm updates through the registry / pending-update flow.
+
+The devnet deployment should still be treated as hackathon-stage infrastructure until the multi-attester path is operated by independent parties and the program upgrade authority is production-managed.
 
 | Component | Trust assumption |
 |---|---|
 | Price data | Pyth Hermes is honest and timely. No cross-check against secondary oracle. |
-| Reference rate | Fetched from the LST's canonical source (`Marinade` API for `mSOL`, `Jito` Kobe API for `jitoSOL`); fallback constants are used if unreachable. A compromised reference-rate API could skew peg_deviation. |
-| Updater | **One** keypair (`ORACLE_AUTHORITY`) controls all writes. Anyone with that keypair can push arbitrary risk values (within clamped ranges). |
-| Program upgrade | Upgrade authority is the deployer's keypair. Program is not currently marked immutable. |
+| Reference rate | Fetched from the LST's canonical source (`Marinade`, `Jito`, or SolBlaze). A compromised reference-rate source could skew `peg_deviation`. |
+| Updater | Single-attester mode trusts `ORACLE_AUTHORITY`; multi-attester mode trusts a threshold of active bonded attesters. |
+| Attester registry | Registry admin controls attester membership, threshold, minimum bond, and slash destination. |
+| Program upgrade | Upgrade authority is still mutable. Program is not currently marked immutable. |
 | Consumer | Consumers are expected to check `timestamp` freshness (see staleness below). |
 
-Consumers should treat the PDA as a single-signer signal until a multi-attester scheme lands (roadmap).
+Consumers should inspect `RiskState.update_mode` and treat single-attester PDAs as a single-signer signal.
 
 ## On-chain Safety Properties
 
@@ -54,13 +60,15 @@ The Anchor program enforces the following on every `update_risk_state`:
 
 | Property | Where |
 |---|---|
-| `authority` signer matches stored `RiskState.authority` | `has_one = authority` |
+| `authority` signer matches stored `RiskState.authority` in single-attester mode | `has_one = authority` |
 | `params.lst_id` matches stored `lst_id` | `require!(state.lst_id == params.lst_id, LstIdMismatch)` |
 | `theta_scaled ≥ 0` | `require!(params.theta_scaled >= 0, InvalidRiskParams)` |
 | `sigma_scaled > 0` | `require!(params.sigma_scaled > 0, InvalidRiskParams)` |
 | `suggested_ltv_bps ∈ [MIN_LTV_BPS, MAX_LTV_BPS]` | checked against constants |
 | Update throttled — ≥ 30 s since last | `UpdateTooFrequent` |
 | `close_oracle` requires authority signer | `has_one = authority` |
+| multi-attester updates require active registry members and threshold confirmations | `propose_update` / `confirm_update` |
+| disputes can slash bonded attesters after admin resolution | `dispute_update` / `resolve_dispute` |
 
 No floating-point math executes on-chain; all risk fields are encoded as scaled `i64` / `u16` basis points.
 
@@ -78,28 +86,28 @@ A lending protocol consuming the PDA **must**:
 
 - `updater/keypair.json` is **never** committed (enforced by `.gitignore`).
 - In CI, the keypair is injected via the `UPDATER_KEYPAIR_JSON` repository secret and written to a temp path for the run.
-- The authority keypair has *only* the rights granted by `has_one = authority` on `RiskState`. It is **not** the program upgrade authority.
+- The authority keypair has *only* the rights granted by `has_one = authority` on single-mode `RiskState`. It is **not** the program upgrade authority.
 - Losing the updater keypair means the PDA becomes unupdatable but funds are not at risk because the program holds no funds. Recovery path: redeploy with a new lst_id (same flow used for layout migrations; see `updater/close.ts`).
 
 ## Known Limitations
 
 Disclosed proactively so consumers don't take on hidden risk:
 
-- **Single attester.** No multi-signer or threshold scheme yet. A compromised `ORACLE_AUTHORITY` keypair can push any values within clamped ranges.
+- **Devnet operator centralization.** Multi-attester code exists, but independent production attester operations and key custody are not yet live.
 - **No secondary price cross-check.** If Pyth publishes a bad price, PegShield will propagate it.
-- **Reference-rate API dependency.** If the configured LST's canonical rate endpoint is unreachable, the bridge falls back to a hardcoded rate. This is flagged in the snapshot as `reference_rate_source: "fallback-hardcoded"`, but consumers should watch for it.
+- **Reference-rate dependency.** If the configured LST's canonical rate source is unreachable or compromised, risk output can be delayed or skewed. Consumers should watch artifact metadata and staleness.
 - **Short calibration window.** The rolling OU window is bootstrapped; during the first few updates, `theta`/`sigma` estimates will be noisy.
 - **Devnet-only.** No mainnet deployment. Assume all funds and state are disposable.
-- **Limited live deployment scope.** The codebase now supports `mSOL-v2` and `jitoSOL-v1`, but only the `mSOL-v2` devnet PDA is live by default. Each new LST still needs its own PDA, updater run, and calibration review.
+- **Limited live deployment scope.** The codebase supports `mSOL-v2`, `jitoSOL-v1`, and `bSOL-v1`, but each LST still needs its own initialized PDA, updater run, and calibration review.
 - **Upgrade authority.** The program is upgrade-mutable. A future release will mark it immutable after a stable mainnet deployment.
 
 ## Roadmap to "Production-Grade"
 
-1. Multi-attester scheme (threshold-signed updates)
+1. Operate the multi-attester scheme with independent attesters and documented key custody
 2. Secondary oracle cross-check (Switchboard / Chainlink delta)
 3. On-chain confidence intervals (widen LTV band when Pyth confidence is high)
 4. Formal verification of the LTV clamp logic
-5. Mainnet deployment + immutable upgrade authority
+5. Mainnet deployment + immutable or multisig-controlled upgrade authority
 6. Published consumer SDK with type-safe deserialisation + staleness guards
 
 ## Responsible Disclosure Acknowledgements
