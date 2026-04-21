@@ -6,6 +6,7 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 import { createHash } from "crypto";
+import { evaluateMultiAttesterReadiness } from "./multi_attester_readiness";
 
 dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env") });
 
@@ -830,6 +831,52 @@ async function commandStatus(args: ReturnType<typeof parseArgs>) {
   );
 }
 
+async function commandMultiStatus(args: ReturnType<typeof parseArgs>) {
+  const { program } = getContext();
+  const lstId = args.positional[0] ?? "mSOL-v2";
+  const roundFlag = flagValue(args.flags, "round");
+  const riskStatePda = deriveRiskStatePda(program.programId, lstId);
+  const registryPda = deriveRegistryPda(program.programId);
+  const riskState = await fetchNullable(() => program.account.riskState.fetch(riskStatePda)) as RiskStateAccount | null;
+  const registry = await fetchNullable(() => program.account.attesterRegistry.fetch(registryPda)) as RegistryAccount | null;
+  const oracle = riskState ? decodeRiskState(riskState) : null;
+  const registryAccount = registry ? decodeRegistry(registry) : null;
+
+  let pendingUpdate: PublicKey | null = null;
+  let pendingAccount: ReturnType<typeof decodePendingUpdate> | null = null;
+  if (roundFlag) {
+    const round = parseInteger(roundFlag, "round");
+    pendingUpdate = derivePendingUpdatePda(program.programId, lstId, round);
+    const pending = await fetchNullable(() => program.account.pendingUpdate.fetch(pendingUpdate!)) as PendingUpdateAccount | null;
+    pendingAccount = pending ? decodePendingUpdate(pending) : null;
+  }
+
+  const readiness = evaluateMultiAttesterReadiness({
+    oracle,
+    registry: registryAccount,
+    pending: pendingAccount,
+  });
+
+  console.log(
+    JSON.stringify(
+      {
+        lst_id: lstId,
+        ready: readiness.ready,
+        blockers: readiness.blockers,
+        warnings: readiness.warnings,
+        risk_state: riskStatePda.toBase58(),
+        registry: registryPda.toBase58(),
+        pending_update: pendingUpdate?.toBase58() ?? null,
+        oracle,
+        registry_account: registryAccount,
+        pending_account: pendingAccount,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 async function commandHistory(args: ReturnType<typeof parseArgs>) {
   const lstId = args.positional[0] ?? "mSOL-v2";
   const days = parseInteger(flagValue(args.flags, "days") ?? "7", "days");
@@ -876,6 +923,7 @@ Commands:
   pending <lst-id> --round <n>
   dispute-status <lst-id> --round <n> --attester <pubkey>
   status [lst-id]
+  multi-status [lst-id] [--round <n>]
   history [lst-id] [--days 7]
   dispute <lst-id> --round <n> --attester <pubkey> --evidence <hex-or-string>
   resolve <lst-id> --round <n> --attester <pubkey> --disputer <pubkey> [--reject]
@@ -938,6 +986,9 @@ async function main() {
       return;
     case "status":
       await commandStatus(args);
+      return;
+    case "multi-status":
+      await commandMultiStatus(args);
       return;
     case "history":
       await commandHistory(args);

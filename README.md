@@ -139,6 +139,18 @@ Consumers are expected to fall back conservatively on staleness or critical regi
 | [`docs/`](./docs) | architecture, integration, and multi-attester design |
 | [`tests/`](./tests) | engine micro-tests |
 
+## Operator Dashboard
+
+Build the static status surface from committed oracle artifacts:
+
+```bash
+.venv/bin/python scripts/build_status_dashboard.py
+```
+
+Open [`artifacts/status_dashboard.html`](./artifacts/status_dashboard.html) to inspect current peg deviation, statistical LTV, suggested LTV, liquidity haircut, freshness, regime, and the plain-English reason each LTV moved.
+
+The historical validation write-up lives at [`docs/case-studies/steth-june-2022.md`](./docs/case-studies/steth-june-2022.md) and is generated from [`artifacts/stress_scenario.json`](./artifacts/stress_scenario.json).
+
 ## Stress Evidence
 
 The repo carries both a **real** historical replay (June 2022 `stETH/ETH`) and synthetic scenarios. Current bundle in [`artifacts/stress_scenario.json`](./artifacts/stress_scenario.json): `steth_june_2022`, `liquidity_vacuum`, `reflexive_bank_run`, `slow_grind_depeg`, `false_positive_wick`, `flash_crash_repricing`.

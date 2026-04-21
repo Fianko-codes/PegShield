@@ -40,6 +40,23 @@ That compatibility path remains for devnet and migration. The protocol path now 
 | Liveness | one keypair must be online | any sufficiently large subset can progress |
 | Consumer read path | single PDA | unchanged single PDA |
 
+## Operator Readiness Check
+
+Use the CLI before asking any integrator to trust a multi-attester feed:
+
+```bash
+npm --prefix cli run start -- multi-status mSOL-v2
+npm --prefix cli run start -- multi-status mSOL-v2 --round 42
+```
+
+The command returns:
+
+- `ready`: true only when the oracle is in multi-attester mode, the state is fresh, the registry exists, threshold is at least 2, and enough active attesters meet the minimum bond.
+- `blockers`: conditions that must be fixed before production use, such as stale oracle state, single-attester mode, missing registry, insufficient attesters, insufficient bond, or an expired unfinalized round.
+- `warnings`: conditions that deserve operator attention but do not automatically block reads, such as a current critical regime, a live unfinalized pending round, or active attesters with lost disputes.
+
+This is intentionally an operator gate, not a new on-chain account. Consumers still read the same `RiskState` PDA; operators use `multi-status` to prove that the trust model behind that PDA is actually the intended threshold-attester path.
+
 ## High-Level Architecture
 
 ```mermaid

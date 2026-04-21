@@ -51,6 +51,8 @@ demo:
 artifacts:
 	@.venv/bin/python simulation/stress_test.py
 	@.venv/bin/python scripts/sync_artifacts.py
+	@.venv/bin/python scripts/build_status_dashboard.py
+	@.venv/bin/python scripts/build_steth_case_study.py
 
 security-scan:
 	@./scripts/validate_submission.sh --security-only
