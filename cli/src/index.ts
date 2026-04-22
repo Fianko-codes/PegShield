@@ -261,8 +261,16 @@ function deriveDisputePda(programId: PublicKey, lstId: string, roundId: number, 
 async function fetchNullable<T>(fetcher: () => Promise<T>): Promise<T | null> {
   try {
     return await fetcher();
-  } catch {
-    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("Account does not exist") ||
+      message.includes("could not find account") ||
+      message.includes("AccountNotFound")
+    ) {
+      return null;
+    }
+    throw error;
   }
 }
 

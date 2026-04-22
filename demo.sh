@@ -85,7 +85,7 @@ run_step "▶ 6/7  replay real stETH depeg" \
   "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/simulation/stress_test.py"
 
 run_step "▶ 7/7  sync oracle artifacts" \
-  "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/scripts/sync_artifacts.py"
+  "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/scripts/sync_artifacts.py" --write-asset-alias
 
 echo
 if (( DRY_RUN )); then
