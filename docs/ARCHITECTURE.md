@@ -16,8 +16,8 @@ End-to-end view of how a Pyth tick becomes an on-chain LTV that a Solana lending
 
 ```
                 ┌──────────────────────────────────────────────────────────────┐
-                │                       OFF-CHAIN PIPELINE                      │
-                │                                                               │
+                │                       OFF-CHAIN PIPELINE                     │
+                │                                                              │
    ┌─────────┐  │  ┌──────────┐   ┌────────────────┐   ┌────────────────────┐  │   ┌──────────────┐
    │  Pyth   │──┼─▶│  bridge  │──▶│  core-engine   │──▶│      updater       │──┼──▶│ Solana PDA   │
    │ Hermes  │  │  │ fetch +  │   │  OU + ADF +    │   │ Anchor TX (signed) │  │   │ RiskState    │
@@ -30,18 +30,18 @@ End-to-end view of how a Pyth tick becomes an on-chain LTV that a Solana lending
                 │  │ Jito ref.  │    │  .json   │         │ update.ts  │       │   │ sdk reads    │
                 │  │   rates    │    │ artifact │         │            │       │   │ + guards     │
                 │  └────────────┘    └──────────┘         └────────────┘       │   └──────┬───────┘
-                │                                                               │          │
-                │  ┌──────────────────────────────────────────────────────────┐ │          ▼
-                │  │ GitHub Actions cron (oracle-updater.yml, every 5 min)    │ │   ┌──────────────┐
-                │  │ runs the bridge → engine → updater chain end-to-end      │ │   │ Lending      │
-                │  └──────────────────────────────────────────────────────────┘ │   │ protocol     │
-                │                                                               │   │ borrow gate  │
+                │                                                              │          │
+                │  ┌──────────────────────────────────────────────────────────┐│          ▼
+                │  │ GitHub Actions cron (oracle-updater.yml, every 5 min)    ││   ┌──────────────┐
+                │  │ runs the bridge → engine → updater chain end-to-end      ││   │ Lending      │
+                │  └──────────────────────────────────────────────────────────┘│   │ protocol     │
+                │                                                              │   │ borrow gate  │
                 └──────────────────────────────────────────────────────────────┘   └──────────────┘
                                                                                           │
                                                                                           ▼
                                                                                    ┌──────────────┐
-                                                                                   │  Consumers    │
-                                                                                   │  / operators  │
+                                                                                   │  Consumers   │
+                                                                                   │  / operators │
                                                                                    └──────────────┘
 ```
 
@@ -65,13 +65,13 @@ GitHub Actions    bridge/fetch_pyth.py     core-engine/pipeline.py     updater/s
      │                    │                          │                           │                       │
      │── trigger (cron) ─▶│                          │                           │                       │
      │                    │── GET Hermes + ref-rate ▶│                           │                       │
-     │                    │◀──── prices, rate ──────│                           │                       │
+     │                    │◀──── prices, rate ──────-│                           │                       │
      │                    │── write latest.json ────▶│                           │                       │
-     │                    │                          │── fit OU, ADF, z, LTV ──▶│                       │
-     │                    │                          │── write pipeline.json ──▶│                       │
+     │                    │                          │── fit OU, ADF, z, LTV ──-▶│                       │
+     │                    │                          │── write pipeline.json ──-▶│                       │
      │                    │                          │                           │── update_risk_state ─▶│
-     │                    │                          │                           │◀── tx signature ─────│
-     │── commit artifacts ◀┼─────────────────────────┼───────────────────────────┘                       │
+     │                    │                          │                           │◀── tx signature ─────-│
+     │── commit artifacts |◀─────────────────────────┼───────────────────────────┘                       │
      │                    │                          │                                                   │
      ▼                    ▼                          ▼                                                   ▼
  repo cache refreshes                                                                     consumers fetch & guard
