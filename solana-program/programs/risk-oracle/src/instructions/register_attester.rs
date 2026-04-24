@@ -1,8 +1,8 @@
+use crate::constants::*;
+use crate::errors::OracleError;
+use crate::state::AttesterRegistry;
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-use crate::state::AttesterRegistry;
-use crate::errors::OracleError;
-use crate::constants::*;
 
 #[derive(Accounts)]
 pub struct RegisterAttester<'info> {
@@ -36,7 +36,9 @@ pub fn handler(ctx: Context<RegisterAttester>, bond_amount: u64) -> Result<()> {
     );
 
     // Find empty slot
-    let slot_index = ctx.accounts.registry
+    let slot_index = ctx
+        .accounts
+        .registry
         .find_empty_slot()
         .ok_or(OracleError::RegistryFull)?;
 

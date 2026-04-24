@@ -141,6 +141,13 @@ def build_oracle_snapshot(
             "components": {},
             "inputs": {},
         }),
+        "data_quality_risk": oracle_payload.get("data_quality_risk", {
+            "status": "UNKNOWN",
+            "score": 0.0,
+            "haircut": 0.0,
+            "components": {},
+            "inputs": {},
+        }),
         "z_score": float(oracle_payload["z_score"]),
         "spread": float(live_spread_pct),
         "spread_pct": float(live_spread_pct),

@@ -3,9 +3,9 @@ use std::io::Cursor;
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
+use crate::constants::MAX_LST_ID_LEN;
 use crate::errors::OracleError;
 use crate::state::{LegacyRiskState, RiskState};
-use crate::constants::MAX_LST_ID_LEN;
 
 #[derive(Accounts)]
 #[instruction(lst_id: String)]

@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::{AttesterRegistry, AttesterEntry};
-use crate::errors::OracleError;
 use crate::constants::*;
+use crate::errors::OracleError;
+use crate::state::{AttesterEntry, AttesterRegistry};
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct InitializeRegistry<'info> {
@@ -24,19 +24,12 @@ pub struct InitializeRegistry<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(
-    ctx: Context<InitializeRegistry>,
-    threshold: u8,
-    min_bond: u64,
-) -> Result<()> {
+pub fn handler(ctx: Context<InitializeRegistry>, threshold: u8, min_bond: u64) -> Result<()> {
     require!(
         threshold > 0 && threshold <= MAX_ATTESTERS as u8,
         OracleError::InvalidThreshold
     );
-    require!(
-        min_bond >= MIN_ATTESTER_BOND,
-        OracleError::InsufficientBond
-    );
+    require!(min_bond >= MIN_ATTESTER_BOND, OracleError::InsufficientBond);
 
     let registry = &mut ctx.accounts.registry;
     registry.admin = ctx.accounts.admin.key();

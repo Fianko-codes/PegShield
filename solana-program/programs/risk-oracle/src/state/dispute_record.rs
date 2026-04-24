@@ -64,7 +64,7 @@ impl DisputeRecord {
         + 8                       // disputed_sigma_scaled i64
         + 1                       // disputed_regime_flag u8
         + 2                       // disputed_ltv_bps u16
-        + 8;                      // disputed_z_score_scaled i64
+        + 8; // disputed_z_score_scaled i64
 
     pub fn is_expired(&self, now: i64) -> bool {
         now > self.resolution_deadline

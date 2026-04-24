@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::constants::*;
+use anchor_lang::prelude::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct LegacyRiskState {
@@ -65,7 +65,7 @@ impl RiskState {
         + 8                      // slot u64
         + 8                      // timestamp i64
         + 32                     // authority Pubkey
-        + 32;                    // last_updater Pubkey
+        + 32; // last_updater Pubkey
 
     pub const SPACE: usize = 8  // Anchor discriminator
         + 4 + MAX_LST_ID_LEN    // String prefix (4) + data
@@ -79,7 +79,7 @@ impl RiskState {
         + 32                     // authority Pubkey
         + 32                     // last_updater Pubkey
         + 1                      // update_mode u8
-        + 32;                    // attester_registry Pubkey
+        + 32; // attester_registry Pubkey
 
     pub fn is_multi_attester(&self) -> bool {
         self.update_mode == 1

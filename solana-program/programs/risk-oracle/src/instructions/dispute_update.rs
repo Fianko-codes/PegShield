@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 
+use crate::constants::ATTESTER_REGISTRY_SEED;
 use crate::constants::{DISPUTE_RECORD_SEED, RESOLUTION_DEADLINE_SECS};
 use crate::errors::OracleError;
-use crate::constants::ATTESTER_REGISTRY_SEED;
 use crate::state::{AttesterRegistry, DisputeRecord, PendingUpdate};
 
 #[derive(Accounts)]
@@ -50,7 +50,10 @@ pub fn handler(
     let clock = Clock::get()?;
     let now = clock.unix_timestamp;
 
-    require!(pending_update.dispute_window_open(now), OracleError::DisputeWindowClosed);
+    require!(
+        pending_update.dispute_window_open(now),
+        OracleError::DisputeWindowClosed
+    );
 
     let attester_index = registry
         .find_attester(&disputed_attester)

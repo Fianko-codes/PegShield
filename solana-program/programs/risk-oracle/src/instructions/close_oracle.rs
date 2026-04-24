@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
-use crate::state::RiskState;
 use crate::errors::OracleError;
+use crate::state::RiskState;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct CloseOracle<'info> {

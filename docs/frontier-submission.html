@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PegShield Frontier Submission</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f6f1e7;
+        color: #15130f;
+        font: 16px/1.55 Georgia, "Times New Roman", serif;
+      }
+      main {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 48px 24px 72px;
+      }
+      h1, h2 {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        line-height: 1.1;
+      }
+      h1 {
+        font-size: clamp(36px, 6vw, 72px);
+        margin: 0 0 8px;
+      }
+      h2 {
+        margin-top: 36px;
+      }
+      .tagline {
+        font-size: 22px;
+        max-width: 760px;
+      }
+      .card {
+        background: #fffaf0;
+        border: 1px solid #d8c9a8;
+        border-radius: 18px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      code, pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      pre {
+        background: #15130f;
+        color: #fff4d6;
+        border-radius: 14px;
+        overflow-x: auto;
+        padding: 16px;
+      }
+      ul {
+        padding-left: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>PegShield</h1>
+      <p class="tagline">On-chain collateral circuit breaker for Solana LST lending.</p>
+
+      <section class="card">
+        <h2>One-Line Pitch</h2>
+        <p>
+          PegShield is a Solana-native collateral circuit breaker that turns static LST collateral
+          factors into live on-chain borrow limits. Price oracles tell lenders what collateral is worth;
+          PegShield tells lenders whether to keep extending credit against it right now, and at what LTV.
+        </p>
+      </section>
+
+      <h2>Problem</h2>
+      <p>
+        Solana lending protocols use price oracles, but collateral factors are still static tables. That is
+        dangerous for liquid staking tokens: an LST can keep returning a valid market price while its
+        reference-rate peg, liquidity, and liquidation safety deteriorate faster than governance can react.
+      </p>
+
+      <h2>Solution</h2>
+      <p>
+        PegShield publishes a compact <code>RiskState</code> PDA per LST. The PDA stores
+        <code>suggested_ltv_bps</code>, <code>regime_flag</code>, freshness, and fixed-point model
+        diagnostics. A lending protocol reads it during borrow evaluation and clamps new credit when the
+        oracle detects peg stress or stale state.
+      </p>
+
+      <h2>Judge Proof</h2>
+      <pre>make frontier-proof</pre>
+      <p>
+        This command uses committed artifacts to show the core behavior: the same borrow passes a static
+        80% LTV table and is rejected under PegShield stress LTV. It also summarizes the June 2022 stETH
+        replay where PegShield cut LTV before the fixed baseline showed modeled shortfall.
+      </p>
+      <pre>make multi-attester-demo</pre>
+      <p>
+        This command shows the threshold path: registry initialization, three bonded attesters, 2-of-3
+        proposal confirmation, finalized <code>RiskState</code>, and readiness checks.
+      </p>
+      <pre>make scenario-lab</pre>
+      <p>
+        This command summarizes all historical and synthetic stress scenarios, including first LTV cut,
+        first critical signal, modeled loss prevention, and false-positive recovery.
+      </p>
+
+      <h2>What Works Today</h2>
+      <ul>
+        <li>Anchor risk-oracle program deployed on Solana devnet.</li>
+        <li><code>RiskState</code> PDA storing live LTV, regime, timestamp, and fixed-point risk parameters.</li>
+        <li>Pyth plus protocol reference-rate bridge for <code>mSOL-v2</code>, <code>jitoSOL-v1</code>, and <code>bSOL-v1</code>.</li>
+        <li>OU/ADF risk engine that converts peg deviation into suggested LTV.</li>
+        <li>Source-quality haircuts for fallback history, fallback reference rates, missing liquidity depth, and wide Pyth confidence.</li>
+        <li>Typed SDK, operator CLI, updater scripts, PegShield Gate, and offline borrow-gate demo.</li>
+        <li>Deterministic multi-attester proof for the 2-of-3 finalization path.</li>
+        <li>Historical stETH replay plus synthetic stress scenarios.</li>
+      </ul>
+
+      <h2>Demo Commands</h2>
+      <pre>make frontier-proof
+make verify-offline
+make multi-attester-demo
+make scenario-lab
+./demo.sh --dry-run
+npm --prefix cli run start -- read mSOL-v2
+cd examples/lending-borrow-demo && npm run start:snapshot -- 100 1814.63 stETH</pre>
+
+      <h2>Why Solana</h2>
+      <p>
+        The value is enforcement inside the borrow path. Solana makes it cheap for protocols to read a PDA,
+        enforce a fresh LTV, and avoid waiting for off-chain reports or governance updates during a fast LST
+        stress event.
+      </p>
+
+      <h2>Honest Status</h2>
+      <p>
+        PegShield is hackathon-stage devnet infrastructure. It is not audited, not mainnet production
+        infrastructure, and independent attester operations are not live yet. The submission proves the
+        primitive, the integration path, and the stress behavior.
+      </p>
+    </main>
+  </body>
+</html>

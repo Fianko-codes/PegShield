@@ -1,11 +1,13 @@
 #![allow(unexpected_cfgs)]
+#![allow(ambiguous_glob_reexports)]
+#![allow(deprecated)]
 
 use anchor_lang::prelude::*;
 
 pub mod constants;
 pub mod errors;
-pub mod state;
 pub mod instructions;
+pub mod state;
 
 use instructions::*;
 
@@ -47,10 +49,7 @@ pub mod risk_oracle {
     }
 
     /// Register as an attester by staking a bond.
-    pub fn register_attester(
-        ctx: Context<RegisterAttester>,
-        bond_amount: u64,
-    ) -> Result<()> {
+    pub fn register_attester(ctx: Context<RegisterAttester>, bond_amount: u64) -> Result<()> {
         instructions::register_attester::handler(ctx, bond_amount)
     }
 
@@ -65,10 +64,7 @@ pub mod risk_oracle {
     }
 
     /// Enable multi-attester mode for an existing oracle.
-    pub fn enable_multi_attester(
-        ctx: Context<EnableMultiAttester>,
-        lst_id: String,
-    ) -> Result<()> {
+    pub fn enable_multi_attester(ctx: Context<EnableMultiAttester>, lst_id: String) -> Result<()> {
         instructions::enable_multi_attester::handler(ctx, lst_id)
     }
 
@@ -96,20 +92,25 @@ pub mod risk_oracle {
     }
 
     /// Confirm a pending update (multi-attester mode).
-    pub fn confirm_update(ctx: Context<ConfirmUpdate>, lst_id: String, round_id: u64) -> Result<()> {
+    pub fn confirm_update(
+        ctx: Context<ConfirmUpdate>,
+        lst_id: String,
+        round_id: u64,
+    ) -> Result<()> {
         instructions::confirm_update::handler(ctx, lst_id, round_id)
     }
 
     /// Cancel an expired pending update.
-    pub fn cancel_expired(ctx: Context<CancelExpired>, lst_id: String, round_id: u64) -> Result<()> {
+    pub fn cancel_expired(
+        ctx: Context<CancelExpired>,
+        lst_id: String,
+        round_id: u64,
+    ) -> Result<()> {
         instructions::cancel_expired::handler(ctx, lst_id, round_id)
     }
 
     /// Migrate a legacy RiskState account to the current layout.
-    pub fn migrate_risk_state(
-        ctx: Context<MigrateRiskState>,
-        lst_id: String,
-    ) -> Result<()> {
+    pub fn migrate_risk_state(ctx: Context<MigrateRiskState>, lst_id: String) -> Result<()> {
         instructions::migrate_risk_state::handler(ctx, lst_id)
     }
 
@@ -121,7 +122,13 @@ pub mod risk_oracle {
         disputed_attester: Pubkey,
         evidence_hash: [u8; 32],
     ) -> Result<()> {
-        instructions::dispute_update::handler(ctx, lst_id, round_id, disputed_attester, evidence_hash)
+        instructions::dispute_update::handler(
+            ctx,
+            lst_id,
+            round_id,
+            disputed_attester,
+            evidence_hash,
+        )
     }
 
     /// Resolve a dispute (admin only). Slashes attester if slash_attester is true.
@@ -132,7 +139,13 @@ pub mod risk_oracle {
         disputed_attester: Pubkey,
         slash_attester: bool,
     ) -> Result<()> {
-        instructions::resolve_dispute::handler(ctx, lst_id, disputed_slot, disputed_attester, slash_attester)
+        instructions::resolve_dispute::handler(
+            ctx,
+            lst_id,
+            disputed_slot,
+            disputed_attester,
+            slash_attester,
+        )
     }
 
     /// Close an expired, unresolved dispute and refund rent to disputer.

@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::constants::*;
+use anchor_lang::prelude::*;
 
 #[account]
 pub struct AttesterRegistry {
@@ -60,7 +60,9 @@ impl AttesterRegistry {
         + (AttesterEntry::SPACE * MAX_ATTESTERS); // attesters array
 
     pub fn find_attester(&self, pubkey: &Pubkey) -> Option<usize> {
-        self.attesters.iter().position(|a| a.is_active && a.pubkey == *pubkey)
+        self.attesters
+            .iter()
+            .position(|a| a.is_active && a.pubkey == *pubkey)
     }
 
     pub fn find_empty_slot(&self) -> Option<usize> {
@@ -87,7 +89,7 @@ impl AttesterEntry {
         + 8                       // unregister_initiated_at i64
         + 8                       // updates_submitted u64
         + 8                       // disputes_lost u64
-        + 1;                      // is_active bool
+        + 1; // is_active bool
 }
 
 #[cfg(test)]

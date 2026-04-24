@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::AttesterRegistry;
-use crate::errors::OracleError;
 use crate::constants::*;
+use crate::errors::OracleError;
+use crate::state::AttesterRegistry;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct InitiateUnregister<'info> {

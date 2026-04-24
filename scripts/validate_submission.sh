@@ -61,11 +61,33 @@ check_artifacts() {
   need_file artifacts/oracle_state.mSOL-v2.json
   need_file artifacts/oracle_state.jitoSOL-v1.json
   need_file artifacts/oracle_state.bSOL-v1.json
+  need_file artifacts/bridge_cache.mSOL-v2.json
+  need_file artifacts/bridge_cache.jitoSOL-v1.json
+  need_file artifacts/bridge_cache.bSOL-v1.json
   need_file artifacts/stress_scenario.json
   need_file docs/case-studies/steth-june-2022.md
   need_dir solana-program/programs/mock-lender
   need_dir cli
   need_dir sdk
+
+  "$ROOT_DIR/.venv/bin/python" - <<'PY'
+import json
+from pathlib import Path
+
+root = Path.cwd()
+for path in [
+    root / "artifacts" / "oracle_state.json",
+    root / "artifacts" / "oracle_state.mSOL-v2.json",
+    root / "artifacts" / "oracle_state.jitoSOL-v1.json",
+    root / "artifacts" / "oracle_state.bSOL-v1.json",
+]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    risk = payload.get("data_quality_risk")
+    if not isinstance(risk, dict):
+        raise SystemExit(f"{path} missing data_quality_risk")
+    if "haircut" not in risk or "components" not in risk or "inputs" not in risk:
+        raise SystemExit(f"{path} has incomplete data_quality_risk")
+PY
 }
 
 security_scan
@@ -86,7 +108,11 @@ run "cli tests" npm --prefix cli test
 run "stETH case study build" "$ROOT_DIR/.venv/bin/python" scripts/build_steth_case_study.py --output /tmp/pegshield-steth-case-study.md
 run "sdk build" npm --prefix sdk run build
 run "cli build" npm --prefix cli run build
+run "frontier proof command" npm --prefix cli run start -- frontier-proof
+run "multi-attester proof command" npm --prefix cli run start -- multi-attester-proof
+run "scenario lab command" npm --prefix cli run start -- scenario-lab
 run "rust program check" bash -lc "cd solana-program && cargo check"
+run "PegShield Gate unit tests" bash -lc "cd solana-program && cargo test -p mock-lender"
 run "demo dry-run wiring" ./demo.sh --dry-run
 check_artifacts
 

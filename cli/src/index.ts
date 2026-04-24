@@ -8,6 +8,9 @@ import * as path from "path";
 import { createHash } from "crypto";
 import { evaluateMultiAttesterReadiness } from "./multi_attester_readiness";
 import { buildArtifactStatus, OracleSnapshot } from "./artifact_status";
+import { buildFrontierProof, StressBundle } from "./frontier_proof";
+import { buildMultiAttesterProof } from "./multi_attester_proof";
+import { loadScenarioLab } from "./scenario_lab";
 
 dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env") });
 
@@ -914,6 +917,58 @@ async function commandSnapshotStatus(args: ReturnType<typeof parseArgs>) {
   console.log(JSON.stringify(flagBoolean(args.flags, "all") ? { items } : items[0], null, 2));
 }
 
+async function commandFrontierProof(args: ReturnType<typeof parseArgs>) {
+  const stressPath = resolveRepoPath(flagValue(args.flags, "stress") ?? "artifacts/stress_scenario.json");
+  const snapshotPath = resolveRepoPath(flagValue(args.flags, "snapshot") ?? "artifacts/oracle_state.json");
+  const collateralUnits = parseFloatStrict(flagValue(args.flags, "units") ?? "100", "units");
+  const unitPriceUsd = parseFloatStrict(flagValue(args.flags, "unit-price-usd") ?? "1814.63", "unit-price-usd");
+  const requestedBorrowFlag = flagValue(args.flags, "borrow-usd");
+  const requestedBorrowUsd = requestedBorrowFlag ? parseFloatStrict(requestedBorrowFlag, "borrow-usd") : undefined;
+  const stress = JSON.parse(fs.readFileSync(stressPath, "utf-8")) as StressBundle;
+  const snapshot = JSON.parse(fs.readFileSync(snapshotPath, "utf-8")) as OracleSnapshot;
+
+  console.log(
+    JSON.stringify(
+      buildFrontierProof(stress, snapshot, {
+        collateralUnits,
+        unitPriceUsd,
+        requestedBorrowUsd,
+      }),
+      null,
+      2,
+    ),
+  );
+}
+
+async function commandMultiAttesterProof(args: ReturnType<typeof parseArgs>) {
+  const lstId = args.positional[0] ?? flagValue(args.flags, "lst-id") ?? "jitoSOL-v1";
+  const threshold = parseInteger(flagValue(args.flags, "threshold") ?? "2", "threshold");
+  const roundId = parseInteger(flagValue(args.flags, "round") ?? "1", "round");
+  const minBondSol = parseFloatStrict(flagValue(args.flags, "min-bond-sol") ?? "1", "min-bond-sol");
+  const suggestedLtv = parseFloatStrict(flagValue(args.flags, "ltv") ?? "0.72", "ltv");
+  const regimeFlag = parseInteger(flagValue(args.flags, "regime") ?? "0", "regime");
+
+  console.log(
+    JSON.stringify(
+      buildMultiAttesterProof({
+        lstId,
+        threshold,
+        roundId,
+        minBondLamports: BigInt(Math.round(minBondSol * LAMPORTS_PER_SOL)),
+        suggestedLtvBps: toLtvBps(suggestedLtv),
+        regimeFlag,
+      }),
+      null,
+      2,
+    ),
+  );
+}
+
+async function commandScenarioLab(args: ReturnType<typeof parseArgs>) {
+  const scenarioPath = resolveRepoPath(flagValue(args.flags, "input") ?? "artifacts/stress_scenario.json");
+  console.log(JSON.stringify(loadScenarioLab(scenarioPath), null, 2));
+}
+
 function printHelp() {
   console.log(`PegShield CLI
 
@@ -941,6 +996,9 @@ Commands:
   multi-status [lst-id] [--round <n>]
   snapshot-status [lst-id]
   snapshot-status --all
+  frontier-proof [--stress artifacts/stress_scenario.json] [--snapshot artifacts/oracle_state.json]
+  multi-attester-proof [lst-id] [--threshold 2] [--round 1] [--ltv 0.72]
+  scenario-lab [--input artifacts/stress_scenario.json]
   history [lst-id] [--days 7]
   dispute <lst-id> --round <n> --attester <pubkey> --evidence <hex-or-string>
   resolve <lst-id> --round <n> --attester <pubkey> --disputer <pubkey> [--reject]
@@ -1009,6 +1067,15 @@ async function main() {
       return;
     case "snapshot-status":
       await commandSnapshotStatus(args);
+      return;
+    case "frontier-proof":
+      await commandFrontierProof(args);
+      return;
+    case "multi-attester-proof":
+      await commandMultiAttesterProof(args);
+      return;
+    case "scenario-lab":
+      await commandScenarioLab(args);
       return;
     case "history":
       await commandHistory(args);

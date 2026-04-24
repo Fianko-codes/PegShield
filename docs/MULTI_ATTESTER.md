@@ -42,6 +42,20 @@ That compatibility path remains for devnet and migration. The protocol path now 
 
 ## Operator Readiness Check
 
+For the deterministic judge-facing proof, run:
+
+```bash
+make multi-attester-demo
+```
+
+It prints the whole threshold path without requiring RPC or keypairs:
+
+```text
+initialize registry -> register 3 bonded attesters -> enable multi mode
+-> propose round -> second attester confirms -> RiskState finalized
+-> operator readiness = true
+```
+
 Use the CLI before asking any integrator to trust a multi-attester feed:
 
 ```bash

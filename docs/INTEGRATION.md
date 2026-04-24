@@ -1,6 +1,6 @@
 # Lender Integration Guide
 
-How a Solana lending protocol integrates the PegShield risk oracle as the LTV source for LST collateral. Bridges the high-level [`README.md`](../README.md), the API reference in [`sdk/README.md`](../sdk/README.md), the runnable [`examples/lending-borrow-demo`](../examples/lending-borrow-demo), and the on-chain [`mock-lender`](../solana-program/programs/mock-lender) consumer program.
+How a Solana lending protocol integrates the PegShield risk oracle as the LTV source for LST collateral. Bridges the high-level [`README.md`](../README.md), the API reference in [`sdk/README.md`](../sdk/README.md), the runnable [`examples/lending-borrow-demo`](../examples/lending-borrow-demo), and the on-chain [`PegShield Gate`](../solana-program/programs/mock-lender) reference program.
 
 > **TL;DR** — install `@pegshield/sdk`, derive the PDA with the LST id you support, decode `RiskState`, gate borrows behind `safeLtv()`. If anything goes wrong, fall back to a conservative static LTV — never a higher one.
 
@@ -123,7 +123,31 @@ npm run start -- 100 1814.63 stETH       # live devnet read
 npm run start:snapshot -- 100 1814.63 stETH  # offline, uses repo snapshot
 ```
 
-If you want an on-chain reference instead of a TypeScript consumer, inspect [`solana-program/programs/mock-lender/src/lib.rs`](../solana-program/programs/mock-lender/src/lib.rs). That program reads PegShield's `RiskState`, applies freshness / regime / LTV checks, and stores a `BorrowDecision` PDA for auditability.
+If you want an on-chain reference instead of a TypeScript consumer, inspect [`solana-program/programs/mock-lender/src/lib.rs`](../solana-program/programs/mock-lender/src/lib.rs). That program is PegShield Gate: it reads a market `BorrowPolicy` PDA plus PegShield's `RiskState`, applies freshness / regime / LTV checks, and stores a `BorrowDecision` PDA for auditability.
+
+## Optional On-Chain Gate
+
+PegShield Gate is the reusable enforcement layer for protocols that do not want
+to hand-roll borrow checks.
+
+| Account | Purpose |
+|---|---|
+| `BorrowPolicy` | Market admin config: max LTV, fallback LTV, max oracle age, critical-regime behavior, pause state |
+| `RiskState` | PegShield PDA with suggested LTV, regime, timestamp, and risk diagnostics |
+| `BorrowDecision` | Auditable allow/reject result for a borrower and LST market |
+
+The policy is intentionally asymmetric:
+
+| Condition | Gate behavior |
+|---|---|
+| Healthy oracle | Applies `min(risk_state.suggested_ltv_bps, policy.max_ltv_bps)` |
+| Stale oracle | Applies `policy.fallback_ltv_bps` |
+| Critical regime + `halt_on_critical = true` | Rejects new borrows |
+| Critical regime + `halt_on_critical = false` | Applies `policy.fallback_ltv_bps` |
+| Paused policy | Rejects new borrows |
+
+This turns PegShield from a feed into a borrow-path primitive: a protocol can
+adopt the SDK, the on-chain gate, or both.
 
 ## Step 4 — Treat failure as the common case
 

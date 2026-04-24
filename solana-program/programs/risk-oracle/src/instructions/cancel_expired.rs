@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::PendingUpdate;
-use crate::errors::OracleError;
 use crate::constants::*;
+use crate::errors::OracleError;
+use crate::state::PendingUpdate;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 #[instruction(lst_id: String, round_id: u64)]
@@ -36,10 +36,7 @@ pub fn handler(ctx: Context<CancelExpired>, _lst_id: String, _round_id: u64) -> 
     );
 
     // Must not be finalized
-    require!(
-        !pending.is_finalized,
-        OracleError::NoPendingUpdate
-    );
+    require!(!pending.is_finalized, OracleError::NoPendingUpdate);
 
     msg!(
         "Expired pending update for LST {} cancelled, rent refunded to {}",

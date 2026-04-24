@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 
-use crate::constants::{ATTESTER_REGISTRY_SEED, DISPUTE_RECORD_SEED, DISPUTER_REWARD_PERCENT, SLASH_PERCENT};
+use crate::constants::{
+    ATTESTER_REGISTRY_SEED, DISPUTER_REWARD_PERCENT, DISPUTE_RECORD_SEED, SLASH_PERCENT,
+};
 use crate::errors::OracleError;
 use crate::state::{AttesterRegistry, DisputeRecord};
 

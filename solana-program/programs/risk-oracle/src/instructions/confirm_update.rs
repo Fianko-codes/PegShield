@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::{RiskState, AttesterRegistry, PendingUpdate};
-use crate::errors::OracleError;
 use crate::constants::*;
+use crate::errors::OracleError;
+use crate::state::{AttesterRegistry, PendingUpdate, RiskState};
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 #[instruction(lst_id: String, round_id: u64)]

@@ -17,7 +17,7 @@ for path in (str(CORE_ENGINE), str(SIMULATION)):
 
 from ou_model import estimate_ou_params
 from regime_detector import detect_regime
-from ltv_calculator import compute_liquidity_risk, compute_ltv
+from ltv_calculator import compute_data_quality_risk, compute_liquidity_risk, compute_ltv
 from pipeline import build_risk_payload
 from stress_test import (
     build_simulation_bundle,
@@ -88,9 +88,11 @@ class CoreEngineMicroTests(unittest.TestCase):
         self.assertEqual(payload["marinade_msol_sol_rate"], marinade_rate)
         self.assertGreaterEqual(payload["suggested_ltv"], 0.4)
         self.assertLessEqual(payload["suggested_ltv"], 0.8)
-        self.assertEqual(payload["statistical_ltv"], payload["suggested_ltv"])
+        self.assertGreater(payload["statistical_ltv"], payload["suggested_ltv"])
         self.assertEqual(payload["liquidity_risk"]["status"], "UNKNOWN")
         self.assertEqual(payload["liquidity_risk"]["haircut"], 0.0)
+        self.assertEqual(payload["data_quality_risk"]["status"], "WATCH")
+        self.assertGreater(payload["data_quality_risk"]["haircut"], 0.0)
         self.assertEqual(payload["asset_symbol"], "mSOL")
         self.assertEqual(payload["reference_rate_source"], "test-fixture")
 
@@ -129,6 +131,27 @@ class CoreEngineMicroTests(unittest.TestCase):
 
         self.assertEqual(statistical_ltv, 0.8)
         self.assertEqual(liquidity_ltv, 0.62)
+
+    def test_compute_data_quality_risk_penalizes_degraded_inputs(self) -> None:
+        data_quality_risk = compute_data_quality_risk(
+            latest_row={
+                "asset_usd_price": 100.0,
+                "sol_usd_price": 80.0,
+                "asset_confidence": 4.0,
+                "sol_confidence": 0.05,
+            },
+            bridge_payload={
+                "history_source": "cache_fallback",
+                "reference_rate_source": "fallback-hardcoded",
+            },
+            liquidity_metrics=None,
+        )
+
+        self.assertEqual(data_quality_risk["status"], "DEGRADED")
+        self.assertGreaterEqual(data_quality_risk["haircut"], 0.10)
+        self.assertEqual(data_quality_risk["components"]["history_fallback"], 1.0)
+        self.assertEqual(data_quality_risk["components"]["reference_rate_fallback"], 1.0)
+        self.assertEqual(data_quality_risk["components"]["missing_liquidity_depth"], 1.0)
 
     def test_pipeline_build_risk_payload_includes_liquidity_haircut(self) -> None:
         reference_rate = 1.17
@@ -174,6 +197,7 @@ class CoreEngineMicroTests(unittest.TestCase):
         self.assertGreater(payload["statistical_ltv"], payload["suggested_ltv"])
         self.assertEqual(payload["liquidity_risk"]["status"], "SEVERE")
         self.assertGreater(payload["liquidity_risk"]["haircut"], 0.10)
+        self.assertEqual(payload["data_quality_risk"]["components"]["missing_liquidity_depth"], 0.0)
 
     def test_pipeline_build_risk_payload_contract_for_jitosol(self) -> None:
         reference_rate = 1.27363

@@ -1,6 +1,6 @@
 # Architecture
 
-End-to-end view of how a Pyth tick becomes an on-chain LTV that a Solana lending protocol can read. Pairs with [`README.md`](../README.md) (overview), [`SECURITY.md`](../SECURITY.md) (trust model), and [`MULTI_ATTESTER.md`](./MULTI_ATTESTER.md) (decentralization roadmap).
+End-to-end view of how a Pyth tick becomes an on-chain collateral circuit breaker that a Solana lending protocol can read. Pairs with [`README.md`](../README.md) (overview), [`SECURITY.md`](../SECURITY.md) (trust model), and [`MULTI_ATTESTER.md`](./MULTI_ATTESTER.md) (decentralization roadmap).
 
 ## Architecture At A Glance
 
@@ -138,6 +138,18 @@ peg_deviation = (asset_usd / sol_usd) / reference_rate − 1
 | `authority`, `last_updater` | `Pubkey` | gate writes / observability |
 
 The SDK's `RiskState` view exposes both the raw scaled `bigint`s and decoded floats so consumers can choose the precision they need.
+
+### LTV Haircuts
+
+PegShield separates three signals before publishing `suggested_ltv`:
+
+| Signal | What it measures | Effect |
+|---|---|---|
+| Statistical model | OU mean reversion, volatility, ADF/z-score regime | Sets the base dynamic LTV |
+| Liquidity risk | exit depth, slippage, pool imbalance, withdrawal delay, concentration | Applies a bounded liquidity haircut |
+| Data-quality risk | Pyth confidence width, fallback history, fallback reference rate, missing liquidity depth | Applies a bounded source-quality haircut |
+
+Missing or degraded inputs are not treated as neutral. If liquidity depth is absent, price confidence is wide, or the bridge falls back to cached/reference data, the final `suggested_ltv` tightens even if peg deviation is calm.
 
 ## Failure Modes & What Happens
 

@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::constants::*;
+use anchor_lang::prelude::*;
 
 #[account]
 pub struct PendingUpdate {
@@ -78,7 +78,7 @@ impl PendingUpdate {
         + 1                       // is_finalized bool
         + 8                       // finalized_at i64
         + 8                       // finalized_slot u64
-        + RiskParams::SPACE;      // params
+        + RiskParams::SPACE; // params
 
     pub fn is_expired(&self, now: i64) -> bool {
         now >= self.expires_at
@@ -104,11 +104,9 @@ impl RiskParams {
         + 8                       // sigma_scaled i64
         + 1                       // regime_flag u8
         + 2                       // suggested_ltv_bps u16
-        + 8;                      // z_score_scaled i64
+        + 8; // z_score_scaled i64
 
     pub fn is_valid(&self) -> bool {
-        self.theta_scaled >= 0
-            && self.sigma_scaled > 0
-            && self.suggested_ltv_bps <= MAX_LTV_BPS
+        self.theta_scaled >= 0 && self.sigma_scaled > 0 && self.suggested_ltv_bps <= MAX_LTV_BPS
     }
 }

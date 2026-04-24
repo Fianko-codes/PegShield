@@ -21,6 +21,13 @@ export type OracleSnapshot = {
     components?: Record<string, number>;
     inputs?: Record<string, number | null>;
   };
+  data_quality_risk?: {
+    status?: string;
+    score?: number;
+    haircut?: number;
+    components?: Record<string, number>;
+    inputs?: Record<string, unknown>;
+  };
 };
 
 function pct(value: number): string {
@@ -32,12 +39,17 @@ export function explainLtv(snapshot: OracleSnapshot): string[] {
   const statisticalLtv = snapshot.statistical_ltv ?? snapshot.suggested_ltv;
   const liquidityRisk = snapshot.liquidity_risk ?? {};
   const liquidityHaircut = Number(liquidityRisk.haircut ?? 0);
+  const dataQualityRisk = snapshot.data_quality_risk ?? {};
+  const dataQualityHaircut = Number(dataQualityRisk.haircut ?? 0);
 
   if (snapshot.regime_flag === 1) {
     reasons.push("Critical regime: model detected non-stationary stress and forced conservative LTV.");
   }
   if (liquidityHaircut > 0) {
     reasons.push(`Liquidity haircut reduced LTV by ${pct(liquidityHaircut)}.`);
+  }
+  if (dataQualityHaircut > 0) {
+    reasons.push(`Data-quality haircut reduced LTV by ${pct(dataQualityHaircut)}.`);
   }
   if (snapshot.suggested_ltv < statisticalLtv && liquidityHaircut <= 0) {
     reasons.push("Suggested LTV is below statistical LTV due to model clamps or fallback policy.");
@@ -63,6 +75,13 @@ export function buildArtifactStatus(snapshot: OracleSnapshot, nowSeconds = Math.
     components: {},
     inputs: {},
   };
+  const dataQualityRisk = snapshot.data_quality_risk ?? {
+    status: "UNKNOWN",
+    score: 0,
+    haircut: 0,
+    components: {},
+    inputs: {},
+  };
 
   return {
     lst_id: snapshot.lst_id,
@@ -77,6 +96,7 @@ export function buildArtifactStatus(snapshot: OracleSnapshot, nowSeconds = Math.
     reference_rate: snapshot.reference_rate ?? null,
     reference_rate_source: snapshot.reference_rate_source ?? "unknown",
     liquidity_risk: liquidityRisk,
+    data_quality_risk: dataQualityRisk,
     timestamp: snapshot.timestamp,
     updated_at_iso: snapshot.updated_at_iso,
     age_seconds: ageSeconds,

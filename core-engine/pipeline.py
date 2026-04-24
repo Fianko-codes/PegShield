@@ -14,7 +14,7 @@ import pandas as pd
 DEFAULT_LST_ID = os.environ.get("LST_ID", "mSOL-v2")
 
 from calibration import derive_baseline
-from ltv_calculator import compute_liquidity_risk, compute_ltv
+from ltv_calculator import compute_data_quality_risk, compute_liquidity_risk, compute_ltv
 from ou_model import compute_spread, estimate_ou_params
 from regime_detector import detect_regime
 
@@ -54,6 +54,12 @@ def build_risk_payload(
     baseline = derive_baseline(spread, dt_seconds=step_seconds)
     liquidity_metrics = bridge_payload.get("liquidity_metrics", bridge_payload.get("liquidity"))
     liquidity_risk = compute_liquidity_risk(liquidity_metrics)
+    latest_row = history_df.iloc[-1]
+    data_quality_risk = compute_data_quality_risk(
+        latest_row=latest_row.to_dict(),
+        bridge_payload=bridge_payload,
+        liquidity_metrics=liquidity_metrics,
+    )
     statistical_ltv = compute_ltv(
         theta=ou_params["theta"],
         sigma=ou_params["sigma"],
@@ -66,9 +72,9 @@ def build_risk_payload(
         regime_flag=regime["regime_flag"],
         baseline=baseline,
         liquidity_risk=liquidity_risk,
+        data_quality_risk=data_quality_risk,
     )
 
-    latest_row = history_df.iloc[-1]
     # Use current wall-clock time for the oracle output timestamp, not the last
     # history point's timestamp. This ensures consumers know when the oracle
     # computation actually ran, even if the history data is from a cache fallback.
@@ -110,6 +116,7 @@ def build_risk_payload(
         "statistical_ltv": statistical_ltv,
         "suggested_ltv": suggested_ltv,
         "liquidity_risk": liquidity_risk,
+        "data_quality_risk": data_quality_risk,
         "z_score": regime["z_score"],
         "mu": ou_params["mu"],
         "adf_pvalue": regime["adf_pvalue"],

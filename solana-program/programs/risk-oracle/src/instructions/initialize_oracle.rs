@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::RiskState;
-use crate::errors::OracleError;
 use crate::constants::MAX_LST_ID_LEN;
+use crate::errors::OracleError;
+use crate::state::RiskState;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 #[instruction(lst_id: String)]
@@ -21,11 +21,7 @@ pub struct InitializeOracle<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(
-    ctx: Context<InitializeOracle>,
-    lst_id: String,
-    authority: Pubkey,
-) -> Result<()> {
+pub fn handler(ctx: Context<InitializeOracle>, lst_id: String, authority: Pubkey) -> Result<()> {
     require!(valid_lst_id(&lst_id), OracleError::InvalidLstId);
 
     let state = &mut ctx.accounts.risk_state;
