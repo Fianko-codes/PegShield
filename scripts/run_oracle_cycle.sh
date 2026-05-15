@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DRY_RUN=0
 
 if [[ "${1:-}" == "--dry-run" ]]; then
@@ -47,19 +47,19 @@ if (( ! DRY_RUN )); then
   require_file "sdk/dist/index.js"
 fi
 
-run_step "▶ 1/7  verify engine tests" \
+run_step "1/7  verify engine tests" \
   "$ROOT_DIR/.venv/bin/python" -m unittest tests.test_core_engine -v
 
-run_step "▶ 2/7  fetch live Pyth + Marinade" \
+run_step "2/7  fetch live Pyth + Marinade" \
   "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/bridge/fetch_pyth.py"
 
-run_step "▶ 3/7  run statistical engine" \
+run_step "3/7  run statistical engine" \
   "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/core-engine/pipeline.py"
 
-run_step "▶ 4/7  push update on-chain (devnet)" \
+run_step "4/7  push update on-chain (devnet)" \
   npm --prefix "$ROOT_DIR/updater" run submit
 
-run_step "▶ 5/7  read PDA back through SDK" \
+run_step "5/7  read PDA back through SDK" \
   env NODE_PATH="$ROOT_DIR/updater/node_modules" node -e '
 const { Connection } = require("@solana/web3.js");
 const { fetchRiskState } = require("./sdk/dist");
@@ -81,15 +81,15 @@ const { fetchRiskState } = require("./sdk/dist");
 });
 '
 
-run_step "▶ 6/7  replay real stETH depeg" \
+run_step "6/7  replay real stETH depeg" \
   "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/simulation/stress_test.py"
 
-run_step "▶ 7/7  sync oracle artifacts" \
+run_step "7/7  sync oracle artifacts" \
   "$ROOT_DIR/.venv/bin/python" "$ROOT_DIR/scripts/sync_artifacts.py" --write-asset-alias
 
 echo
 if (( DRY_RUN )); then
-  echo "✅ dry run passed. oracle artifacts written to ./artifacts/"
+  echo "dry run passed. oracle artifacts written to ./artifacts/"
 else
-  echo "✅ done. oracle artifacts written to ./artifacts/"
+  echo "oracle update cycle complete. oracle artifacts written to ./artifacts/"
 fi

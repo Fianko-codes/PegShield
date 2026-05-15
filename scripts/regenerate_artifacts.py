@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate all committed PegShield demo artifacts from checked-in inputs."""
+"""Regenerate all committed PegShield protocol artifacts from checked-in inputs."""
 
 from __future__ import annotations
 

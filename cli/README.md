@@ -22,7 +22,7 @@ pegshield read mSOL-v2
 pegshield read --all
 pegshield registry
 pegshield history mSOL-v2 --days 7
-pegshield frontier-proof
+pegshield policy-proof
 pegshield multi-attester-proof
 
 pegshield dispute jitoSOL-v1 --round 1 --attester <pubkey> --evidence deadbeef
@@ -42,5 +42,5 @@ The CLI reads the same repo-level `.env` used by the updater scripts:
 - `submit` keeps the current single-attester operator path intact.
 - `propose` / `confirm` / `dispute` / `resolve` drive the multi-attester flow.
 - `history` reads committed repo artifacts instead of scraping chain data.
-- `frontier-proof` is offline and judge-facing: it compares static 80% borrow limits against PegShield stress limits from committed artifacts.
-- `multi-attester-proof` is offline and judge-facing: it shows the 2-of-3 threshold flow and the equivalent live CLI commands.
+- `policy-proof` is offline and compares static 80% borrow limits against PegShield stress limits from committed artifacts.
+- `multi-attester-proof` is offline and shows the 2-of-3 threshold flow and the equivalent live CLI commands.

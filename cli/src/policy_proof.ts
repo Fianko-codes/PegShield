@@ -41,7 +41,7 @@ export type OracleSnapshot = {
   network?: string;
 };
 
-export type FrontierProofOptions = {
+export type PolicyProofOptions = {
   collateralUnits?: number;
   unitPriceUsd?: number;
   requestedBorrowUsd?: number;
@@ -63,10 +63,10 @@ function firstStaticShortfallPoint(points: StressPoint[] = []): StressPoint | nu
   return points.find((point) => point.shortfall_static > 0) ?? null;
 }
 
-export function buildFrontierProof(
+export function buildPolicyProof(
   stress: StressBundle,
   snapshot: OracleSnapshot,
-  options: FrontierProofOptions = {},
+  options: PolicyProofOptions = {},
 ) {
   const collateralUnits = options.collateralUnits ?? 100;
   const unitPriceUsd = options.unitPriceUsd ?? 1814.63;
@@ -124,7 +124,7 @@ export function buildFrontierProof(
       guardrail:
         "Scenario-scale replay only: this proves earlier collateral tightening, not guaranteed zero production bad debt.",
     },
-    borrow_gate_demo: {
+    borrow_gate_proof: {
       collateral: `${collateralUnits} stETH-like units at $${unitPriceUsd}`,
       collateral_value_usd: roundMoney(collateralValueUsd),
       requested_borrow_usd: roundMoney(requestedBorrowUsd),
@@ -135,19 +135,19 @@ export function buildFrontierProof(
       new_credit_removed_usd: roundMoney(staticBorrowLimitUsd - pegShieldBorrowLimitUsd),
       takeaway: "The same borrow can pass a static table and fail once PegShield cuts LTV on-chain.",
     },
-    winner_framing: {
-      one_sentence_submission:
+    protocol_status: {
+      one_sentence_summary:
         "PegShield is a reusable Solana collateral-circuit-breaker primitive that turns static LST collateral factors into live on-chain borrow limits.",
-      what_works_today: [
+      implemented_surfaces: [
         "devnet RiskState PDA",
         "Pyth + reference-rate bridge",
         "OU/ADF risk engine",
         "typed SDK guards",
         "operator CLI",
-        "PegShield Gate and borrow-gate demo",
+        "PegShield Gate and borrow-gate reference integration",
         "historical stress replay",
       ],
-      not_claimed: [
+      remaining_production_work: [
         "not mainnet production infrastructure",
         "not audited",
         "independent attester operations are not live yet",

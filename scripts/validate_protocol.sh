@@ -100,7 +100,7 @@ need_file .venv/bin/python
 need_file sdk/package.json
 need_file cli/package.json
 need_file solana-program/Cargo.toml
-need_file demo.sh
+need_file scripts/run_oracle_cycle.sh
 
 run "engine micro-tests" "$ROOT_DIR/.venv/bin/python" -m unittest tests.test_core_engine -v
 run "sdk tests" npm --prefix sdk test
@@ -108,12 +108,12 @@ run "cli tests" npm --prefix cli test
 run "stETH case study build" "$ROOT_DIR/.venv/bin/python" scripts/build_steth_case_study.py --output /tmp/pegshield-steth-case-study.md
 run "sdk build" npm --prefix sdk run build
 run "cli build" npm --prefix cli run build
-run "frontier proof command" npm --prefix cli run start -- frontier-proof
+run "borrow policy proof command" npm --prefix cli run start -- policy-proof
 run "multi-attester proof command" npm --prefix cli run start -- multi-attester-proof
 run "scenario lab command" npm --prefix cli run start -- scenario-lab
 run "rust program check" bash -lc "cd solana-program && cargo check"
 run "PegShield Gate unit tests" bash -lc "cd solana-program && cargo test -p mock-lender"
-run "demo dry-run wiring" ./demo.sh --dry-run
+run "oracle cycle dry-run wiring" ./scripts/run_oracle_cycle.sh --dry-run
 check_artifacts
 
-printf '\nSubmission validation passed.\n'
+printf '\nProtocol validation passed.\n'

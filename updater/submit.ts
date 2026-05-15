@@ -21,7 +21,7 @@ type RiskPayload = {
   z_score: number;
 };
 
-type SubmissionResult = {
+type UpdateResult = {
   lst_id: string;
   asset_symbol?: string;
   payload_path: string;
@@ -111,7 +111,7 @@ async function main(): Promise<void> {
   const provider = new anchor.AnchorProvider(connection, wallet, {});
   const idl = loadIdl();
   const program = new anchor.Program(idl as anchor.Idl, provider) as any;
-  const submissions: SubmissionResult[] = [];
+  const updates: UpdateResult[] = [];
 
   for (const payloadPath of payloadPaths) {
     const riskData = loadRiskPayload(payloadPath);
@@ -135,7 +135,7 @@ async function main(): Promise<void> {
       })
       .rpc();
 
-    submissions.push({
+    updates.push({
       lst_id: riskData.lst_id,
       asset_symbol: riskData.asset_symbol,
       payload_path: payloadPath,
@@ -152,8 +152,8 @@ async function main(): Promise<void> {
     JSON.stringify(
       {
         status: "submitted",
-        count: submissions.length,
-        submissions,
+        count: updates.length,
+        updates,
       },
       null,
       2,

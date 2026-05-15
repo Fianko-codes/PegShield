@@ -1,4 +1,4 @@
-.PHONY: help install verify-offline verify-devnet test-engine test-sdk test-gate build-sdk build-cli check-program frontier-proof multi-attester-demo scenario-lab demo-dry-run demo artifacts anchor-test security-scan
+.PHONY: help install verify-offline verify-devnet test-engine test-sdk test-gate build-sdk build-cli check-program policy-proof attester-proof scenario-lab cycle-dry-run run-cycle artifacts anchor-test security-scan
 
 help:
 	@printf '%s\n' "PegShield operator targets"
@@ -7,11 +7,11 @@ help:
 	@printf '%s\n' "  make verify-offline Verify code paths that do not require live Solana writes"
 	@printf '%s\n' "  make verify-devnet  Run offline checks plus Anchor devnet tests"
 	@printf '%s\n' "  make test-gate      Run PegShield Gate policy unit tests"
-	@printf '%s\n' "  make frontier-proof Print the judge-facing proof that static LTV fails and PegShield tightens"
-	@printf '%s\n' "  make multi-attester-demo Print the 2-of-3 bonded attester finalization proof"
+	@printf '%s\n' "  make policy-proof   Print the borrow-policy proof that static LTV fails and PegShield tightens"
+	@printf '%s\n' "  make attester-proof Print the 2-of-3 bonded attester finalization proof"
 	@printf '%s\n' "  make scenario-lab    Print all historical/synthetic stress scenario outcomes"
-	@printf '%s\n' "  make demo-dry-run   Validate the seven-step demo command wiring"
-	@printf '%s\n' "  make demo           Run the live demo path, including devnet submit"
+	@printf '%s\n' "  make cycle-dry-run  Validate the oracle update cycle wiring"
+	@printf '%s\n' "  make run-cycle      Run the live oracle update cycle, including devnet submit"
 	@printf '%s\n' "  make artifacts      Regenerate the committed oracle/stress artifacts"
 	@printf '%s\n' "  make security-scan  Check for common local-only or secret files"
 
@@ -24,7 +24,7 @@ install:
 	@npm --prefix solana-program install
 
 verify-offline:
-	@./scripts/validate_submission.sh
+	@./scripts/validate_protocol.sh
 
 verify-devnet: verify-offline anchor-test
 
@@ -46,10 +46,10 @@ build-cli:
 check-program:
 	@cd solana-program && cargo check
 
-frontier-proof:
-	@npm --prefix cli run start -- frontier-proof
+policy-proof:
+	@npm --prefix cli run start -- policy-proof
 
-multi-attester-demo:
+attester-proof:
 	@npm --prefix cli run start -- multi-attester-proof
 
 scenario-lab:
@@ -58,15 +58,15 @@ scenario-lab:
 anchor-test:
 	@npm --prefix solana-program test
 
-demo-dry-run:
-	@./demo.sh --dry-run
+cycle-dry-run:
+	@./scripts/run_oracle_cycle.sh --dry-run
 
-demo:
-	@./demo.sh
+run-cycle:
+	@./scripts/run_oracle_cycle.sh
 
 artifacts:
 	@.venv/bin/python scripts/regenerate_artifacts.py
 	@.venv/bin/python scripts/build_steth_case_study.py
 
 security-scan:
-	@./scripts/validate_submission.sh --security-only
+	@./scripts/validate_protocol.sh --security-only

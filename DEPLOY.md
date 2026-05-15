@@ -246,7 +246,7 @@ Use a reputable paid RPC (Helius, Triton, QuickNode) — public mainnet RPCs thr
 
 ### Step M6: Lock down upgrade authority
 
-Once the program is deployed and one PDA is live, decide whether to keep upgrade authority hot, rotate to a multisig, or set it to `None` (immutable). For hackathon credibility, keep it on the deployer keypair so judges see a reachable, working account; document your plan in `docs/MULTI_ATTESTER.md` for rotating to a Squads multisig post-submission.
+Once the program is deployed and one PDA is live, decide whether to keep upgrade authority hot, rotate to a multisig, or set it to `None` (immutable). For production discipline, prefer a multisig-controlled upgrade authority during active rollout and document the path to immutability in `docs/MULTI_ATTESTER.md`.
 
 ### Risks to flag to yourself before pressing deploy
 
@@ -254,11 +254,11 @@ Once the program is deployed and one PDA is live, decide whether to keep upgrade
 - **Rent cost**: `anchor deploy` mainnet failures mid-deploy can still debit SOL. Don't deploy with the exact minimum balance; keep headroom.
 - **RPC rate limits**: public mainnet RPC will rate-limit `anchor deploy`. Use a dedicated RPC endpoint for the deploy itself.
 
-## Step 9: Final Judge Demo
+## Step 9: Operational Cycle Check
 
 ```bash
-time ./demo.sh --dry-run
-time ./demo.sh
+time ./scripts/run_oracle_cycle.sh --dry-run
+time ./scripts/run_oracle_cycle.sh
 ```
 
-The dry run should complete quickly. The live run depends on network latency and devnet health; record the actual time in [`SUBMISSION.md`](./SUBMISSION.md) before marking the 90-second demo checklist item complete.
+The dry run should complete quickly. The live run depends on network latency and devnet health; record the actual time in the operator notes for the deployment.

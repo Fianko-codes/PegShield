@@ -20,7 +20,7 @@ That compatibility path remains for devnet and migration. The protocol path now 
 - Preserve the current consumer surface: protocols still read a single `RiskState` PDA.
 - Replace single-signer trust with threshold attestation: `m` valid operator approvals out of `n`.
 - Keep the hot write path simple enough to operate reliably during volatile markets.
-- Make equivocation and obviously invalid submissions economically punishable.
+- Make equivocation and obviously invalid updates economically punishable.
 - Avoid putting heavy statistical computation on-chain.
 
 ## Non-Goals
@@ -42,10 +42,10 @@ That compatibility path remains for devnet and migration. The protocol path now 
 
 ## Operator Readiness Check
 
-For the deterministic judge-facing proof, run:
+For the deterministic threshold proof, run:
 
 ```bash
-make multi-attester-demo
+make attester-proof
 ```
 
 It prints the whole threshold path without requiring RPC or keypairs:

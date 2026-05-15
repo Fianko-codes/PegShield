@@ -1,6 +1,6 @@
 # Lender Integration Guide
 
-How a Solana lending protocol integrates the PegShield risk oracle as the LTV source for LST collateral. Bridges the high-level [`README.md`](../README.md), the API reference in [`sdk/README.md`](../sdk/README.md), the runnable [`examples/lending-borrow-demo`](../examples/lending-borrow-demo), and the on-chain [`PegShield Gate`](../solana-program/programs/mock-lender) reference program.
+How a Solana lending protocol integrates the PegShield risk oracle as the LTV source for LST collateral. Bridges the high-level [`README.md`](../README.md), the API reference in [`sdk/README.md`](../sdk/README.md), the runnable [`examples/lending-borrow-reference`](../examples/lending-borrow-reference), and the on-chain [`PegShield Gate`](../solana-program/programs/mock-lender) reference program.
 
 > **TL;DR** — install `@pegshield/sdk`, derive the PDA with the LST id you support, decode `RiskState`, gate borrows behind `safeLtv()`. If anything goes wrong, fall back to a conservative static LTV — never a higher one.
 
@@ -114,10 +114,10 @@ function maxBorrowUsd(collateralUsd: number, state: RiskState) {
 }
 ```
 
-The reference [`examples/lending-borrow-demo`](../examples/lending-borrow-demo) prints the live oracle decision next to a naive fixed-80% baseline so you can see the difference on real data:
+The reference [`examples/lending-borrow-reference`](../examples/lending-borrow-reference) prints the live oracle decision next to a naive fixed-80% baseline so you can see the difference on real data:
 
 ```bash
-cd examples/lending-borrow-demo
+cd examples/lending-borrow-reference
 npm install
 npm run start -- 100 1814.63 stETH       # live devnet read
 npm run start:snapshot -- 100 1814.63 stETH  # offline, uses repo snapshot
@@ -220,4 +220,4 @@ Track that work via the project's GitHub issues.
 - [`SECURITY.md`](../SECURITY.md) — trust model & disclosure
 - [`docs/MULTI_ATTESTER.md`](./MULTI_ATTESTER.md) — decentralization roadmap
 - [`cli/`](../cli) — operator commands for registry and consensus flow
-- [`examples/lending-borrow-demo`](../examples/lending-borrow-demo) — runnable reference consumer
+- [`examples/lending-borrow-reference`](../examples/lending-borrow-reference) — runnable reference consumer

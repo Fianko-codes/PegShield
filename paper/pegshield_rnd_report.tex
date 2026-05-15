@@ -1,0 +1,684 @@
+\begin{filecontents*}[overwrite]{pegshield_refs.bib}
+@misc{marinade_msol,
+  author = {{Marinade Finance}},
+  title = {{What is mSOL?}},
+  howpublished = {\url{https://docs.marinade.finance/marinade-protocol/protocol-overview/marinade-liquid/what-is-msol}},
+  year = {2026},
+  note = {Accessed 2026-05-15}
+}
+
+@misc{jito_jitosol,
+  author = {{Jito Foundation}},
+  title = {{JitoSOL Liquid Staking}},
+  howpublished = {\url{https://www.jito.network/docs/jitosol/jitosol-liquid-staking/}},
+  year = {2026},
+  note = {Accessed 2026-05-15}
+}
+
+@misc{defillama_jito,
+  author = {{DeFiLlama}},
+  title = {{Jito Liquid Staking}},
+  howpublished = {\url{https://defillama.com/protocol/jito-liquid-staking}},
+  year = {2026},
+  note = {Accessed 2026-05-15}
+}
+
+@misc{pyth_hermes,
+  author = {{Pyth Network}},
+  title = {{Hermes API documentation}},
+  howpublished = {\url{https://docs.pyth.network/price-feeds/api-instances-and-providers/hermes}},
+  year = {2026},
+  note = {Accessed 2026-05-15}
+}
+
+@misc{anchor,
+  author = {{Coral}},
+  title = {{Anchor Documentation}},
+  howpublished = {\url{https://www.anchor-lang.com/docs}},
+  year = {2026},
+  note = {Accessed 2026-05-15}
+}
+
+@article{adf,
+  author = {Dickey, D. A. and Fuller, W. A.},
+  title = {Distribution of the estimators for autoregressive time series with a unit root},
+  journal = {Journal of the American Statistical Association},
+  volume = {74},
+  pages = {427--431},
+  year = {1979}
+}
+
+@article{ou,
+  author = {Uhlenbeck, G. E. and Ornstein, L. S.},
+  title = {On the theory of the Brownian motion},
+  journal = {Physical Review},
+  volume = {36},
+  pages = {823--841},
+  year = {1930}
+}
+\end{filecontents*}
+
+\documentclass[aps,preprint,onecolumn,nofootinbib,longbibliography]{revtex4-2}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\lstdefinestyle{pegshield}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single,
+  framerule=0.3pt,
+  rulecolor=\color{black!35},
+  xleftmargin=0pt,
+  xrightmargin=0pt
+}
+\lstset{style=pegshield}
+\graphicspath{{figures/}}
+
+\newcommand{\bps}{\mathrm{bps}}
+\newcommand{\clip}{\operatorname{clip}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\one}{\mathbf{1}}
+
+\begin{document}
+
+\title{PegShield: A Solvency-as-a-Service Risk Oracle for Liquid-Staked Collateral on Solana}
+
+\author{Anubhav Prasai}
+\affiliation{AI Youth Global Organization (AIYGO)}
+
+\date{\today}
+
+\begin{abstract}
+PegShield is a Solana-native risk oracle for liquid staking token (LST) collateral.
+Unlike a price oracle, which estimates the exchange value of an asset, PegShield
+publishes an enforceable lending constraint: a live loan-to-value (LTV) recommendation
+and regime flag for a collateral market keyed by an LST identifier. This report
+formalizes PegShield as a solvency-as-a-service system: off-chain processes estimate
+peg-deviation dynamics from Pyth market prices and protocol-specific staking exchange
+rates, then commit a compact fixed-point risk state to a Solana program-derived
+address (PDA) consumed by lending protocols. The system targets LST de-pegging tail
+risk, where slow governance updates, stake-pool exit friction, and correlated
+liquidations can make static collateral factors insufficient. The current
+implementation comprises a Pyth/reference-rate bridge, an Ornstein-Uhlenbeck (OU)
+calibration engine, an Augmented Dickey-Fuller (ADF) and z-score regime detector,
+bounded liquidity and data-quality haircuts, a devnet Anchor oracle program, a
+threshold-attester update path, a TypeScript SDK, an operator CLI, and both TypeScript
+and Anchor reference consumers. The resulting primitive is not an assertion that a
+token is worth a given number of dollars; it is a machine-readable solvency boundary
+that downstream protocols can clamp, fallback, or use to halt new credit.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+
+Liquid staking resolves a capital-efficiency problem in proof-of-stake systems:
+staked assets need not remain economically inert. On Solana, receipt assets such as
+\texttt{mSOL}, \texttt{jitoSOL}, and \texttt{bSOL} represent claims on delegated SOL
+and can circulate through automated market makers, lending markets, vaults, and other
+DeFi contracts. Marinade describes \texttt{mSOL} as the liquid staking token received
+for staking SOL through its protocol, and Jito documents \texttt{JitoSOL} as the token
+associated with its stake-pool system \cite{marinade_msol,jito_jitosol}. DeFiLlama and
+protocol dashboards show that liquid staking is a major component of the contemporary
+Solana DeFi surface \cite{defillama_jito}.
+
+This composability produces what this report calls the \emph{Liquidity-Staking
+Paradox}. The same token that improves capital efficiency during normal conditions can
+become an unstable collateral object under stress. A stake-pool receipt token is
+redeemable against an underlying staking position, but immediate secondary-market
+liquidity is finite. When the receipt trades below its canonical staking exchange rate,
+borrowers, liquidators, lenders, and arbitrageurs may all require exit liquidity in the
+same time interval. Static collateral factors, updated by governance or manual risk
+operations, are not designed to react at the speed of the borrow path.
+
+PegShield addresses this mismatch by separating price discovery from collateral
+solvency control. The implemented question is:
+\begin{quote}
+Given current peg deviation, estimated mean reversion, volatility, stationarity,
+liquidity depth, and source quality, should a lending protocol extend new credit
+against this collateral, and at what LTV?
+\end{quote}
+The answer is stored in a Solana PDA rather than in an off-chain dashboard. A lending
+protocol can read the account, verify ownership and freshness, and apply the suggested
+LTV or a stricter fallback policy inside its own borrowing logic.
+
+\section{Public Artifacts}
+
+The implementation is accompanied by public, verifiable artifacts. These links are
+included because PegShield is intended to be evaluated as a deployed protocol surface,
+not only as a theoretical design.
+
+\begin{table}[h]
+\caption{\label{tab:public-artifacts}Primary public artifacts and deployment references.}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{ll}
+\toprule
+Artifact & Link \\
+\midrule
+Devnet program &
+\href{https://explorer.solana.com/address/DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea?cluster=devnet}{\texttt{DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea}} \\
+GitHub repository &
+\href{https://github.com/Fianko-codes/PegShield}{\texttt{github.com/Fianko-codes/PegShield}} \\
+Live \texttt{mSOL-v2} oracle state &
+\href{https://explorer.solana.com/address/7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo?cluster=devnet}{\texttt{7dtHBg6SyTykm1sDDvFPxoj7UJ12jqbFKSC5S8gpenGo}} \\
+Updater authority &
+\href{https://explorer.solana.com/address/4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc?cluster=devnet}{\texttt{4kEmLqMqb3PGsmBC8brARQ5sKzUv37PjdSereu1yoNyc}} \\
+Last documented devnet refresh &
+\href{https://explorer.solana.com/tx/5cq1vDvEyfAyjsafW2TVAbGHAb8vyLHSoGrJWnQLLZy3K5KsmWBv2qfSwLnKoMKJJM8EcTuxGDwuAvz6teSmtMqy?cluster=devnet}{\texttt{5cq1vDvEyfAyjsafW2TVAbGHAb8vyLHSoGrJWnQLLZy3K5KsmWBv2qfSwLnKoMKJJM8EcTuxGDwuAvz6teSmtMqy}} \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\section{Repository-Derived Implementation Scope}
+
+This report is derived from the repository implementation rather than from a proposed
+roadmap. Table~\ref{tab:repo-map} summarizes the inspected components.
+
+\begin{table}[h]
+\caption{\label{tab:repo-map}Implementation surfaces used for this report.}
+\begin{tabular}{ll}
+\toprule
+Surface & Role \\
+\midrule
+Bridge & Pyth/reference-rate ingestion and peg-deviation construction. \\
+Core engine & OU calibration, ADF/z-score regime detection, LTV haircuts. \\
+Updater & Fixed-point payload submission and consumer comparison scripts. \\
+Risk oracle & Anchor oracle, risk state, attesters, disputes, slashing records. \\
+Mock lender & Anchor borrow-gate reference consumer. \\
+SDK & Decoder, PDA derivation, owner verification, freshness and LTV guards. \\
+CLI & Operator commands, policy proof, multi-attester proof, scenario lab. \\
+Lending example & External TypeScript lending consumer. \\
+Scripts & Artifact regeneration, validation, and oracle-cycle wiring. \\
+Artifacts/simulation & Oracle snapshots and stress-scenario bundles. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The current deployment state is explicitly pre-production. The repository documents a
+devnet Anchor program ID
+\texttt{DMR3rXBh8RGrKyx1mxqFVTMbyfoiuu9iYHr6s6CW23ea}, a devnet \texttt{mSOL-v2}
+\texttt{RiskState} PDA, and an updater authority. The code supports \texttt{mSOL-v2},
+\texttt{jitoSOL-v1}, and \texttt{bSOL-v1}; not every supported asset has a populated
+PDA in the committed artifacts. Security documentation also states that the program is
+not audited, not mainnet production infrastructure, and remains upgrade-mutable.
+
+\section{System Architecture}
+
+\subsection{Data Plane}
+
+Let $a$ denote an LST market and let $s$ denote SOL. The bridge reads two Pyth market
+prices, $P^a_t$ and $P^s_t$, and a protocol-specific reference exchange rate $R^a_t$.
+The implemented supported sources are:
+\begin{itemize}
+\item Marinade API for \texttt{mSOL-v2};
+\item Jito stake-pool statistics for \texttt{jitoSOL-v1};
+\item BlazeStake stake-pool account data over Solana RPC for \texttt{bSOL-v1}.
+\end{itemize}
+The canonical risk signal is not the raw USD premium. It is the peg deviation
+\begin{equation}
+X^a_t
+= \frac{P^a_t/P^s_t}{R^a_t} - 1.
+\label{eq:peg-deviation}
+\end{equation}
+This distinction is essential because an LST can trade above SOL in USD terms simply
+because the staking exchange rate has accrued rewards. Peg risk begins when the market
+ratio trades below the protocol redemption ratio.
+
+The bridge rejects malformed price data, carries Pyth confidence values, records
+whether historical data were live or cache-derived, and marks reference-rate fallbacks.
+The engine then treats degraded input quality as a separate source of risk rather than
+as a neutral missing value.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\linewidth]{system_architecture.pdf}
+\caption{\label{fig:system-architecture}Implemented PegShield data plane. Pyth market
+feeds and protocol reference rates are normalized by the bridge, calibrated by the
+off-chain engine, encoded by the updater or attester path, and committed to a
+\texttt{RiskState} PDA consumed by lending protocols.}
+\end{figure}
+
+\subsection{Risk-State Commitment}
+
+The on-chain oracle account is an Anchor account \texttt{RiskState}, derived by
+\begin{equation}
+\operatorname{PDA}_a
+= \operatorname{findProgramAddress}([\texttt{"risk"}, \operatorname{bytes}(a)],\; \texttt{program\_id}).
+\end{equation}
+The implemented fields are shown in Table~\ref{tab:riskstate}.
+
+\begin{table}[h]
+\caption{\label{tab:riskstate}\texttt{RiskState} account fields. Floating values are stored in fixed point.}
+\begin{tabular}{lll}
+\toprule
+Field & Type & Meaning \\
+\midrule
+\texttt{lst\_id} & \texttt{String} & LST market identifier, max 16 bytes. \\
+\texttt{theta\_scaled} & \texttt{i64} & OU mean-reversion speed $\theta \times 10^6$. \\
+\texttt{sigma\_scaled} & \texttt{i64} & OU volatility $\sigma \times 10^6$. \\
+\texttt{regime\_flag} & \texttt{u8} & $0=$ normal, $1=$ critical. \\
+\texttt{suggested\_ltv\_bps} & \texttt{u16} & Suggested LTV in basis points. \\
+\texttt{z\_score\_scaled} & \texttt{i64} & Current z-score $z \times 10^6$. \\
+\texttt{slot} & \texttt{u64} & Slot of last accepted update. \\
+\texttt{timestamp} & \texttt{i64} & Unix timestamp of last accepted update. \\
+\texttt{authority} & \texttt{Pubkey} & Single-attester writer in compatibility mode. \\
+\texttt{last\_updater} & \texttt{Pubkey} & Most recent submitter/confirming signer. \\
+\texttt{update\_mode} & \texttt{u8} & $0=$ single-attester, $1=$ multi-attester. \\
+\texttt{attester\_registry} & \texttt{Pubkey} & Registry PDA for multi-attester mode. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The oracle program performs no floating-point computation on-chain. Its role is to
+validate account identity, signer authority, update mode, basic numeric bounds, timing
+constraints, and threshold-attester state transitions. In single-attester mode,
+\texttt{update\_risk\_state} requires the stored \texttt{authority} signer, rejects
+multi-attester accounts, checks that the supplied \texttt{lst\_id} matches the PDA
+state, enforces $\theta_{\mathrm{scaled}}\geq 0$, $\sigma_{\mathrm{scaled}}>0$, and
+$0\leq \mathrm{LTV}_{\bps}\leq 10000$, and rate-limits updates to at least 30 seconds
+apart.
+
+\section{Statistical Model and Solvency Index}
+
+\subsection{OU Calibration}
+
+The engine fits an Ornstein-Uhlenbeck model to the peg-deviation series in
+Eq.~\eqref{eq:peg-deviation}. In continuous time,
+\begin{equation}
+\dd X_t = \theta(\mu-X_t)\dd t+\sigma\dd W_t,
+\label{eq:ou}
+\end{equation}
+where $\theta>0$ denotes mean-reversion speed, $\mu$ the local equilibrium deviation,
+$\sigma>0$ instantaneous volatility, and $W_t$ a Brownian motion. The implementation
+estimates the discrete regression
+\begin{equation}
+\Delta X_i = \alpha+\beta X_{i-1}+\varepsilon_i,
+\end{equation}
+with sampling interval $\Delta t$ in days. It then maps
+\begin{equation}
+\hat{\theta}=-\frac{\hat{\beta}}{\Delta t},\qquad
+\hat{\mu}=\frac{\hat{\alpha}}{-\hat{\beta}},\qquad
+\hat{\sigma}=\frac{\operatorname{sd}(\hat{\varepsilon})}{\sqrt{\Delta t}},
+\end{equation}
+with positive lower bounds used to avoid degenerate zero estimates. The baseline
+parameters $(\bar{\theta},\bar{\sigma})$ are medians over rolling windows when enough
+history exists, otherwise the current-window estimate is used.
+
+\subsection{Regime Detection}
+
+The current z-score is
+\begin{equation}
+z_t=\frac{X_t-\bar{X}_{[t-n,t]}}{s_{[t-n,t]}}.
+\end{equation}
+The engine applies an ADF test to the rolling deviation window and declares
+\begin{equation}
+C_t=
+\one\left\{|z_t|>2.5\right\}
+\one\left\{p_{\mathrm{ADF},t}\geq 0.05\right\}.
+\label{eq:critical}
+\end{equation}
+Thus \texttt{CRITICAL} requires both an extreme standardized deviation and failure of
+the stationarity test. This avoids treating every ordinary variance realization as a
+structural break.
+
+\subsection{Liquidity, Validator Health, and Peg Stability}
+
+LST solvency depends on more than price. Let $L_t$ denote effective exit liquidity
+available to liquidators and arbitrageurs, and let $H_t\in[0,1]$ denote a latent
+validator/stake-pool health variable capturing delegation performance, withdrawal
+friction, and reference-rate reliability. Peg stability can be modeled as a
+jump-diffusion extension of Eq.~\eqref{eq:ou}:
+\begin{equation}
+\dd X_t
+= \theta_t(\mu_t-X_t)\dd t+\sigma_t\dd W_t
+- \kappa_L\dd N^L_t
+- \kappa_H\dd N^H_t,
+\label{eq:jump-model}
+\end{equation}
+where liquidity shocks and validator-health shocks have intensities
+\begin{align}
+\lambda^L_t
+&= \lambda^L_0
+\exp\left(\beta_L\left(1-\frac{L_t}{L^\star_t}\right)_+\right),\\
+\lambda^H_t
+&= \lambda^H_0
+\exp\left(\beta_H(1-H_t)_+\right).
+\end{align}
+The current code does not ingest validator-performance telemetry as a first-class
+field. It uses the canonical staking exchange rate as the accounting reference and
+applies data-quality haircuts when reference-rate sources are fallback-derived. The
+code does, however, accept generic liquidity metrics and maps them into bounded
+haircuts.
+
+\subsection{Implemented LTV Functional}
+
+The implemented base constants are
+\begin{equation}
+\ell_0=0.80,\qquad
+\ell_{\min}=0.40,\qquad
+\ell_{\max}=0.80.
+\end{equation}
+The statistical LTV is
+\begin{equation}
+\ell^{\mathrm{stat}}_t =
+\begin{cases}
+\ell_{\min}, & C_t=1,\\
+\clip\left(
+\ell_0
+\frac{\hat{\theta}_t}{\bar{\theta}_t}
+\frac{\bar{\sigma}_t}{\hat{\sigma}_t},
+\ell_{\min},
+\ell_{\max}
+\right), & C_t=0.
+\end{cases}
+\label{eq:stat-ltv}
+\end{equation}
+Liquidity and data-quality risk maps return bounded haircuts
+\begin{equation}
+h^L_t\in[0,0.30],\qquad h^Q_t\in[0,0.15].
+\end{equation}
+The published LTV is
+\begin{equation}
+\ell_t =
+\clip\left(\ell^{\mathrm{stat}}_t-h^L_t-h^Q_t,\ell_{\min},\ell_{\max}\right).
+\label{eq:published-ltv}
+\end{equation}
+The solvency index is the normalized enforced collateral factor
+\begin{equation}
+\Psi_t=\frac{\ell_t}{\ell_0}\in\left[\frac{1}{2},1\right],
+\label{eq:psi}
+\end{equation}
+where $\Psi_t=1$ means the model permits the base collateral factor and
+$\Psi_t=1/2$ means the system has reached the configured 40\% floor. For a lending
+protocol with collateral value $V_t$ and requested debt $B_t$, PegShield's reference
+credit constraint is
+\begin{equation}
+B_t \leq V_t \ell_t.
+\label{eq:borrow-constraint}
+\end{equation}
+The protocol remains free to apply a stricter cap, fallback, pause, or liquidation
+policy.
+
+\section{Policy Proofs and Stress Evidence}
+
+The repository's \texttt{policy-proof} command is a deterministic artifact-level proof,
+not a formal theorem prover. It loads the committed stress bundle and oracle snapshot,
+constructs a collateral scenario, and compares a fixed 80\% table against the dynamic
+PegShield LTV. In the June 2022 stETH/ETH replay, the model emitted its first critical
+signal on 2022-06-09 at approximately $-3.40\%$ peg deviation, while the fixed-LTV
+baseline first exhibited shortfall on 2022-06-13. The committed case-study artifact
+reports a peak fixed-80\% shortfall of \$51,946.38, a peak PegShield shortfall of
+\$0.00 in the modeled 100-unit position, and a peak LTV cut of 40 percentage points.
+These results validate early collateral tightening in the replay; they do not prove
+zero market-wide bad debt, production liquidator performance, or universal
+calibration across all LSTs.
+
+The scenario lab currently contains one historical replay and multiple synthetic
+paths: liquidity vacuum, reflexive bank run, slow grind depeg, false-positive wick,
+flash-crash repricing, SVB-weekend bank run, stablecoin redemption spiral, and
+restaking bridge contagion. The synthetic scenarios are useful for regression testing
+the policy surface but should not be cited as empirical market measurements.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{steth_ltv_peg.pdf}
+\caption{\label{fig:steth-ltv}Historical stETH/ETH replay. The dynamic LTV falls from
+the static 80\% baseline to the 40\% floor as peg deviation deteriorates. In terms of
+the solvency index, this corresponds to a movement from $\Psi_t=1$ to $\Psi_t=0.5$.}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{shortfall_reduction.pdf}
+\caption{\label{fig:shortfall}Modeled shortfall comparison for the same replay. The
+static 80\% policy develops positive shortfall after the depeg widens; the PegShield
+policy has already tightened to the floor in this scenario-scale collateral model.}
+\end{figure}
+
+\section{Attester Cycles}
+
+\subsection{Implemented Account Model}
+
+The multi-attester path preserves the consumer interface: protocols still read the
+same \texttt{RiskState} PDA. The trust model behind writes changes from a single
+authority to a bonded registry and pending-update cycle.
+
+\begin{table}[h]
+\caption{\label{tab:attester}Implemented threshold-attester constants and accounts.}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{ll}
+\toprule
+Item & Implemented behavior \\
+\midrule
+\texttt{MAX\_ATTESTERS} & 5 fixed registry slots. \\
+\texttt{MIN\_BOND} & 1 SOL minimum registration bond. \\
+\texttt{PENDING\_TTL} & 300 seconds. \\
+\texttt{DISPUTE\_WINDOW} & 3600 seconds after finalization. \\
+\texttt{RESOLUTION\_DEADLINE} & 24 hours after dispute filing. \\
+\texttt{SLASH\_PERCENT} & 50\% of attester bond. \\
+\texttt{DISPUTER\_REWARD} & 50\% of slashed amount. \\
+\texttt{AttesterRegistry} & Admin, threshold, minimum bond, slash destination, and attester entries. \\
+\texttt{PendingUpdate} & Round payload, proposer, expiration, bitmap confirmations, finalization metadata. \\
+\texttt{DisputeRecord} & Evidence hash, disputed attester, deadline, slash outcome, and copied disputed parameters. \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+The implemented cycle is:
+\begin{enumerate}
+\item \texttt{initialize\_registry(threshold,min\_bond)} creates the registry PDA and
+sets admin, threshold, minimum bond, and slash destination.
+\item \texttt{register\_attester(bond\_amount)} transfers lamports from the attester
+to the registry PDA and records an active attester slot.
+\item \texttt{enable\_multi\_attester(lst\_id)} switches a \texttt{RiskState} from
+single-attester to multi-attester mode if the registry can satisfy its threshold.
+\item \texttt{propose\_update} creates a pending round. The proposer must be active
+and auto-confirms via a bitmap bit indexed by registry position.
+\item \texttt{confirm\_update} requires a registered, unique, not-yet-confirming
+attester and a non-expired pending update. Once confirmation count reaches threshold,
+the risk parameters are copied into \texttt{RiskState}.
+\item \texttt{cancel\_expired} can close an expired unfinalized pending update and
+refund rent to the proposer.
+\item \texttt{dispute\_update} can be filed within the finalization dispute window
+against an attester who participated in the round.
+\item \texttt{resolve\_dispute} is admin-gated. If slashing is selected, 50\% of the
+attester bond is deducted; half of the slashed amount goes to the disputer and half to
+the configured slash destination.
+\end{enumerate}
+
+The current program authenticates attesters by Solana transaction signer identity and
+registry membership. It does not yet implement an on-chain Ed25519 signature
+aggregation verifier over an off-chain canonical payload. The CLI's
+\texttt{multi-attester-proof} is therefore a deterministic readiness proof for the
+implemented state machine, not evidence of a live independent production committee.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{attester_cycle.pdf}
+\caption{\label{fig:attester-cycle}Threshold-attester lifecycle implemented in the
+Anchor program. The consumer PDA remains stable while the write path moves from a
+single authority to bonded proposal, confirmation, finalization, and dispute states.}
+\end{figure}
+
+\section{Consumer Reference Implementation}
+
+\subsection{SDK Policy}
+
+The TypeScript SDK exposes \texttt{fetchRiskState}, \texttt{decodeRiskState}, PDA
+derivation, and guards. \texttt{fetchRiskState} rejects missing accounts and rejects
+accounts not owned by the expected PegShield program. \texttt{isStale} treats timestamp
+zero as stale and defaults to a 600-second maximum age. \texttt{isCritical} returns
+true when \texttt{regimeFlag == 1}. The reference policy is:
+\begin{equation}
+\operatorname{safeLtv}(S_t)=
+\begin{cases}
+\ell_{\mathrm{fallback}}, & \operatorname{stale}(S_t),\\
+\ell_{\mathrm{fallback}}, & S_t.\operatorname{regimeFlag}=1,\\
+\min(\max(S_t.\operatorname{suggestedLtv},0),\ell_{\mathrm{protocolMax}}), & \text{otherwise}.
+\end{cases}
+\end{equation}
+The default fallback in the SDK is 40\%, while example consumers commonly cap the
+maximum at 80\% or a protocol-selected ceiling.
+
+\subsection{Anchor Borrow Gate}
+
+The \texttt{mock-lender} program is a reference enforcement module rather than a toy
+off-chain script. It stores a \texttt{BorrowPolicy} PDA with market admin, LST ID,
+maximum LTV, fallback LTV, maximum oracle age, critical-regime behavior, pause flag,
+and update timestamp. \texttt{assess\_borrow} reads the PegShield \texttt{RiskState}
+through \texttt{seeds::program = risk\_oracle::ID}, validates matching LST IDs, then
+records a \texttt{BorrowDecision} PDA with the applied LTV, oracle age, reason code,
+and allow/reject outcome. Its implemented decision logic is:
+\begin{align}
+\ell^{\mathrm{applied}}_t &=
+\begin{cases}
+0, & \text{policy paused},\\
+\ell_{\mathrm{fallback}}, & \text{oracle stale},\\
+0, & \text{critical and halt-on-critical},\\
+\ell_{\mathrm{fallback}}, & \text{critical and not halt-on-critical},\\
+\min(\ell^{\mathrm{oracle}}_t,\ell_{\mathrm{policyMax}}), & \text{otherwise}.
+\end{cases}
+\end{align}
+The borrow is allowed only if requested debt is no greater than
+$V_t\ell^{\mathrm{applied}}_t$.
+
+\section{Security and Manipulation Analysis}
+
+\subsection{Oracle Manipulation Surface}
+
+PegShield is less sensitive to ordinary USD-price drift than a naive LST/USD spread
+because it normalizes the LST/SOL market ratio by a protocol reference rate. A
+manipulator must therefore influence the relative LST/SOL market price, the Pyth feed,
+or the canonical reference-rate source. The current code includes several defensive
+properties:
+\begin{itemize}
+\item on-chain writers cannot submit negative $\theta$, non-positive $\sigma$, or LTV
+outside $[0,10000]$ basis points;
+\item single-attester writes require the stored authority and are rate-limited;
+\item multi-attester writes require active bonded registry members and threshold
+confirmation before finalization;
+\item source degradation is represented as a data-quality haircut rather than ignored;
+\item missing liquidity metrics are penalized by the data-quality component;
+\item SDK consumers verify owner, decode layout, freshness, and critical regime before
+using the feed;
+\item consumer policy is asymmetric: stale, missing, or critical data lowers LTV or
+halts borrowing.
+\end{itemize}
+These mechanisms do not make the oracle manipulation-proof. The repository security
+document explicitly lists dependency on Pyth honesty/timeliness, reference-rate
+integrity, mutable upgrade authority, unaudited code, and pre-production independent
+attester operations as limitations. The current implementation also does not
+cross-check Pyth against a secondary oracle and does not recompute OU/ADF logic
+on-chain.
+
+\subsection{Composability}
+
+PegShield is composable because its primary output is a single PDA per LST, not a
+bespoke integration process. A protocol can consume it in three ways:
+\begin{enumerate}
+\item off-chain or client-side via \texttt{@pegshield/sdk};
+\item directly in an Anchor program by deriving \texttt{["risk", lst\_id]} under the
+PegShield program ID and decoding the account;
+\item through the reference borrow gate pattern, which records auditable borrow
+decisions in a market-owned policy account.
+\end{enumerate}
+The design intentionally does not force a lender to surrender final risk authority.
+Protocols retain their own maximum LTVs, fallbacks, market pauses, and critical-regime
+policies. PegShield supplies the time-varying solvency constraint.
+
+\section{Operational Flow}
+
+The seven-step oracle cycle encoded in \texttt{scripts/run\_oracle\_cycle.sh} is:
+\begin{enumerate}
+\item run engine unit tests;
+\item fetch live Pyth prices and the relevant reference rate;
+\item run the statistical engine;
+\item submit a devnet update;
+\item read the PDA back through the SDK;
+\item replay the stETH stress scenario;
+\item sync oracle and simulation artifacts.
+\end{enumerate}
+The stricter \texttt{scripts/validate\_protocol.sh} adds security scanning for
+tracked secret-like files, engine tests, SDK tests, CLI tests, case-study generation,
+SDK and CLI builds, the policy proof, the multi-attester proof, scenario lab output,
+Rust \texttt{cargo check}, mock-lender unit tests, oracle-cycle dry-run wiring, and
+artifact-presence checks.
+
+The updater converts floats to fixed point using scale $10^6$ and converts
+\texttt{suggested\_ltv} to basis points:
+\begin{lstlisting}
+theta_scaled = round(theta * 1_000_000)
+sigma_scaled = round(sigma * 1_000_000)
+z_score_scaled = round(z_score * 1_000_000)
+suggested_ltv_bps = round(clamp(suggested_ltv, 0, 1) * 10_000)
+\end{lstlisting}
+This serialization boundary is the interface between stochastic off-chain computation
+and deterministic on-chain state.
+
+\section{Current Artifact Snapshot}
+
+The committed snapshots dated 2026-04-24 report \texttt{NORMAL} regime for the three
+configured LST identifiers and \texttt{suggested\_ltv = 0.7325}. The reduction from
+the statistical 0.80 LTV is explained by a 0.0675 data-quality haircut caused by
+fallback history and missing liquidity-depth metrics. The snapshots mark
+\texttt{analytics\_status} as \texttt{withheld\_fallback\_history}; therefore they
+should be interpreted as committed operational artifacts, not as a fresh production
+calibration.
+
+\section{Limitations and Research Agenda}
+
+The implementation is sufficient to define a concrete solvency-as-a-service primitive,
+but several limitations are explicit:
+\begin{itemize}
+\item devnet-only deployment status;
+\item no completed independent production attester set;
+\item no external audit;
+\item no secondary oracle cross-check;
+\item no on-chain recomputation of statistical model outputs;
+\item latent validator health is not currently ingested as a separate telemetry stream;
+\item synthetic scenarios are regression tests, not empirical guarantees;
+\item the LTV mapping constants require production calibration before mainnet use.
+\end{itemize}
+The natural research agenda is to add secondary price-source checks, validator and
+stake-pool health telemetry, formal verification of LTV clamp invariants, production
+multi-attester operations, immutable or multisig-controlled program upgrades, and
+venue-specific liquidity-depth calibration for each supported LST.
+
+\section{Conclusion}
+
+PegShield implements a risk-oracle architecture for LST collateral in which solvency
+constraints, rather than asset prices, are the primary output. The codebase establishes
+an end-to-end path from Pyth/reference-rate ingestion to OU/ADF risk estimation,
+fixed-point Solana state, attester-mediated updates, and lending-protocol borrow
+gates. The resulting standard is operationally simple for consumers: read one PDA,
+verify ownership and freshness, respect critical regime, clamp to local policy, and
+fallback conservatively. The scientific contribution is the explicit conversion of
+peg-deviation tail risk into an enforceable on-chain credit boundary $\Psi_t$, making
+LST collateral management a continuous solvency service rather than a static governance
+parameter.
+
+\bibliography{pegshield_refs}
+
+\end{document}

@@ -4,7 +4,7 @@ Reference on-chain borrow gate for protocols that want to enforce PegShield's
 LST risk feed inside a lending flow.
 
 The program is named `mock-lender` in the Anchor workspace for compatibility
-with the existing demo, but the product surface is the reusable gate:
+with the existing reference integration, but the product surface is the reusable gate:
 
 ```text
 BorrowPolicy PDA + PegShield RiskState PDA -> BorrowDecision PDA

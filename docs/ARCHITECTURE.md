@@ -157,7 +157,7 @@ Missing or degraded inputs are not treated as neutral. If liquidity depth is abs
 |---|---|---|
 | Pyth feed unavailable | Bridge | Cron job fails loudly; PDA simply isn't updated; consumers see staleness rising |
 | Reference rate API unavailable | Bridge | Same as above; we never substitute a stale rate silently |
-| Updater keypair unavailable | Updater | Submission fails; PDA stale; consumers fall back to conservative LTV |
+| Updater keypair unavailable | Updater | Update fails; PDA stale; consumers fall back to conservative LTV |
 | Authority key compromised | — | Out of scope for v1; mitigation is the multi-attester roadmap |
 | Consumer skips guards | Consumer | Their own bad-debt risk; documented loudly in `sdk/README.md` |
 

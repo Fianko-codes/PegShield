@@ -144,7 +144,7 @@ export function buildMultiAttesterProof(options: MultiAttesterProofOptions = {})
 
   const proof = {
     project: "PegShield",
-    demo: "multi-attester threshold update proof",
+    proof: "multi-attester threshold update proof",
     claim:
       "A single signer is no longer required: a bonded 2-of-3 attester committee can finalize a risk update into the same RiskState PDA consumers already read.",
     configuration: {

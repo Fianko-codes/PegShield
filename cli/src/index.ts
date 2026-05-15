@@ -8,7 +8,7 @@ import * as path from "path";
 import { createHash } from "crypto";
 import { evaluateMultiAttesterReadiness } from "./multi_attester_readiness";
 import { buildArtifactStatus, OracleSnapshot } from "./artifact_status";
-import { buildFrontierProof, StressBundle } from "./frontier_proof";
+import { buildPolicyProof, StressBundle } from "./policy_proof";
 import { buildMultiAttesterProof } from "./multi_attester_proof";
 import { loadScenarioLab } from "./scenario_lab";
 
@@ -917,7 +917,7 @@ async function commandSnapshotStatus(args: ReturnType<typeof parseArgs>) {
   console.log(JSON.stringify(flagBoolean(args.flags, "all") ? { items } : items[0], null, 2));
 }
 
-async function commandFrontierProof(args: ReturnType<typeof parseArgs>) {
+async function commandPolicyProof(args: ReturnType<typeof parseArgs>) {
   const stressPath = resolveRepoPath(flagValue(args.flags, "stress") ?? "artifacts/stress_scenario.json");
   const snapshotPath = resolveRepoPath(flagValue(args.flags, "snapshot") ?? "artifacts/oracle_state.json");
   const collateralUnits = parseFloatStrict(flagValue(args.flags, "units") ?? "100", "units");
@@ -929,7 +929,7 @@ async function commandFrontierProof(args: ReturnType<typeof parseArgs>) {
 
   console.log(
     JSON.stringify(
-      buildFrontierProof(stress, snapshot, {
+      buildPolicyProof(stress, snapshot, {
         collateralUnits,
         unitPriceUsd,
         requestedBorrowUsd,
@@ -996,7 +996,7 @@ Commands:
   multi-status [lst-id] [--round <n>]
   snapshot-status [lst-id]
   snapshot-status --all
-  frontier-proof [--stress artifacts/stress_scenario.json] [--snapshot artifacts/oracle_state.json]
+  policy-proof [--stress artifacts/stress_scenario.json] [--snapshot artifacts/oracle_state.json]
   multi-attester-proof [lst-id] [--threshold 2] [--round 1] [--ltv 0.72]
   scenario-lab [--input artifacts/stress_scenario.json]
   history [lst-id] [--days 7]
@@ -1068,8 +1068,8 @@ async function main() {
     case "snapshot-status":
       await commandSnapshotStatus(args);
       return;
-    case "frontier-proof":
-      await commandFrontierProof(args);
+    case "policy-proof":
+      await commandPolicyProof(args);
       return;
     case "multi-attester-proof":
       await commandMultiAttesterProof(args);

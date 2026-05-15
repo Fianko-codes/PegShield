@@ -41,7 +41,7 @@ PegShield now supports two update modes:
 - `update_mode = 0`: single-attester compatibility mode, where the stored `authority` key can write directly.
 - `update_mode = 1`: multi-attester mode, where bonded attesters propose and confirm updates through the registry / pending-update flow.
 
-The devnet deployment should still be treated as hackathon-stage infrastructure until the multi-attester path is operated by independent parties and the program upgrade authority is production-managed.
+The devnet deployment should still be treated as pre-production infrastructure until the multi-attester path is operated by independent parties and the program upgrade authority is production-managed.
 
 | Component | Trust assumption |
 |---|---|
@@ -76,7 +76,7 @@ No floating-point math executes on-chain; all risk fields are encoded as scaled 
 
 A lending protocol consuming the PDA **must**:
 
-1. **Check freshness.** Reject `timestamp` older than your safety window. The reference `updater/consumer_demo.ts` uses `MAX_STALENESS_SECS = 600`.
+1. **Check freshness.** Reject `timestamp` older than your safety window. The reference `updater/consumer_reference.ts` uses `MAX_STALENESS_SECS = 600`.
 2. **Verify `regime_flag`.** `CRITICAL` means the model has detected non-stationarity + extreme z-score; consider gating new loans entirely.
 3. **Do not rehydrate floats blindly.** Always divide scaled integers by the documented `SCALE = 1_000_000`; treat `suggested_ltv_bps` as basis points, not a float.
 4. **Clamp defensively.** Even if the on-chain program enforces `[MIN_LTV_BPS, MAX_LTV_BPS]`, apply your own protocol-side cap.

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { buildArtifactStatus } from "../src/artifact_status";
-import { buildFrontierProof } from "../src/frontier_proof";
+import { buildPolicyProof } from "../src/policy_proof";
 import { buildMultiAttesterProof } from "../src/multi_attester_proof";
 import { buildScenarioLab } from "../src/scenario_lab";
 import { evaluateMultiAttesterReadiness } from "../src/multi_attester_readiness";
@@ -108,7 +108,7 @@ console.log("multi-attester readiness tests passed");
 console.log("artifact status tests passed");
 
 {
-  const proof = buildFrontierProof(
+  const proof = buildPolicyProof(
     {
       replay: { title: "stETH/ETH June 2022 depeg" },
       points: [
@@ -152,13 +152,13 @@ console.log("artifact status tests passed");
     },
   );
 
-  assert.equal(proof.borrow_gate_demo.static_policy_decision, "ALLOW");
-  assert.equal(proof.borrow_gate_demo.pegshield_policy_decision, "REJECT");
+  assert.equal(proof.borrow_gate_proof.static_policy_decision, "ALLOW");
+  assert.equal(proof.borrow_gate_proof.pegshield_policy_decision, "REJECT");
   assert.equal(proof.stress_replay_proof.first_critical_signal?.timestamp, "2022-06-09T00:00:00+00:00");
-  assert.ok(proof.winner_framing.one_sentence_submission.includes("collateral-circuit-breaker"));
+  assert.ok(proof.protocol_status.one_sentence_summary.includes("collateral-circuit-breaker"));
 }
 
-console.log("frontier proof tests passed");
+console.log("policy proof tests passed");
 
 {
   const proof = buildMultiAttesterProof({

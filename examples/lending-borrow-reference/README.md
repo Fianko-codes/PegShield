@@ -1,4 +1,4 @@
-# Lending Borrow Demo
+# Lending Borrow Reference
 
 Reference consumer for PegShield. This simulates how a lending protocol would turn the on-chain oracle state into a borrow decision for LST collateral.
 

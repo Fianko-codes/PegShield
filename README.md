@@ -14,14 +14,14 @@ PegShield does not answer "what is this token worth?" It answers **"should a len
 >
 > PegShield continuously measures **peg risk**, calibrates a statistical model over that signal, and publishes a live on-chain **suggested LTV** that a lending protocol can enforce immediately.
 
-Solana LSTs represent multi-billion dollars of on-chain collateral today, and every dollar of it is still gated by static, governance-set LTV tables. PegShield replaces those tables with live, bonded, slashable risk state. Market, revenue model, and competitive positioning are in [`SUBMISSION.md`](./SUBMISSION.md#business-case).
+Solana LSTs represent multi-billion dollars of on-chain collateral today, and every dollar of it is still gated by static, governance-set LTV tables. PegShield replaces those tables with live, bonded, slashable risk state that can be enforced directly in lending markets.
 
-## Frontier Judge Proof
+## Borrow Policy Proof
 
 The fastest way to understand PegShield is not another oracle read. It is the borrow gate:
 
 ```bash
-make frontier-proof
+make policy-proof
 ```
 
 That command prints a deterministic proof from committed artifacts:
@@ -102,38 +102,38 @@ The program ships with a full multi-attester path (`AttesterRegistry`, `PendingU
 | Source-quality guardrails | LTV haircuts for fallback history, fallback reference rates, missing liquidity depth, and wide Pyth confidence |
 | Operator surface | unified `pegshield` CLI for init / read / propose / confirm / dispute flows |
 | Consumer surface | `@pegshield/sdk` with `fetchRiskState`, `isStale`, `isCritical`, `safeLtv` |
-| On-chain integration proof | PegShield Gate Anchor program that reads PegShield and records policy-driven borrow decisions |
+| On-chain integration | PegShield Gate Anchor program that reads PegShield and records policy-driven borrow decisions |
 | CI loop | scheduled GitHub Actions updater |
 | Historical proof | replay of June 2022 `stETH/ETH` depeg |
 | Scenario breadth | 1 historical + 8 synthetic / scenario-lab stress paths |
 
-## Fastest Evaluation Path
+## Fastest Verification Path
 
 Under five minutes:
 
 | Step | Command | What it proves |
 |---|---|---|
-| 1 | `make frontier-proof` | static LTV allows a borrow that PegShield rejects under stress |
-| 2 | `make multi-attester-demo` | 2-of-3 bonded attesters finalize an update into the same consumer PDA |
+| 1 | `make policy-proof` | static LTV allows a borrow that PegShield rejects under stress |
+| 2 | `make attester-proof` | 2-of-3 bonded attesters finalize an update into the same consumer PDA |
 | 3 | `make scenario-lab` | all historical/synthetic stress scenarios summarized in one table |
-| 4 | `make verify-offline` | tests, SDK, CLI build, Rust compile, demo wiring, artifact presence |
-| 5 | `./demo.sh --dry-run` | the operational flow is coherent |
+| 4 | `make verify-offline` | tests, SDK, CLI build, Rust compile, oracle-cycle wiring, artifact presence |
+| 5 | `make cycle-dry-run` | the operational flow is coherent |
 | 6 | `npm --prefix cli run start -- read mSOL-v2` | operator CLI reads the live devnet PDA |
 | 7 | `.venv/bin/python simulation/stress_test.py` | historical stress replay is reproducible |
-| 8 | `cd examples/lending-borrow-demo && npm install && npm run start:snapshot -- 100 1814.63 stETH` | a lender consumes the risk state without live RPC |
+| 8 | `cd examples/lending-borrow-reference && npm install && npm run start:snapshot -- 100 1814.63 stETH` | a lender consumes the risk state without live RPC |
 
-To refresh all committed judge artifacts from checked-in bridge caches:
+To refresh all committed protocol artifacts from checked-in bridge caches:
 
 ```bash
 make artifacts
 ```
 
-Judge-facing walkthrough: [`SUBMISSION.md`](./SUBMISSION.md). Deployment steps: [`DEPLOY.md`](./DEPLOY.md).
+Deployment steps: [`DEPLOY.md`](./DEPLOY.md).
 
-## One-Command Demo
+## Operator Cycle
 
 ```bash
-./demo.sh
+./scripts/run_oracle_cycle.sh
 ```
 
 Runs: engine tests → live bridge fetch → statistical engine → devnet submit → SDK read → June 2022 stETH replay → artifact refresh. Use `--dry-run` to verify wiring without touching devnet.
@@ -158,11 +158,11 @@ Consumers are expected to fall back conservatively on staleness or critical regi
 | [`solana-program/`](./solana-program) | Anchor programs for `RiskState`, multi-attester registry, and PegShield Gate borrow enforcement |
 | [`bridge/`](./bridge) | fetches Pyth prices and reference rates, writes peg-deviation series |
 | [`core-engine/`](./core-engine) | OU calibration, ADF regime detection, LTV mapping |
-| [`updater/`](./updater) | initialize / submit / read / close / consumer demo scripts |
+| [`updater/`](./updater) | initialize / submit / read / close / consumer reference scripts |
 | [`cli/`](./cli) | unified `pegshield` operator CLI |
 | [`sdk/`](./sdk) | typed TS client for integrators |
 | [`simulation/`](./simulation) | historical and synthetic stress replays |
-| [`examples/lending-borrow-demo/`](./examples/lending-borrow-demo) | runnable external consumer |
+| [`examples/lending-borrow-reference/`](./examples/lending-borrow-reference) | runnable external consumer |
 | [`artifacts/`](./artifacts) | committed oracle snapshots, bridge caches, scenario bundle |
 | [`docs/`](./docs) | architecture, integration, and multi-attester design |
 | [`tests/`](./tests) | engine micro-tests |
@@ -189,7 +189,7 @@ The repo carries both a **real** historical replay (June 2022 `stETH/ETH`) and s
 
 Writes `simulation/charts/stress_scenario.{csv,png,meta.json}`.
 
-For a judge-readable summary across every scenario:
+For a protocol-readable summary across every scenario:
 
 ```bash
 make scenario-lab
@@ -214,7 +214,7 @@ make scenario-lab
 
 - devnet only
 - independent production attester set is not yet live
-- no production lender integration yet; current proof is the reusable integration path
+- no production lender integration yet; current reference implementation is the reusable integration path
 - no operational alerting or mainnet deployment process yet
 
 ## Local Setup
@@ -242,9 +242,7 @@ Copy `.env.example` to `.env` and fill in `SOLANA_RPC_URL`, `PROGRAM_ID`, `UPDAT
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system design, data contracts, failure modes
 - [`docs/INTEGRATION.md`](./docs/INTEGRATION.md) — lender integration path
 - [`docs/MULTI_ATTESTER.md`](./docs/MULTI_ATTESTER.md) — decentralization design
-- [`docs/frontier-submission.html`](./docs/frontier-submission.html) — copy-paste Frontier submission artifact
 - [`solana-program/programs/mock-lender/README.md`](./solana-program/programs/mock-lender/README.md) — PegShield Gate borrow-policy module
-- [`SUBMISSION.md`](./SUBMISSION.md) — judge-facing proof path
 - [`DEPLOY.md`](./DEPLOY.md) — deployment and upgrade runbook
 - [`SECURITY.md`](./SECURITY.md) — trust model and disclosure process
 - [`sdk/README.md`](./sdk/README.md) — SDK API reference

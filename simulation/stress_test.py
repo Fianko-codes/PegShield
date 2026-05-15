@@ -2,7 +2,7 @@
 
 The default path is a bundled historical replay (June 2022 stETH/ETH depeg).
 The older synthetic mSOL/SOL stress generator is retained as a fallback mode so
-the demo can still run offline from the current bridge baseline when needed.
+the stress suite can still run offline from the current bridge baseline when needed.
 """
 
 from __future__ import annotations
@@ -614,7 +614,7 @@ def build_simulation_bundle(
             "highlights": [
                 "Targets the exact feedback loop a collateral risk oracle is supposed to break.",
                 "Peak loss prevented rises during the cascading leg, not after the market finally settles.",
-                "Useful for demoing that the oracle reacts to path-dependence, not just terminal drawdown.",
+                "Useful for verifying that the oracle reacts to path-dependence, not just terminal drawdown.",
             ],
         },
         {
