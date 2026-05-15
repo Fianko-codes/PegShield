@@ -43,5 +43,5 @@ jobs:
           npm --prefix sdk ci
           npm --prefix cli ci
 
-      - name: Verify offline submission path
-        run: ./scripts/validate_submission.sh
+      - name: Verify offline protocol path
+        run: ./scripts/validate_protocol.sh
