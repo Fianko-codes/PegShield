@@ -50,47 +50,86 @@ def style_axes(ax: plt.Axes) -> None:
     ax.grid(True, axis="y", color=GRID, linewidth=0.8)
 
 
+def _flow_box(ax, cx, cy, w, h, title, subtitle, color):
+    """Draw a rounded box centred at (cx, cy) with a bold title and muted subtitle.
+
+    Coordinates are in data units; the axes use aspect='equal' so a data unit is
+    the same length on both axes and text/box geometry is predictable.
+    """
+    patch = FancyBboxPatch(
+        (cx - w / 2, cy - h / 2),
+        w,
+        h,
+        boxstyle="round,pad=0.04,rounding_size=0.10",
+        linewidth=1.6,
+        edgecolor=color,
+        facecolor="#FFFFFF",
+        mutation_aspect=1.0,
+    )
+    ax.add_patch(patch)
+    if subtitle:
+        ax.text(cx, cy + 0.20, title, ha="center", va="center",
+                fontsize=9.5, fontweight="bold", color=color)
+        ax.text(cx, cy - 0.30, subtitle, ha="center", va="center",
+                fontsize=7.6, color=MUTED, linespacing=1.15)
+    else:
+        ax.text(cx, cy, title, ha="center", va="center",
+                fontsize=9.5, fontweight="bold", color=color)
+
+
+def _flow_arrow(ax, start, end, color=INK):
+    ax.add_patch(FancyArrowPatch(
+        start, end,
+        arrowstyle="-|>", mutation_scale=18,
+        linewidth=2.0, color=color,
+        shrinkA=2, shrinkB=2,
+    ))
+
+
 def figure_architecture() -> None:
-    fig, ax = plt.subplots(figsize=(9.5, 3.4))
+    # Data-unit canvas; figsize matches the xlim:ylim ratio so aspect='equal'
+    # leaves no distortion and box geometry is exactly as specified.
+    fig, ax = plt.subplots(figsize=(10.0, 4.2))
     ax.set_axis_off()
+    ax.set_aspect("equal")
+    ax.set_xlim(0, 20.0)
+    ax.set_ylim(0, 8.4)
 
-    boxes = [
-        ("Pyth Hermes\nLST/SOL prices", 0.04, 0.55, BLUE),
-        ("Reference rates\nMarinade/Jito/SolBlaze", 0.04, 0.17, TEAL),
-        ("Bridge\npeg deviation", 0.25, 0.36, INK),
-        ("Core engine\nOU + ADF + haircuts", 0.45, 0.36, INK),
-        ("Updater / attesters\nfixed-point payload", 0.66, 0.36, INK),
-        ("RiskState PDA\nsuggested LTV + regime", 0.86, 0.36, RED),
+    W, H = 3.4, 1.9
+    mid = 4.7  # middle-row y for the linear pipeline
+
+    # Two input sources (left), stacked. Titles are single-line to avoid
+    # colliding with the subtitle.
+    _flow_box(ax, 2.1, 6.4, W, H, "Pyth Hermes", "LST and SOL\nmarket prices", BLUE)
+    _flow_box(ax, 2.1, 2.6, W, H, "Reference rates", "Marinade · Jito\n· SolBlaze", TEAL)
+
+    # Linear processing pipeline.
+    pipeline = [
+        (6.4, "Bridge", "peg\ndeviation", INK),
+        (10.0, "Core engine", "OU · ADF\n· haircuts", INK),
+        (13.6, "Updater", "attester path ·\nfixed-point", INK),
+        (17.2, "RiskState PDA", "suggested LTV\n+ regime", RED),
     ]
+    for cx, title, subtitle, color in pipeline:
+        _flow_box(ax, cx, mid, W, H, title, subtitle, color)
 
-    for label, x, y, color in boxes:
-        patch = FancyBboxPatch(
-            (x, y),
-            0.14,
-            0.22,
-            boxstyle="round,pad=0.012,rounding_size=0.02",
-            linewidth=1.2,
-            edgecolor=color,
-            facecolor="#F9FAFB",
-        )
-        ax.add_patch(patch)
-        ax.text(x + 0.07, y + 0.11, label, ha="center", va="center", fontsize=8.5, color=INK)
+    # Inputs merge into the bridge (distinct landing points, not the same spot).
+    bridge_left = 6.4 - W / 2
+    _flow_arrow(ax, (2.1 + W / 2, 6.4), (bridge_left, mid + 0.55))
+    _flow_arrow(ax, (2.1 + W / 2, 2.6), (bridge_left, mid - 0.55))
 
-    arrows = [
-        ((0.18, 0.66), (0.25, 0.47)),
-        ((0.18, 0.28), (0.25, 0.47)),
-        ((0.39, 0.47), (0.45, 0.47)),
-        ((0.59, 0.47), (0.66, 0.47)),
-        ((0.80, 0.47), (0.86, 0.47)),
-    ]
-    for start, end in arrows:
-        ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|>", mutation_scale=12, color=MUTED, linewidth=1.2))
+    # Pipeline arrows.
+    centers = [6.4, 10.0, 13.6, 17.2]
+    for left, right in zip(centers[:-1], centers[1:], strict=True):
+        _flow_arrow(ax, (left + W / 2, mid), (right - W / 2, mid))
 
-    ax.text(0.93, 0.22, "Lending protocols\nread + clamp", ha="center", va="center", fontsize=8.5, color=INK)
-    ax.add_patch(FancyArrowPatch((0.93, 0.36), (0.93, 0.27), arrowstyle="-|>", mutation_scale=12, color=MUTED))
-    ax.set_xlim(0, 1.04)
-    ax.set_ylim(0.05, 0.85)
+    # Down to consumers.
+    _flow_box(ax, 17.2, 1.5, W, H, "Lenders", "read · clamp\n· fall back", AMBER)
+    _flow_arrow(ax, (17.2, mid - H / 2), (17.2, 1.5 + H / 2))
+
     save(fig, "system_architecture")
+
+
 
 
 def figure_steth_ltv() -> None:
@@ -149,35 +188,38 @@ def figure_shortfall() -> None:
 
 
 def figure_attester_cycle() -> None:
-    fig, ax = plt.subplots(figsize=(8.6, 2.9))
+    # Full-width single row (rendered as a figure* in the paper). Equal aspect so
+    # the six boxes and connecting arrows keep their proportions.
+    fig, ax = plt.subplots(figsize=(9.6, 3.0))
     ax.set_axis_off()
+    ax.set_aspect("equal")
+    ax.set_xlim(0, 19.2)
+    ax.set_ylim(0, 6.0)
+
     steps = [
-        ("Registry\nthreshold + bond", BLUE),
-        ("Register\nbonded attesters", TEAL),
-        ("Propose\nround payload", AMBER),
-        ("Confirm\nunique signer bitmap", AMBER),
-        ("Finalize\nRiskState PDA", RED),
-        ("Dispute\nslashable evidence", INK),
+        ("Registry", "threshold\n+ bond", BLUE),
+        ("Register", "bonded\nattesters", TEAL),
+        ("Propose", "round\npayload", AMBER),
+        ("Confirm", "signer\nbitmap", AMBER),
+        ("Finalize", "RiskState\nPDA", RED),
+        ("Dispute", "slashable\nevidence", INK),
     ]
-    xs = [0.05, 0.22, 0.39, 0.56, 0.73, 0.90]
-    for (label, color), x in zip(steps, xs, strict=True):
-        patch = FancyBboxPatch(
-            (x - 0.065, 0.38),
-            0.13,
-            0.25,
-            boxstyle="round,pad=0.012,rounding_size=0.025",
-            linewidth=1.2,
-            edgecolor=color,
-            facecolor="#F9FAFB",
-        )
-        ax.add_patch(patch)
-        ax.text(x, 0.505, label, ha="center", va="center", fontsize=8.2, color=INK)
-    for left, right in zip(xs[:-1], xs[1:], strict=True):
-        ax.add_patch(FancyArrowPatch((left + 0.07, 0.505), (right - 0.075, 0.505), arrowstyle="-|>", mutation_scale=12, color=MUTED))
-    ax.text(0.5, 0.18, "Consumers continue to read the same RiskState PDA; only the write trust model changes.", ha="center", fontsize=8.6, color=MUTED)
-    ax.set_xlim(-0.02, 1.02)
-    ax.set_ylim(0.05, 0.78)
+    W, H = 2.5, 2.0
+    cy = 4.0
+    centers = [1.65 + i * 3.18 for i in range(len(steps))]
+    for (title, subtitle, color), cx in zip(steps, centers, strict=True):
+        _flow_box(ax, cx, cy, W, H, title, subtitle, color)
+    for left, right in zip(centers[:-1], centers[1:], strict=True):
+        _flow_arrow(ax, (left + W / 2, cy), (right - W / 2, cy))
+
+    ax.text(
+        centers[0] - W / 2,
+        1.35,
+        "Consumers continue to read the same RiskState PDA; only the write trust model changes.",
+        ha="left", va="center", fontsize=8.4, color=MUTED, style="italic",
+    )
     save(fig, "attester_cycle")
+
 
 
 def main() -> None:

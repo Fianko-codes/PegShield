@@ -1,0 +1,523 @@
+%apsrev4-2.bst 2019-01-14 (MD) hand-edited version of apsrev4-1.bst
+%Control: key (0)
+%Control: author (8) initials jnrlst
+%Control: editor formatted (1) identically to author
+%Control: production of article title (0) allowed
+%Control: page (0) single
+%Control: year (1) truncated
+%Control: production of eprint (0) enabled
+\begin{thebibliography}{46}%
+\makeatletter
+\providecommand \@ifxundefined [1]{%
+ \@ifx{#1\undefined}
+}%
+\providecommand \@ifnum [1]{%
+ \ifnum #1\expandafter \@firstoftwo
+ \else \expandafter \@secondoftwo
+ \fi
+}%
+\providecommand \@ifx [1]{%
+ \ifx #1\expandafter \@firstoftwo
+ \else \expandafter \@secondoftwo
+ \fi
+}%
+\providecommand \natexlab [1]{#1}%
+\providecommand \enquote  [1]{``#1''}%
+\providecommand \bibnamefont  [1]{#1}%
+\providecommand \bibfnamefont [1]{#1}%
+\providecommand \citenamefont [1]{#1}%
+\providecommand \href@noop [0]{\@secondoftwo}%
+\providecommand \href [0]{\begingroup \@sanitize@url \@href}%
+\providecommand \@href[1]{\@@startlink{#1}\@@href}%
+\providecommand \@@href[1]{\endgroup#1\@@endlink}%
+\providecommand \@sanitize@url [0]{\catcode `\\12\catcode `\$12\catcode
+  `\&12\catcode `\#12\catcode `\^12\catcode `\_12\catcode `\%12\relax}%
+\providecommand \@@startlink[1]{}%
+\providecommand \@@endlink[0]{}%
+\providecommand \url  [0]{\begingroup\@sanitize@url \@url }%
+\providecommand \@url [1]{\endgroup\@href {#1}{\urlprefix }}%
+\providecommand \urlprefix  [0]{URL }%
+\providecommand \Eprint [0]{\href }%
+\providecommand \doibase [0]{https://doi.org/}%
+\providecommand \selectlanguage [0]{\@gobble}%
+\providecommand \bibinfo  [0]{\@secondoftwo}%
+\providecommand \bibfield  [0]{\@secondoftwo}%
+\providecommand \translation [1]{[#1]}%
+\providecommand \BibitemOpen [0]{}%
+\providecommand \bibitemStop [0]{}%
+\providecommand \bibitemNoStop [0]{.\EOS\space}%
+\providecommand \EOS [0]{\spacefactor3000\relax}%
+\providecommand \BibitemShut  [1]{\csname bibitem#1\endcsname}%
+\let\auto@bib@innerbib\@empty
+%</preamble>
+\bibitem [{\citenamefont {Yakovenko}(2018)}]{yakovenko2018solana}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Yakovenko}},\ }\href@noop {} {\bibinfo {title} {Solana: A new architecture
+  for a high performance blockchain}},\ \bibinfo {howpublished} {Solana Labs
+  Whitepaper} (\bibinfo {year} {2018}),\ \bibinfo {note}
+  {\url{https://solana.com/solana-whitepaper.pdf}. Accessed
+  2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Marinade Finance}}(2026)}]{marinade_msol}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Marinade Finance}}},\
+  }\href@noop {} {\bibinfo {title} {What is {mSOL}?}},\ \bibinfo {howpublished}
+  {\url{https://docs.marinade.finance/}} (\bibinfo {year} {2026}),\ \bibinfo
+  {note} {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Jito Foundation}}(2026)}]{jito_jitosol}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Jito Foundation}}},\
+  }\href@noop {} {\bibinfo {title} {{JitoSOL} liquid staking}},\ \bibinfo
+  {howpublished}
+  {\url{https://www.jito.network/docs/jitosol/jitosol-liquid-staking/}}
+  (\bibinfo {year} {2026}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {{SolBlaze}}(2026)}]{solblaze_bsol}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{SolBlaze}}},\
+  }\href@noop {} {\bibinfo {title} {{BlazeStake} liquid staking ({bSOL})}},\
+  \bibinfo {howpublished} {\url{https://stake-docs.solblaze.org/}} (\bibinfo
+  {year} {2026}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{DeFiLlama}}(2026)}]{defillama_lst}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{DeFiLlama}}},\
+  }\href@noop {} {\bibinfo {title} {Liquid staking total value locked}},\
+  \bibinfo {howpublished} {\url{https://defillama.com/lsd}} (\bibinfo {year}
+  {2026}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Lido Finance}}(2022)}]{lido_steth_2022}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Lido Finance}}},\
+  }\href@noop {} {\bibinfo {title} {The {stETH}/{ETH} secondary-market discount
+  of june 2022}},\ \bibinfo {howpublished} {\url{https://blog.lido.fi/}}
+  (\bibinfo {year} {2022}),\ \bibinfo {note} {context on the June 2022 stETH
+  discount during the Celsius/3AC deleveraging. Accessed
+  2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Aave Labs}}(2026)}]{aave2024docs}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Aave Labs}}},\
+  }\href@noop {} {\bibinfo {title} {{Aave} protocol documentation:
+  Liquidations, loan-to-value and health factor}},\ \bibinfo {howpublished}
+  {\url{https://aave.com/docs}} (\bibinfo {year} {2026}),\ \bibinfo {note}
+  {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Leshner}\ and\ \citenamefont
+  {Hayes}(2019)}]{compound2019whitepaper}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {R.}~\bibnamefont
+  {Leshner}}\ and\ \bibinfo {author} {\bibfnamefont {G.}~\bibnamefont
+  {Hayes}},\ }\href@noop {} {\bibinfo {title} {Compound: The money market
+  protocol}},\ \bibinfo {howpublished}
+  {\url{https://compound.finance/documents/Compound.Whitepaper.pdf}} (\bibinfo
+  {year} {2019}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Maker Team}}(2020)}]{makerdao_whitepaper}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Maker Team}}},\
+  }\href@noop {} {\bibinfo {title} {The {Maker} protocol: {MakerDAO}'s
+  multi-collateral {Dai} ({MCD}) system}},\ \bibinfo {howpublished}
+  {\url{https://makerdao.com/whitepaper/}} (\bibinfo {year} {2020}),\ \bibinfo
+  {note} {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Qin}\ \emph {et~al.}(2021{\natexlab{a}})\citenamefont
+  {Qin}, \citenamefont {Zhou}, \citenamefont {Gamito}, \citenamefont
+  {Jovanovic},\ and\ \citenamefont {Gervais}}]{qin2021empirical}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {K.}~\bibnamefont
+  {Qin}}, \bibinfo {author} {\bibfnamefont {L.}~\bibnamefont {Zhou}}, \bibinfo
+  {author} {\bibfnamefont {P.}~\bibnamefont {Gamito}}, \bibinfo {author}
+  {\bibfnamefont {P.}~\bibnamefont {Jovanovic}},\ and\ \bibinfo {author}
+  {\bibfnamefont {A.}~\bibnamefont {Gervais}},\ }\bibfield  {title} {\bibinfo
+  {title} {An empirical study of {DeFi} liquidations: Incentives, risks, and
+  instabilities},\ }in\ \href {https://doi.org/10.1145/3487552.3487811} {\emph
+  {\bibinfo {booktitle} {Proceedings of the 21st ACM Internet Measurement
+  Conference (IMC '21)}}}\ (\bibinfo  {publisher} {ACM},\ \bibinfo {year}
+  {2021})\ pp.\ \bibinfo {pages} {336--350}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Perez}\ \emph {et~al.}(2021)\citenamefont {Perez},
+  \citenamefont {Werner}, \citenamefont {Xu},\ and\ \citenamefont
+  {Livshits}}]{perez2021knifeedge}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {D.}~\bibnamefont
+  {Perez}}, \bibinfo {author} {\bibfnamefont {S.~M.}\ \bibnamefont {Werner}},
+  \bibinfo {author} {\bibfnamefont {J.}~\bibnamefont {Xu}},\ and\ \bibinfo
+  {author} {\bibfnamefont {B.}~\bibnamefont {Livshits}},\ }\bibfield  {title}
+  {\bibinfo {title} {Liquidations: {DeFi} on a knife-edge},\ }in\ \href@noop {}
+  {\emph {\bibinfo {booktitle} {Financial Cryptography and Data Security (FC
+  2021)}}},\ \bibinfo {series} {Lecture Notes in Computer Science}, Vol.\
+  \bibinfo {volume} {12675}\ (\bibinfo  {publisher} {Springer},\ \bibinfo
+  {year} {2021})\ pp.\ \bibinfo {pages} {457--476}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Gudgeon}\ \emph
+  {et~al.}(2020{\natexlab{a}})\citenamefont {Gudgeon}, \citenamefont {Perez},
+  \citenamefont {Harz}, \citenamefont {Livshits},\ and\ \citenamefont
+  {Gervais}}]{gudgeon2020crisis}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {L.}~\bibnamefont
+  {Gudgeon}}, \bibinfo {author} {\bibfnamefont {D.}~\bibnamefont {Perez}},
+  \bibinfo {author} {\bibfnamefont {D.}~\bibnamefont {Harz}}, \bibinfo {author}
+  {\bibfnamefont {B.}~\bibnamefont {Livshits}},\ and\ \bibinfo {author}
+  {\bibfnamefont {A.}~\bibnamefont {Gervais}},\ }\bibfield  {title} {\bibinfo
+  {title} {The decentralized financial crisis},\ }in\ \href@noop {} {\emph
+  {\bibinfo {booktitle} {2020 Crypto Valley Conference on Blockchain Technology
+  (CVCBT)}}}\ (\bibinfo  {publisher} {IEEE},\ \bibinfo {year} {2020})\ pp.\
+  \bibinfo {pages} {1--15}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Warmuz}\ \emph {et~al.}(2022)\citenamefont {Warmuz},
+  \citenamefont {Chaudhary},\ and\ \citenamefont {Pinna}}]{warmuz2022toxic}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {J.}~\bibnamefont
+  {Warmuz}}, \bibinfo {author} {\bibfnamefont {A.}~\bibnamefont {Chaudhary}},\
+  and\ \bibinfo {author} {\bibfnamefont {D.}~\bibnamefont {Pinna}},\ }\href
+  {https://doi.org/10.48550/arXiv.2212.07306} {\bibinfo {title} {Toxic
+  liquidation spirals}},\ \bibinfo {howpublished} {arXiv preprint
+  arXiv:2212.07306} (\bibinfo {year} {2022})\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Breidenbach}\ \emph {et~al.}(2021)\citenamefont
+  {Breidenbach}, \citenamefont {Cachin}, \citenamefont {Chan}, \citenamefont
+  {Coventry}, \citenamefont {Ellis}, \citenamefont {Juels}, \citenamefont
+  {Koushanfar}, \citenamefont {Miller}, \citenamefont {Magauran}, \citenamefont
+  {Moroz}, \citenamefont {Nazarov}, \citenamefont {Topliceanu}, \citenamefont
+  {Tram{\`e}r},\ and\ \citenamefont {Zhang}}]{breidenbach2021chainlink}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {L.}~\bibnamefont
+  {Breidenbach}}, \bibinfo {author} {\bibfnamefont {C.}~\bibnamefont {Cachin}},
+  \bibinfo {author} {\bibfnamefont {B.}~\bibnamefont {Chan}}, \bibinfo {author}
+  {\bibfnamefont {A.}~\bibnamefont {Coventry}}, \bibinfo {author}
+  {\bibfnamefont {S.}~\bibnamefont {Ellis}}, \bibinfo {author} {\bibfnamefont
+  {A.}~\bibnamefont {Juels}}, \bibinfo {author} {\bibfnamefont
+  {F.}~\bibnamefont {Koushanfar}}, \bibinfo {author} {\bibfnamefont
+  {A.}~\bibnamefont {Miller}}, \bibinfo {author} {\bibfnamefont
+  {B.}~\bibnamefont {Magauran}}, \bibinfo {author} {\bibfnamefont
+  {D.}~\bibnamefont {Moroz}}, \bibinfo {author} {\bibfnamefont
+  {S.}~\bibnamefont {Nazarov}}, \bibinfo {author} {\bibfnamefont
+  {A.}~\bibnamefont {Topliceanu}}, \bibinfo {author} {\bibfnamefont
+  {F.}~\bibnamefont {Tram{\`e}r}},\ and\ \bibinfo {author} {\bibfnamefont
+  {F.}~\bibnamefont {Zhang}},\ }\href@noop {} {\emph {\bibinfo {title}
+  {Chainlink 2.0: Next Steps in the Evolution of Decentralized Oracle
+  Networks}}},\ \bibinfo {type} {Whitepaper}\ (\bibinfo  {institution}
+  {Chainlink Labs},\ \bibinfo {year} {2021})\ \bibinfo {note}
+  {\url{https://research.chain.link/whitepaper-v2.pdf}}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Pyth Data Association}}(2022)}]{pyth2022whitepaper}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Pyth Data
+  Association}}},\ }\href@noop {} {\emph {\bibinfo {title} {Pyth Network: A
+  First-Party Financial Oracle}}},\ \bibinfo {type} {Whitepaper}\ (\bibinfo
+  {institution} {Pyth Data Association},\ \bibinfo {year} {2022})\ \bibinfo
+  {note} {\url{https://pyth.network/whitepaper.pdf}}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Adams}\ \emph {et~al.}(2021)\citenamefont {Adams},
+  \citenamefont {Zinsmeister}, \citenamefont {Salem}, \citenamefont {Keefer},\
+  and\ \citenamefont {Robinson}}]{adams2021uniswapv3}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {H.}~\bibnamefont
+  {Adams}}, \bibinfo {author} {\bibfnamefont {N.}~\bibnamefont {Zinsmeister}},
+  \bibinfo {author} {\bibfnamefont {M.}~\bibnamefont {Salem}}, \bibinfo
+  {author} {\bibfnamefont {R.}~\bibnamefont {Keefer}},\ and\ \bibinfo {author}
+  {\bibfnamefont {D.}~\bibnamefont {Robinson}},\ }\href@noop {} {\emph
+  {\bibinfo {title} {Uniswap v3 Core}}},\ \bibinfo {type} {Whitepaper}\
+  (\bibinfo  {institution} {Uniswap Labs},\ \bibinfo {year} {2021})\ \bibinfo
+  {note} {\url{https://uniswap.org/whitepaper-v3.pdf}}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{MakerDAO}}(2023)}]{makerdao_oracle_module}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{MakerDAO}}},\
+  }\href@noop {} {\bibinfo {title} {Oracle module: Oracle security module
+  ({OSM}) and medianizer}},\ \bibinfo {howpublished}
+  {\url{https://docs.makerdao.com/smart-contract-modules/oracle-module}}
+  (\bibinfo {year} {2023}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Eskandari}\ \emph {et~al.}(2021)\citenamefont
+  {Eskandari}, \citenamefont {Salehi}, \citenamefont {Gu},\ and\ \citenamefont
+  {Clark}}]{eskandari2021sok}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.}~\bibnamefont
+  {Eskandari}}, \bibinfo {author} {\bibfnamefont {M.}~\bibnamefont {Salehi}},
+  \bibinfo {author} {\bibfnamefont {W.~C.}\ \bibnamefont {Gu}},\ and\ \bibinfo
+  {author} {\bibfnamefont {J.}~\bibnamefont {Clark}},\ }\bibfield  {title}
+  {\bibinfo {title} {{SoK}: Oracles from the ground truth to market
+  manipulation},\ }in\ \href {https://doi.org/10.1145/3479722.3480994} {\emph
+  {\bibinfo {booktitle} {Proceedings of the 3rd ACM Conference on Advances in
+  Financial Technologies (AFT '21)}}}\ (\bibinfo  {publisher} {ACM},\ \bibinfo
+  {year} {2021})\ pp.\ \bibinfo {pages} {127--141}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Zhou}\ \emph {et~al.}(2023)\citenamefont {Zhou},
+  \citenamefont {Xiong}, \citenamefont {Ernstberger}, \citenamefont
+  {Chaliasos}, \citenamefont {Wang}, \citenamefont {Wang}, \citenamefont {Qin},
+  \citenamefont {Wattenhofer}, \citenamefont {Song},\ and\ \citenamefont
+  {Gervais}}]{zhou2023sok}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {L.}~\bibnamefont
+  {Zhou}}, \bibinfo {author} {\bibfnamefont {X.}~\bibnamefont {Xiong}},
+  \bibinfo {author} {\bibfnamefont {J.}~\bibnamefont {Ernstberger}}, \bibinfo
+  {author} {\bibfnamefont {S.}~\bibnamefont {Chaliasos}}, \bibinfo {author}
+  {\bibfnamefont {Z.}~\bibnamefont {Wang}}, \bibinfo {author} {\bibfnamefont
+  {Y.}~\bibnamefont {Wang}}, \bibinfo {author} {\bibfnamefont {K.}~\bibnamefont
+  {Qin}}, \bibinfo {author} {\bibfnamefont {R.}~\bibnamefont {Wattenhofer}},
+  \bibinfo {author} {\bibfnamefont {D.}~\bibnamefont {Song}},\ and\ \bibinfo
+  {author} {\bibfnamefont {A.}~\bibnamefont {Gervais}},\ }\bibfield  {title}
+  {\bibinfo {title} {{SoK}: Decentralized finance ({DeFi}) attacks},\ }in\
+  \href {https://doi.org/10.1109/SP46215.2023.10179435} {\emph {\bibinfo
+  {booktitle} {2023 IEEE Symposium on Security and Privacy (SP)}}}\ (\bibinfo
+  {publisher} {IEEE},\ \bibinfo {year} {2023})\ pp.\ \bibinfo {pages}
+  {2444--2461}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Daian}\ \emph {et~al.}(2020)\citenamefont {Daian},
+  \citenamefont {Goldfeder}, \citenamefont {Kell}, \citenamefont {Li},
+  \citenamefont {Zhao}, \citenamefont {Bentov}, \citenamefont {Breidenbach},\
+  and\ \citenamefont {Juels}}]{daian2020flashboys}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {P.}~\bibnamefont
+  {Daian}}, \bibinfo {author} {\bibfnamefont {S.}~\bibnamefont {Goldfeder}},
+  \bibinfo {author} {\bibfnamefont {T.}~\bibnamefont {Kell}}, \bibinfo {author}
+  {\bibfnamefont {Y.}~\bibnamefont {Li}}, \bibinfo {author} {\bibfnamefont
+  {X.}~\bibnamefont {Zhao}}, \bibinfo {author} {\bibfnamefont {I.}~\bibnamefont
+  {Bentov}}, \bibinfo {author} {\bibfnamefont {L.}~\bibnamefont
+  {Breidenbach}},\ and\ \bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Juels}},\ }\bibfield  {title} {\bibinfo {title} {Flash boys 2.0:
+  Frontrunning, transaction reordering, and consensus instability in
+  decentralized exchanges},\ }in\ \href
+  {https://doi.org/10.1109/SP40000.2020.00040} {\emph {\bibinfo {booktitle}
+  {2020 IEEE Symposium on Security and Privacy (SP)}}}\ (\bibinfo  {publisher}
+  {IEEE},\ \bibinfo {year} {2020})\ pp.\ \bibinfo {pages}
+  {910--927}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{rekt.news}}(2022)}]{rekt_mango_2022}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{rekt.news}}},\
+  }\href@noop {} {\bibinfo {title} {Mango markets --- {REKT}}},\ \bibinfo
+  {howpublished} {\url{https://rekt.news/mango-markets-rekt/}} (\bibinfo {year}
+  {2022}),\ \bibinfo {note} {post-mortem of the October 2022 Mango Markets
+  oracle-price-manipulation exploit. Accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Beniiche}(2020)}]{beniiche2020study}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Beniiche}},\ }\href@noop {} {\bibinfo {title} {A study of blockchain
+  oracles}},\ \bibinfo {howpublished} {arXiv preprint arXiv:2004.07140}
+  (\bibinfo {year} {2020}),\ \bibinfo {note}
+  {\url{https://arxiv.org/abs/2004.07140}}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Pyth Network}}(2026)}]{pyth_hermes}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Pyth Network}}},\
+  }\href@noop {} {\bibinfo {title} {Hermes: Pyth price-feed {API}}},\ \bibinfo
+  {howpublished}
+  {\url{https://docs.pyth.network/price-feeds/api-instances-and-providers/hermes}}
+  (\bibinfo {year} {2026}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {{UMA Protocol}}(2024)}]{uma_optimistic_oracle}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{UMA Protocol}}},\
+  }\href@noop {} {\bibinfo {title} {How does {UMA}'s optimistic oracle
+  work?}},\ \bibinfo {howpublished}
+  {\url{https://docs.uma.xyz/protocol-overview/how-does-umas-oracle-work}}
+  (\bibinfo {year} {2024}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Qin}\ \emph {et~al.}(2021{\natexlab{b}})\citenamefont
+  {Qin}, \citenamefont {Zhou}, \citenamefont {Livshits},\ and\ \citenamefont
+  {Gervais}}]{qin2021flashloans}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {K.}~\bibnamefont
+  {Qin}}, \bibinfo {author} {\bibfnamefont {L.}~\bibnamefont {Zhou}}, \bibinfo
+  {author} {\bibfnamefont {B.}~\bibnamefont {Livshits}},\ and\ \bibinfo
+  {author} {\bibfnamefont {A.}~\bibnamefont {Gervais}},\ }\bibfield  {title}
+  {\bibinfo {title} {Attacking the {DeFi} ecosystem with flash loans for fun
+  and profit},\ }in\ \href@noop {} {\emph {\bibinfo {booktitle} {Financial
+  Cryptography and Data Security (FC 2021)}}},\ \bibinfo {series} {Lecture
+  Notes in Computer Science}, Vol.\ \bibinfo {volume} {12674}\ (\bibinfo
+  {publisher} {Springer},\ \bibinfo {year} {2021})\ pp.\ \bibinfo {pages}
+  {3--32}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Babel}\ \emph {et~al.}(2023)\citenamefont {Babel},
+  \citenamefont {Daian}, \citenamefont {Kelkar},\ and\ \citenamefont
+  {Juels}}]{babel2023clockwork}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {K.}~\bibnamefont
+  {Babel}}, \bibinfo {author} {\bibfnamefont {P.}~\bibnamefont {Daian}},
+  \bibinfo {author} {\bibfnamefont {M.}~\bibnamefont {Kelkar}},\ and\ \bibinfo
+  {author} {\bibfnamefont {A.}~\bibnamefont {Juels}},\ }\bibfield  {title}
+  {\bibinfo {title} {Clockwork finance: Automated analysis of economic security
+  in smart contracts},\ }in\ \href
+  {https://doi.org/10.1109/SP46215.2023.10179291} {\emph {\bibinfo {booktitle}
+  {2023 IEEE Symposium on Security and Privacy (SP)}}}\ (\bibinfo  {publisher}
+  {IEEE},\ \bibinfo {year} {2023})\ pp.\ \bibinfo {pages}
+  {622--639}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Bartoletti}\ \emph {et~al.}(2021)\citenamefont
+  {Bartoletti}, \citenamefont {Chiang},\ and\ \citenamefont
+  {Lluch-Lafuente}}]{bartoletti2021soklending}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Bartoletti}}, \bibinfo {author} {\bibfnamefont {J.~H.-y.}\ \bibnamefont
+  {Chiang}},\ and\ \bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Lluch-Lafuente}},\ }\href {https://doi.org/10.48550/arXiv.2012.13230}
+  {\bibinfo {title} {{SoK}: Lending pools in decentralized finance}},\ \bibinfo
+  {howpublished} {arXiv preprint arXiv:2012.13230} (\bibinfo {year}
+  {2021})\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Gudgeon}\ \emph
+  {et~al.}(2020{\natexlab{b}})\citenamefont {Gudgeon}, \citenamefont {Werner},
+  \citenamefont {Perez},\ and\ \citenamefont
+  {Knottenbelt}}]{gudgeon2020loanablefunds}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {L.}~\bibnamefont
+  {Gudgeon}}, \bibinfo {author} {\bibfnamefont {S.~M.}\ \bibnamefont {Werner}},
+  \bibinfo {author} {\bibfnamefont {D.}~\bibnamefont {Perez}},\ and\ \bibinfo
+  {author} {\bibfnamefont {W.~J.}\ \bibnamefont {Knottenbelt}},\ }\href
+  {https://doi.org/10.48550/arXiv.2006.13922} {\bibinfo {title} {{DeFi}
+  protocols for loanable funds: Interest rates, liquidity and market
+  efficiency}},\ \bibinfo {howpublished} {arXiv preprint arXiv:2006.13922}
+  (\bibinfo {year} {2020}{\natexlab{b}})\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Klages-Mundt}\ and\ \citenamefont
+  {Minca}(2021)}]{klagesmundt2019instability}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Klages-Mundt}}\ and\ \bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Minca}},\ }\bibfield  {title} {\bibinfo {title} {{(In)Stability} for the
+  blockchain: Deleveraging spirals and stablecoin attacks},\ }in\ \href@noop {}
+  {\emph {\bibinfo {booktitle} {Cryptoeconomic Systems}}}\ (\bibinfo {year}
+  {2021})\ \bibinfo {note} {arXiv:1906.02152}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Klages-Mundt}\ and\ \citenamefont
+  {Minca}(2022)}]{klagesmundt2020stability}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Klages-Mundt}}\ and\ \bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Minca}},\ }\bibfield  {title} {\bibinfo {title} {While stability lasts: A
+  stochastic model of non-custodial stablecoins},\ }\href
+  {https://doi.org/10.1111/mafi.12357} {\bibfield  {journal} {\bibinfo
+  {journal} {Mathematical Finance}\ }\textbf {\bibinfo {volume} {32}},\
+  \bibinfo {pages} {943} (\bibinfo {year} {2022})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Klages-Mundt}\ \emph {et~al.}(2020)\citenamefont
+  {Klages-Mundt}, \citenamefont {Harz}, \citenamefont {Gudgeon}, \citenamefont
+  {Liu},\ and\ \citenamefont {Minca}}]{klagesmundt2020stablecoins2}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {A.}~\bibnamefont
+  {Klages-Mundt}}, \bibinfo {author} {\bibfnamefont {D.}~\bibnamefont {Harz}},
+  \bibinfo {author} {\bibfnamefont {L.}~\bibnamefont {Gudgeon}}, \bibinfo
+  {author} {\bibfnamefont {J.-Y.}\ \bibnamefont {Liu}},\ and\ \bibinfo {author}
+  {\bibfnamefont {A.}~\bibnamefont {Minca}},\ }\bibfield  {title} {\bibinfo
+  {title} {Stablecoins 2.0: Economic foundations and risk-based models},\ }in\
+  \href {https://doi.org/10.1145/3419614.3423261} {\emph {\bibinfo {booktitle}
+  {Proceedings of the 2nd ACM Conference on Advances in Financial Technologies
+  (AFT '20)}}}\ (\bibinfo  {publisher} {ACM},\ \bibinfo {year} {2020})\ pp.\
+  \bibinfo {pages} {59--79}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Werner}\ \emph {et~al.}(2022)\citenamefont {Werner},
+  \citenamefont {Perez}, \citenamefont {Gudgeon}, \citenamefont {Klages-Mundt},
+  \citenamefont {Harz},\ and\ \citenamefont {Knottenbelt}}]{werner2022sok}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.~M.}\ \bibnamefont
+  {Werner}}, \bibinfo {author} {\bibfnamefont {D.}~\bibnamefont {Perez}},
+  \bibinfo {author} {\bibfnamefont {L.}~\bibnamefont {Gudgeon}}, \bibinfo
+  {author} {\bibfnamefont {A.}~\bibnamefont {Klages-Mundt}}, \bibinfo {author}
+  {\bibfnamefont {D.}~\bibnamefont {Harz}},\ and\ \bibinfo {author}
+  {\bibfnamefont {W.~J.}\ \bibnamefont {Knottenbelt}},\ }\bibfield  {title}
+  {\bibinfo {title} {{SoK}: Decentralized finance ({DeFi})},\ }in\ \href
+  {https://doi.org/10.1145/3558535.3559780} {\emph {\bibinfo {booktitle}
+  {Proceedings of the 4th ACM Conference on Advances in Financial Technologies
+  (AFT '22)}}}\ (\bibinfo  {publisher} {ACM},\ \bibinfo {year} {2022})\ pp.\
+  \bibinfo {pages} {30--46}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Gauntlet}}(2026)}]{gauntlet_riskmethodology}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Gauntlet}}},\
+  }\href@noop {} {\bibinfo {title} {Gauntlet: Model-driven risk management for
+  {DeFi} protocols}},\ \bibinfo {howpublished} {\url{https://www.gauntlet.xyz}}
+  (\bibinfo {year} {2026}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {{Chaos Labs}}(2026)}]{chaoslabs_riskmethodology}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Chaos Labs}}},\
+  }\href@noop {} {\bibinfo {title} {Chaos labs: Agent-based and {Monte Carlo}
+  risk simulations for {DeFi} protocols}},\ \bibinfo {howpublished}
+  {\url{https://chaoslabs.xyz}} (\bibinfo {year} {2026}),\ \bibinfo {note}
+  {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Uhlenbeck}\ and\ \citenamefont
+  {Ornstein}(1930)}]{ou}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {G.~E.}\ \bibnamefont
+  {Uhlenbeck}}\ and\ \bibinfo {author} {\bibfnamefont {L.~S.}\ \bibnamefont
+  {Ornstein}},\ }\bibfield  {title} {\bibinfo {title} {On the theory of the
+  {Brownian} motion},\ }\href {https://doi.org/10.1103/PhysRev.36.823}
+  {\bibfield  {journal} {\bibinfo  {journal} {Physical Review}\ }\textbf
+  {\bibinfo {volume} {36}},\ \bibinfo {pages} {823} (\bibinfo {year}
+  {1930})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Vasicek}(1977)}]{vasicek1977}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {O.}~\bibnamefont
+  {Vasicek}},\ }\bibfield  {title} {\bibinfo {title} {An equilibrium
+  characterization of the term structure},\ }\href
+  {https://doi.org/10.1016/0304-405X(77)90016-2} {\bibfield  {journal}
+  {\bibinfo  {journal} {Journal of Financial Economics}\ }\textbf {\bibinfo
+  {volume} {5}},\ \bibinfo {pages} {177} (\bibinfo {year} {1977})}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Schwartz}(1997)}]{schwartz1997}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {E.~S.}\ \bibnamefont
+  {Schwartz}},\ }\bibfield  {title} {\bibinfo {title} {The stochastic behavior
+  of commodity prices: Implications for valuation and hedging},\ }\href
+  {https://doi.org/10.1111/j.1540-6261.1997.tb02721.x} {\bibfield  {journal}
+  {\bibinfo  {journal} {The Journal of Finance}\ }\textbf {\bibinfo {volume}
+  {52}},\ \bibinfo {pages} {923} (\bibinfo {year} {1997})}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Avellaneda}\ and\ \citenamefont
+  {Lee}(2010)}]{avellaneda_lee2010}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {M.}~\bibnamefont
+  {Avellaneda}}\ and\ \bibinfo {author} {\bibfnamefont {J.-H.}\ \bibnamefont
+  {Lee}},\ }\bibfield  {title} {\bibinfo {title} {Statistical arbitrage in the
+  {US} equities market},\ }\href {https://doi.org/10.1080/14697680903124632}
+  {\bibfield  {journal} {\bibinfo  {journal} {Quantitative Finance}\ }\textbf
+  {\bibinfo {volume} {10}},\ \bibinfo {pages} {761} (\bibinfo {year}
+  {2010})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Gatev}\ \emph {et~al.}(2006)\citenamefont {Gatev},
+  \citenamefont {Goetzmann},\ and\ \citenamefont {Rouwenhorst}}]{gatev_2006}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {E.}~\bibnamefont
+  {Gatev}}, \bibinfo {author} {\bibfnamefont {W.~N.}\ \bibnamefont
+  {Goetzmann}},\ and\ \bibinfo {author} {\bibfnamefont {K.~G.}\ \bibnamefont
+  {Rouwenhorst}},\ }\bibfield  {title} {\bibinfo {title} {Pairs trading:
+  Performance of a relative-value arbitrage rule},\ }\href
+  {https://doi.org/10.1093/rfs/hhj020} {\bibfield  {journal} {\bibinfo
+  {journal} {The Review of Financial Studies}\ }\textbf {\bibinfo {volume}
+  {19}},\ \bibinfo {pages} {797} (\bibinfo {year} {2006})}\BibitemShut
+  {NoStop}%
+\bibitem [{\citenamefont {Hamilton}(1994)}]{hamilton1994}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {J.~D.}\ \bibnamefont
+  {Hamilton}},\ }\href@noop {} {\emph {\bibinfo {title} {Time Series
+  Analysis}}}\ (\bibinfo  {publisher} {Princeton University Press},\ \bibinfo
+  {address} {Princeton, NJ},\ \bibinfo {year} {1994})\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Dickey}\ and\ \citenamefont {Fuller}(1979)}]{adf}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {D.~A.}\ \bibnamefont
+  {Dickey}}\ and\ \bibinfo {author} {\bibfnamefont {W.~A.}\ \bibnamefont
+  {Fuller}},\ }\bibfield  {title} {\bibinfo {title} {Distribution of the
+  estimators for autoregressive time series with a unit root},\ }\href
+  {https://doi.org/10.1080/01621459.1979.10482531} {\bibfield  {journal}
+  {\bibinfo  {journal} {Journal of the American Statistical Association}\
+  }\textbf {\bibinfo {volume} {74}},\ \bibinfo {pages} {427} (\bibinfo {year}
+  {1979})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Said}\ and\ \citenamefont
+  {Dickey}(1984)}]{said_dickey1984}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {S.~E.}\ \bibnamefont
+  {Said}}\ and\ \bibinfo {author} {\bibfnamefont {D.~A.}\ \bibnamefont
+  {Dickey}},\ }\bibfield  {title} {\bibinfo {title} {Testing for unit roots in
+  autoregressive-moving average models of unknown order},\ }\href
+  {https://doi.org/10.1093/biomet/71.3.599} {\bibfield  {journal} {\bibinfo
+  {journal} {Biometrika}\ }\textbf {\bibinfo {volume} {71}},\ \bibinfo {pages}
+  {599} (\bibinfo {year} {1984})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Andrews}(1993)}]{andrews1993}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {D.~W.~K.}\
+  \bibnamefont {Andrews}},\ }\bibfield  {title} {\bibinfo {title} {Tests for
+  parameter instability and structural change with unknown change point},\
+  }\href {https://doi.org/10.2307/2951764} {\bibfield  {journal} {\bibinfo
+  {journal} {Econometrica}\ }\textbf {\bibinfo {volume} {61}},\ \bibinfo
+  {pages} {821} (\bibinfo {year} {1993})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {Bai}\ and\ \citenamefont
+  {Perron}(2003)}]{bai_perron2003}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibfnamefont {J.}~\bibnamefont
+  {Bai}}\ and\ \bibinfo {author} {\bibfnamefont {P.}~\bibnamefont {Perron}},\
+  }\bibfield  {title} {\bibinfo {title} {Computation and analysis of multiple
+  structural change models},\ }\href {https://doi.org/10.1002/jae.659}
+  {\bibfield  {journal} {\bibinfo  {journal} {Journal of Applied Econometrics}\
+  }\textbf {\bibinfo {volume} {18}},\ \bibinfo {pages} {1} (\bibinfo {year}
+  {2003})}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Anchor Maintainers}}(2026)}]{anchor_framework}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Anchor
+  Maintainers}}},\ }\href@noop {} {\bibinfo {title} {Anchor: A framework for
+  solana's {Sealevel} runtime}},\ \bibinfo {howpublished}
+  {\url{https://www.anchor-lang.com/docs}} (\bibinfo {year} {2026}),\ \bibinfo
+  {note} {accessed 2026-05-31}\BibitemShut {NoStop}%
+\bibitem [{\citenamefont {{Solana Foundation}}(2026)}]{solana_pda}%
+  \BibitemOpen
+  \bibfield  {author} {\bibinfo {author} {\bibnamefont {{Solana Foundation}}},\
+  }\href@noop {} {\bibinfo {title} {Program derived addresses ({PDAs})}},\
+  \bibinfo {howpublished} {\url{https://solana.com/docs/core/pda}} (\bibinfo
+  {year} {2026}),\ \bibinfo {note} {accessed 2026-05-31}\BibitemShut {NoStop}%
+\end{thebibliography}%
