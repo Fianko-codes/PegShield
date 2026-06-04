@@ -16,6 +16,24 @@ PegShield does not answer "what is this token worth?" It answers **"should a len
 
 Solana LSTs represent multi-billion dollars of on-chain collateral today, and every dollar of it is still gated by static, governance-set LTV tables. PegShield replaces those tables with live, bonded, slashable risk state that can be enforced directly in lending markets.
 
+## Reviewer Path
+
+If you only have a few minutes, run the three proof commands:
+
+| Command | Claim it proves |
+|---|---|
+| `make policy-proof` | A static 80% LTV table allows a borrow that PegShield rejects under stress. |
+| `make attester-proof` | A 2-of-3 bonded attester committee can finalize into the same `RiskState` PDA consumers read. |
+| `make scenario-lab` | PegShield has been evaluated across a historical depeg replay plus synthetic stress paths. |
+
+For full local verification:
+
+```bash
+make verify-offline
+```
+
+The evidence packet is [`docs/EVIDENCE.md`](./docs/EVIDENCE.md). The commercial model is [`docs/BUSINESS.md`](./docs/BUSINESS.md). The mainnet decision memo is [`docs/MAINNET_DECISION.md`](./docs/MAINNET_DECISION.md).
+
 ## Borrow Policy Proof
 
 The fastest way to understand PegShield is not another oracle read. It is the borrow gate:
@@ -210,12 +228,13 @@ make scenario-lab
 - typed SDK, unified CLI, runnable lender example, on-chain PegShield Gate
 - nine-scenario stress bundle
 
-**Not production-ready**
+**Production boundaries**
 
-- devnet only
+- devnet deployment only
 - independent production attester set is not yet live
 - no production lender integration yet; current reference implementation is the reusable integration path
-- no operational alerting or mainnet deployment process yet
+- no production alerting stack yet
+- mainnet deployment is intentionally gated on funding, legal structure, monitoring, and attester operations; see [`docs/MAINNET_DECISION.md`](./docs/MAINNET_DECISION.md)
 
 ## Local Setup
 
@@ -239,6 +258,9 @@ Copy `.env.example` to `.env` and fill in `SOLANA_RPC_URL`, `PROGRAM_ID`, `UPDAT
 
 ## Documentation
 
+- [`docs/EVIDENCE.md`](./docs/EVIDENCE.md) — proof packet and reviewer path
+- [`docs/BUSINESS.md`](./docs/BUSINESS.md) — customer, revenue model, GTM wedge, milestones
+- [`docs/MAINNET_DECISION.md`](./docs/MAINNET_DECISION.md) — why mainnet is deferred and what unlocks it
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system design, data contracts, failure modes
 - [`docs/INTEGRATION.md`](./docs/INTEGRATION.md) — lender integration path
 - [`docs/MULTI_ATTESTER.md`](./docs/MULTI_ATTESTER.md) — decentralization design
