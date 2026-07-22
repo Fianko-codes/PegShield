@@ -84,6 +84,7 @@ jobs:
           mkdir -p bridge/data core-engine/output artifacts
 
           PRIMARY_LST_ID="mSOL-v2"
+          SUBMITTED_COUNT=0
           while IFS=':' read -r LST_ASSET LST_ID; do
             BRIDGE_OUT="${GITHUB_WORKSPACE}/bridge/data/latest_raw.${LST_ID}.json"
             CORE_OUT="${GITHUB_WORKSPACE}/core-engine/output/latest.${LST_ID}.json"
@@ -128,12 +129,20 @@ jobs:
               continue
             fi
 
+            npm --prefix updater run submit -- --simulate "${CORE_OUT}"
             npm --prefix updater run submit -- "${CORE_OUT}"
+            npm --prefix updater run read -- "${LST_ID}"
+            SUBMITTED_COUNT=$((SUBMITTED_COUNT + 1))
           done <<'EOF'
           mSOL:mSOL-v2
           jitoSOL:jitoSOL-v1
           bSOL:bSOL-v1
           EOF
+
+          if (( SUBMITTED_COUNT != 3 )); then
+            echo "Only ${SUBMITTED_COUNT}/3 RiskState PDAs were updated; failing the run."
+            exit 1
+          fi
 
       - name: Regenerate simulation outputs
         run: python simulation/stress_test.py

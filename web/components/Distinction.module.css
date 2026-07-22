@@ -1,0 +1,76 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 48px;
+}
+.card {
+  position: relative;
+  padding: 30px 30px 32px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent-line, var(--border-strong));
+}
+.oracle { --accent-line: linear-gradient(90deg, transparent, var(--indigo), transparent); }
+.shield { --accent-line: linear-gradient(90deg, transparent, var(--emerald), transparent); }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin-bottom: 18px;
+}
+.tagDot { width: 8px; height: 8px; border-radius: 50%; }
+
+.q {
+  font-size: 1.35rem;
+  letter-spacing: -0.025em;
+  font-weight: 540;
+  line-height: 1.25;
+  margin-bottom: 14px;
+}
+.qMuted { color: var(--text-3); }
+.body { color: var(--text-2); font-size: 0.98rem; line-height: 1.55; }
+
+.answerRow {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.answerLabel { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--text-faint); text-transform: uppercase; }
+.answerValue { font-size: 1.02rem; color: var(--text); font-weight: 500; letter-spacing: -0.01em; }
+
+.bridge {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(90deg, var(--indigo-dim), transparent 40%, var(--emerald-dim));
+  font-size: 1.02rem;
+  color: var(--text);
+  letter-spacing: -0.012em;
+}
+.bridge b { font-weight: 580; }
+
+@media (max-width: 780px) {
+  .grid { grid-template-columns: 1fr; }
+  .bridge { flex-direction: column; align-items: flex-start; text-align: left; }
+}

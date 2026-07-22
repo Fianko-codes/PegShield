@@ -20,8 +20,17 @@ import requests
 from assets import AssetConfig, resolve_asset_config
 
 DEFAULT_HERMES_URL = os.getenv("PYTH_HTTP_URL", "https://hermes.pyth.network")
+DEFAULT_BENCHMARKS_URL = os.getenv(
+    "PYTH_BENCHMARKS_URL",
+    "https://benchmarks.pyth.network",
+)
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "data" / "latest_raw.json"
 DEFAULT_ASSET = os.getenv("LST_ASSET", "mSOL")
+
+# The public Pyth endpoints allow 10 requests per 10 seconds. Historical
+# sampling now batches both feeds per point and spaces requests so scheduled
+# runs do not hit 429 and silently fall back to cached history.
+HERMES_REQUEST_INTERVAL_SECONDS = 1.1
 
 MARINADE_PRICE_URL = os.getenv(
     "MARINADE_PRICE_URL",
@@ -318,7 +327,7 @@ def fetch_price_feed_at_time(
         )
         if response.status_code != 429:
             response.raise_for_status()
-            time.sleep(0.05)
+            time.sleep(HERMES_REQUEST_INTERVAL_SECONDS)
             return response.json()
 
         last_error = requests.HTTPError(
@@ -330,6 +339,53 @@ def fetch_price_feed_at_time(
     if last_error is not None:
         raise last_error
     raise RuntimeError("Unexpected empty retry state in fetch_price_feed_at_time")
+
+
+def fetch_price_feeds_at_time(
+    session: requests.Session,
+    feeds: dict[str, str],
+    publish_time: int,
+    benchmarks_url: str = DEFAULT_BENCHMARKS_URL,
+) -> dict[str, dict[str, Any]]:
+    """Fetch all historical feeds in one rate-limit-friendly Benchmarks call."""
+    last_error: Exception | None = None
+    for attempt in range(5):
+        response = session.get(
+            f"{benchmarks_url}/v1/updates/price/{publish_time}",
+            params=[
+                *(("ids", feed_id) for feed_id in feeds.values()),
+                ("parsed", "true"),
+            ],
+            timeout=15,
+        )
+        if response.status_code != 429:
+            response.raise_for_status()
+            payload = response.json()
+            parsed = payload.get("parsed", [])
+            by_id = {canonical_feed_id(item["id"]): item for item in parsed}
+            missing = [
+                feed_id
+                for feed_id in feeds.values()
+                if canonical_feed_id(feed_id) not in by_id
+            ]
+            if missing:
+                raise ValueError(f"Missing historical feed data for ids: {missing}")
+            time.sleep(HERMES_REQUEST_INTERVAL_SECONDS)
+            return {
+                label: by_id[canonical_feed_id(feed_id)]
+                for label, feed_id in feeds.items()
+            }
+
+        retry_after = float(response.headers.get("retry-after", "1"))
+        last_error = requests.HTTPError(
+            f"429 rate limit from Benchmarks at {publish_time}",
+            response=response,
+        )
+        time.sleep(max(retry_after, 0.5 * (attempt + 1)))
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Unexpected empty retry state in batched historical fetch")
 
 
 def fetch_historical_series(
@@ -363,12 +419,9 @@ def fetch_historical_series(
     history: list[dict[str, Any]] = []
 
     for timestamp in range(start_time, end_time + 1, step_seconds):
-        asset = normalize_price(
-            fetch_price_feed_at_time(session, feeds["asset_usd"], timestamp, hermes_url)["price"]
-        )
-        sol = normalize_price(
-            fetch_price_feed_at_time(session, feeds["sol_usd"], timestamp, hermes_url)["price"]
-        )
+        historical = fetch_price_feeds_at_time(session, feeds, timestamp)
+        asset = normalize_price(historical["asset_usd"]["price"])
+        sol = normalize_price(historical["sol_usd"]["price"])
 
         ratio = asset["price"] / sol["price"] if sol["price"] else None
         # asset_sol_spread_pct is DEPRECATED for risk calc — it measures USD

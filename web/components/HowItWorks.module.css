@@ -1,0 +1,100 @@
+.pipe {
+  margin-top: 44px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--surface), var(--ink-2));
+  overflow: hidden;
+}
+.node {
+  flex: 1;
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  min-width: 0;
+}
+.node:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: -1px; top: 18px; bottom: 18px;
+  width: 1px;
+  background: var(--border);
+}
+.nodeIdx { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+.nodeName { font-size: 0.95rem; font-weight: 560; letter-spacing: -0.015em; display: flex; align-items: center; gap: 7px; }
+.nodeDot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.nodeDesc { font-size: 0.78rem; color: var(--text-3); line-height: 1.45; }
+.nodeOut { margin-top: auto; padding-top: 8px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-2); }
+
+.layers {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.layer {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 26px 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.layerNum { font-family: var(--font-mono); font-size: 12px; color: var(--emerald); }
+.layerTitle { font-size: 1.1rem; font-weight: 560; letter-spacing: -0.02em; }
+.layerBody { font-size: 0.9rem; color: var(--text-2); line-height: 1.55; }
+.layerBody code { font-family: var(--font-mono); font-size: 0.85em; color: var(--text); background: var(--ink-2); padding: 1px 5px; border-radius: 4px; }
+.layerTags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 8px; }
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--ink-2);
+}
+
+.formula {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 22px 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--ink-2);
+}
+.formulaEquation {
+  flex: none;
+  margin: 0;
+  font-family: "STIX Two Math", "Cambria Math", "Times New Roman", serif;
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  color: var(--text);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.equationLhs { color: var(--emerald); }
+.formulaNote {
+  max-width: 40ch;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+@media (max-width: 900px) {
+  .pipe { flex-direction: column; }
+  .node:not(:last-child)::after { right: 18px; left: 18px; top: auto; bottom: -1px; width: auto; height: 1px; }
+  .layers { grid-template-columns: 1fr; }
+  .formula { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .formula { padding-inline: 20px; }
+  .formulaEquation { font-size: 0.98rem; }
+}

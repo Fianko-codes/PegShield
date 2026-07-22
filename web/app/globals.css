@@ -1,0 +1,349 @@
+/* ============================================================================
+   PegShield — design system tokens & base
+   A calm, precision-instrument aesthetic. Deep ink surfaces, one emerald
+   "protected" signal, coral for stress/critical, amber for watch. All data
+   wears monospace. Color carries product semantics, not decoration.
+   ============================================================================ */
+
+:root {
+  /* --- Surfaces (deep, cool ink) --- */
+  --ink: #090b0f;
+  --ink-2: #0c0f14;
+  --surface: #11151c;
+  --surface-2: #161b24;
+  --surface-3: #1d2431;
+  --surface-hi: #232b3a;
+
+  /* --- Hairlines --- */
+  --border: rgba(255, 255, 255, 0.07);
+  --border-2: rgba(255, 255, 255, 0.11);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* --- Text --- */
+  --text: #eef1f5;
+  --text-2: #a7b0be;
+  --text-3: #737d8c;
+  --text-faint: #4d5563;
+
+  /* --- Signal / semantic --- */
+  --emerald: #3ecf8e;      /* PegShield / protected / healthy */
+  --emerald-bright: #56e6a4;
+  --emerald-dim: rgba(62, 207, 142, 0.14);
+  --emerald-line: rgba(62, 207, 142, 0.28);
+
+  --coral: #f2645d;        /* static policy / stress / critical */
+  --coral-bright: #ff7d76;
+  --coral-dim: rgba(242, 100, 93, 0.13);
+  --coral-line: rgba(242, 100, 93, 0.3);
+
+  --amber: #f2b04c;        /* watch / degraded data quality */
+  --amber-dim: rgba(242, 176, 76, 0.13);
+
+  --indigo: #8b9bf6;       /* price oracle / external data */
+  --indigo-dim: rgba(139, 155, 246, 0.14);
+
+  /* --- Accent gradient hairline (used very sparingly) --- */
+  --glow-emerald: 0 0 0 1px rgba(62, 207, 142, 0.25), 0 8px 40px -12px rgba(62, 207, 142, 0.35);
+
+  /* --- Typography --- */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "SFMono-Regular",
+    "Menlo", "Consolas", monospace;
+
+  /* --- Rhythm --- */
+  --maxw: 1180px;
+  --gutter: clamp(20px, 5vw, 64px);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-lg: 22px;
+
+  /* --- Motion --- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Atmospheric top wash — one subtle emerald aurora, nothing more. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 78% -8%, rgba(62, 207, 142, 0.08), transparent 60%),
+    radial-gradient(760px 480px at 10% 4%, rgba(139, 155, 246, 0.06), transparent 62%);
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--text);
+}
+
+p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+
+::selection {
+  background: rgba(62, 207, 142, 0.26);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--emerald);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---- Layout primitives ---- */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  position: relative;
+  z-index: 1;
+}
+
+.section {
+  padding-block: clamp(56px, 8.5vw, 108px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Eyebrow / kicker ---- */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.kicker::before {
+  content: "";
+  width: 15px;
+  height: 1px;
+  background: var(--emerald);
+  opacity: 0.8;
+}
+
+/* ---- Display type scale ---- */
+.display {
+  font-size: clamp(2.35rem, 6.2vw, 4.15rem);
+  line-height: 1.03;
+  letter-spacing: -0.038em;
+  font-weight: 570;
+}
+.h2 {
+  font-size: clamp(1.85rem, 3.6vw, 2.7rem);
+  letter-spacing: -0.032em;
+  font-weight: 560;
+}
+.h3 {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  letter-spacing: -0.024em;
+  font-weight: 560;
+}
+.lede {
+  font-size: clamp(1.05rem, 1.6vw, 1.28rem);
+  line-height: 1.5;
+  color: var(--text-2);
+  letter-spacing: -0.014em;
+}
+
+.mono { font-family: var(--font-mono); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+.text-emerald { color: var(--emerald); }
+.text-coral { color: var(--coral); }
+.text-amber { color: var(--amber); }
+.text-indigo { color: var(--indigo); }
+.text-2 { color: var(--text-2); }
+.text-3 { color: var(--text-3); }
+
+/* ---- Scroll reveal (progressive enhancement) ----
+   Content is visible by default. Only when JS is present (`html.js`) do we arm
+   the hidden→reveal transition, so a broken or disabled observer never leaves
+   content invisible. */
+.reveal { opacity: 1; transform: none; }
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  will-change: opacity, transform;
+}
+.js .reveal.in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .js .reveal { opacity: 1; transform: none; }
+}
+
+/* ---- Generic surfaces ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ---- Buttons ---- */
+.btn {
+  --btn-bg: var(--surface-2);
+  --btn-fg: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 46px;
+  padding-inline: 20px;
+  border-radius: 11px;
+  border: 1px solid var(--border-2);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-size: 0.94rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: transform 0.18s var(--ease), background 0.2s var(--ease),
+    border-color 0.2s var(--ease), box-shadow 0.25s var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btn-primary {
+  --btn-bg: var(--emerald);
+  --btn-fg: #04150d;
+  border-color: transparent;
+  font-weight: 580;
+  box-shadow: 0 10px 34px -14px rgba(62, 207, 142, 0.7);
+}
+.btn-primary:hover {
+  --btn-bg: var(--emerald-bright);
+  box-shadow: 0 14px 40px -12px rgba(62, 207, 142, 0.8);
+}
+.btn-ghost {
+  --btn-bg: transparent;
+  border-color: var(--border-2);
+}
+.btn-ghost:hover {
+  --btn-bg: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+/* ---- Status pill ---- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding-inline: 10px 12px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.pill.is-healthy { color: var(--emerald); border-color: var(--emerald-line); background: var(--emerald-dim); }
+.pill.is-watch { color: var(--amber); border-color: rgba(242,176,76,0.3); background: var(--amber-dim); }
+.pill.is-critical { color: var(--coral); border-color: var(--coral-line); background: var(--coral-dim); }
+.pill.is-neutral { color: var(--text-2); }
+
+.live-dot {
+  position: relative;
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0;
+  animation: ping 2.4s var(--ease-out) infinite;
+}
+@keyframes ping {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  80%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* ---- Divider label ---- */
+.rule {
+  height: 1px;
+  background: var(--border);
+  border: 0;
+  margin: 0;
+}
+
+/* ---- Utility ---- */
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.wrap { flex-wrap: wrap; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mt-32 { margin-top: 32px; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}

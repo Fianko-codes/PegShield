@@ -30,7 +30,8 @@ type UpdateResult = {
   theta_scaled: number;
   sigma_scaled: number;
   risk_state: string;
-  tx: string;
+  tx?: string;
+  simulation_logs?: string[];
 };
 
 function requiredEnv(name: string): string {
@@ -100,7 +101,11 @@ function toLtvBps(ltv: number): number {
 }
 
 async function main(): Promise<void> {
-  const payloadPaths = resolveInputPaths(process.argv.slice(2));
+  const args = process.argv.slice(2);
+  const simulateOnly = args.includes("--simulate");
+  const payloadPaths = resolveInputPaths(
+    args.filter((arg) => arg !== "--simulate"),
+  );
   const connection = new Connection(requiredEnv("SOLANA_RPC_URL"), "confirmed");
   const rawKeypair = JSON.parse(
     fs.readFileSync(resolveRepoPath(requiredEnv("UPDATER_KEYPAIR_PATH")), "utf-8"),
@@ -120,7 +125,7 @@ async function main(): Promise<void> {
       program.programId,
     );
     const suggestedLtvBps = toLtvBps(riskData.suggested_ltv);
-    const tx = await program.methods
+    const update = program.methods
       .updateRiskState({
         lstId: riskData.lst_id,
         thetaScaled: toScaled(riskData.theta),
@@ -132,8 +137,25 @@ async function main(): Promise<void> {
       .accounts({
         riskState: riskStatePda,
         authority: wallet.publicKey,
-      })
-      .rpc();
+      });
+
+    if (simulateOnly) {
+      const simulation = await update.simulate();
+      updates.push({
+        lst_id: riskData.lst_id,
+        asset_symbol: riskData.asset_symbol,
+        payload_path: payloadPath,
+        suggested_ltv: riskData.suggested_ltv,
+        suggested_ltv_bps: suggestedLtvBps,
+        theta_scaled: riskData.theta * SCALE,
+        sigma_scaled: riskData.sigma * SCALE,
+        risk_state: riskStatePda.toBase58(),
+        simulation_logs: simulation.raw,
+      });
+      continue;
+    }
+
+    const tx = await update.rpc();
 
     updates.push({
       lst_id: riskData.lst_id,
@@ -151,7 +173,7 @@ async function main(): Promise<void> {
   console.log(
     JSON.stringify(
       {
-        status: "submitted",
+        status: simulateOnly ? "simulated" : "submitted",
         count: updates.length,
         updates,
       },

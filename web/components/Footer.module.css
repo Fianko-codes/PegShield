@@ -1,0 +1,64 @@
+.cta {
+  position: relative;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(600px 300px at 50% 0%, rgba(62,207,142,0.08), transparent 70%),
+    var(--ink-2);
+  padding-block: clamp(56px, 9vw, 96px);
+  text-align: center;
+  overflow: hidden;
+}
+.ctaInner { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.ctaTitle { font-size: clamp(1.9rem, 4vw, 2.9rem); letter-spacing: -0.035em; font-weight: 560; max-width: 18ch; }
+.ctaSub { color: var(--text-2); font-size: 1.05rem; max-width: 52ch; }
+.ctaBtns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+.footer { background: var(--ink); padding-block: 56px 40px; }
+.top {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+  gap: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.brandCol { display: flex; flex-direction: column; gap: 16px; max-width: 30ch; }
+.brandTag { font-size: 0.9rem; color: var(--text-3); line-height: 1.55; }
+.disc {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--amber);
+  padding: 6px 10px; border-radius: 7px;
+  border: 1px solid rgba(242,176,76,0.24); background: var(--amber-dim);
+  width: fit-content;
+}
+.colTitle {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-faint); margin-bottom: 16px;
+}
+.links { display: flex; flex-direction: column; gap: 11px; }
+.link { font-size: 0.9rem; color: var(--text-2); transition: color 0.18s var(--ease); width: fit-content; display: inline-flex; align-items: center; gap: 6px; }
+.link:hover { color: var(--emerald); }
+.chainCol { display: flex; flex-direction: column; gap: 12px; }
+.chainRow { display: flex; flex-direction: column; gap: 5px; }
+.chainK { font-size: 0.78rem; color: var(--text-faint); font-family: var(--font-mono); }
+
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 28px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+.bottom a { color: var(--text-3); }
+.bottom a:hover { color: var(--text-2); }
+
+@media (max-width: 820px) {
+  .top { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .brandCol { grid-column: 1 / -1; }
+}
+@media (max-width: 500px) {
+  .top { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,52 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  transition: background 0.3s var(--ease), border-color 0.3s var(--ease),
+    backdrop-filter 0.3s var(--ease);
+  border-bottom: 1px solid transparent;
+}
+.nav.scrolled {
+  background: rgba(9, 11, 15, 0.72);
+  backdrop-filter: saturate(150%) blur(14px);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
+  border-bottom-color: var(--border);
+}
+.inner {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.link {
+  padding: 8px 13px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-2);
+  transition: color 0.18s var(--ease), background 0.18s var(--ease);
+}
+.link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.statusPill {
+  text-decoration: none;
+}
+@media (max-width: 860px) {
+  .links { display: none; }
+}
+@media (max-width: 560px) {
+  .ctaText { display: none; }
+  .statusLabel { display: none; }
+}

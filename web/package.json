@@ -1,0 +1,40 @@
+{
+  "name": "pegshield-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Public-facing website for PegShield — Solana-native collateral circuit breaker for LST lending.",
+  "scripts": {
+    "predev": "node scripts/ensure-sdk.mjs && node scripts/build-data.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/ensure-sdk.mjs && node scripts/build-data.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "build-data": "node scripts/build-data.mjs",
+    "verify-data": "node scripts/verify-data.mjs",
+    "check": "npm run verify-data && npm run typecheck && npm run lint"
+  },
+  "dependencies": {
+    "@pegshield/sdk": "file:../sdk",
+    "@solana/web3.js": "1.98.4",
+    "next": "15.5.21",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "eslint": "8.57.0",
+    "eslint-config-next": "15.5.21",
+    "typescript": "5.5.3"
+  },
+  "overrides": {
+    "jayson": {
+      "uuid": "11.1.1"
+    },
+    "postcss": "8.5.10",
+    "sharp": "0.35.0"
+  }
+}

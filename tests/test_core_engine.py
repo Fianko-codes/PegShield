@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -10,8 +11,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 CORE_ENGINE = ROOT / "core-engine"
 SIMULATION = ROOT / "simulation"
+BRIDGE = ROOT / "bridge"
 
-for path in (str(CORE_ENGINE), str(SIMULATION)):
+for path in (str(CORE_ENGINE), str(SIMULATION), str(BRIDGE)):
     if path not in sys.path:
         sys.path.insert(0, path)
 
@@ -25,9 +27,60 @@ from stress_test import (
     generate_stress_scenario,
     load_historical_replay,
 )
+from fetch_pyth import fetch_price_feeds_at_time
 
 
 class CoreEngineMicroTests(unittest.TestCase):
+    def test_historical_fetch_batches_asset_and_sol_feeds(self) -> None:
+        feed_ids = {
+            "asset_usd": "0xasset",
+            "sol_usd": "0xsol",
+        }
+
+        class FakeResponse:
+            status_code = 200
+            headers: dict[str, str] = {}
+
+            @staticmethod
+            def raise_for_status() -> None:
+                return None
+
+            @staticmethod
+            def json() -> dict:
+                return {
+                    "parsed": [
+                        {"id": "asset", "price": {"price": "125", "expo": -2, "conf": "1", "publish_time": 42}},
+                        {"id": "sol", "price": {"price": "100", "expo": -2, "conf": "1", "publish_time": 42}},
+                    ],
+                }
+
+        class FakeSession:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, list[tuple[str, str]]]] = []
+
+            def get(self, url: str, *, params: list[tuple[str, str]], timeout: int) -> FakeResponse:
+                self.calls.append((url, params))
+                self.assert_timeout = timeout
+                return FakeResponse()
+
+        session = FakeSession()
+        with patch("fetch_pyth.time.sleep"):
+            result = fetch_price_feeds_at_time(
+                session,
+                feed_ids,
+                42,
+                benchmarks_url="https://benchmarks.example",
+            )
+
+        self.assertEqual(len(session.calls), 1)
+        self.assertEqual(session.calls[0][0], "https://benchmarks.example/v1/updates/price/42")
+        self.assertEqual(
+            [value for key, value in session.calls[0][1] if key == "ids"],
+            ["0xasset", "0xsol"],
+        )
+        self.assertEqual(result["asset_usd"]["price"]["price"], "125")
+        self.assertEqual(result["sol_usd"]["price"]["price"], "100")
+
     def test_estimate_ou_params_returns_positive_theta_and_sigma(self) -> None:
         rng = np.random.default_rng(7)
         values = [0.36]
