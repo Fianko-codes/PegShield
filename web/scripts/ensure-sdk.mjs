@@ -25,7 +25,15 @@ if (!existsSync(SDK_DIR)) {
 try {
   if (!existsSync(join(SDK_DIR, "node_modules"))) {
     console.log("[ensure-sdk] installing SDK dependencies…");
-    execSync("npm install", { cwd: SDK_DIR, stdio: "inherit" });
+    // The SDK is compiled with tsc, so it needs its devDependencies
+    // (typescript, @types/node, @solana/web3.js types). Hosts like Vercel run
+    // the build with NODE_ENV=production, which makes a bare `npm install` omit
+    // devDependencies — so force them in explicitly for this nested install.
+    execSync("npm install --include=dev", {
+      cwd: SDK_DIR,
+      stdio: "inherit",
+      env: { ...process.env, NODE_ENV: "development" },
+    });
   }
   console.log("[ensure-sdk] building @pegshield/sdk…");
   execSync("npm run build", { cwd: SDK_DIR, stdio: "inherit" });
