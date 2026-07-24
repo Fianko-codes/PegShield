@@ -22,6 +22,13 @@ interface RiskStateContextValue {
 
 const RiskStateContext = createContext<RiskStateContextValue | null>(null);
 
+/**
+ * How often to re-read the live RiskState. The on-chain account is rate-limited
+ * to one update every 30s, so polling faster buys nothing. A quiet re-fetch
+ * (data is kept, only `refreshing` flips) means no loading skeleton flash.
+ */
+const POLL_INTERVAL_MS = 30_000;
+
 export function RiskStateProvider({
   lstId,
   children,
@@ -69,6 +76,40 @@ export function RiskStateProvider({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lstId, nonce]);
+
+  // Auto-refresh: re-read the live account on an interval so the card reflects
+  // new on-chain publishes without a manual click. Polling pauses while the tab
+  // is hidden (no point spending devnet RPC on an unseen page) and fires once
+  // immediately on re-focus so a returning viewer sees a current value.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    let timer: number | undefined;
+    const start = () => {
+      if (timer === undefined) {
+        timer = window.setInterval(reload, POLL_INTERVAL_MS);
+      }
+    };
+    const stop = () => {
+      if (timer !== undefined) {
+        window.clearInterval(timer);
+        timer = undefined;
+      }
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        reload();
+        start();
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [reload]);
 
   return (
     <RiskStateContext.Provider value={{ data, loadState, refreshing, reload }}>
