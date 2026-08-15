@@ -3,11 +3,11 @@
   "asset_symbol": "jitoSOL",
   "asset_display_name": "Jito Staked SOL",
   "base_symbol": "SOL",
-  "theta": 299.599157,
-  "sigma": 0.001227,
+  "theta": 355.561445,
+  "sigma": 0.001849,
   "regime_flag": 0,
-  "statistical_ltv": 0.7824,
-  "suggested_ltv": 0.7599,
+  "statistical_ltv": 0.8,
+  "suggested_ltv": 0.7775,
   "liquidity_risk": {
     "status": "UNKNOWN",
     "score": 0.0,
@@ -39,30 +39,30 @@
       "missing_liquidity_depth": 1.0
     },
     "inputs": {
-      "asset_confidence_ratio": 0.0012,
-      "sol_confidence_ratio": 0.000612,
+      "asset_confidence_ratio": 0.000883,
+      "sol_confidence_ratio": 0.00058,
       "history_source": "live_incremental",
       "reference_rate_source": "jito-kobe-api",
       "has_liquidity_metrics": false
     }
   },
-  "z_score": -0.8382,
-  "spread": 0.29538695563647127,
-  "spread_pct": 0.29538695563647127,
+  "z_score": -0.1625,
+  "spread": 0.29521234845630606,
+  "spread_pct": 0.29521234845630606,
   "spread_signal": "peg_deviation",
-  "peg_deviation_pct": -0.0005255009647860964,
-  "asset_price": 97.97555608,
-  "reference_rate": 1.2960680406422571,
+  "peg_deviation_pct": -0.000660221654357751,
+  "asset_price": 97.9062514,
+  "reference_rate": 1.2960680406422591,
   "reference_rate_source": "jito-kobe-api",
-  "marinade_msol_sol_rate": 1.2960680406422571,
+  "marinade_msol_sol_rate": 1.2960680406422591,
   "marinade_rate_source": "jito-kobe-api",
-  "timestamp": 1786830482,
-  "updated_at_iso": "2026-08-15T21:48:02+00:00",
+  "timestamp": 1786831311,
+  "updated_at_iso": "2026-08-15T22:01:51+00:00",
   "status": "NORMAL",
-  "msol_price": 97.97555608,
-  "sol_price": 75.6342,
+  "msol_price": 97.9062514,
+  "sol_price": 75.59088787,
   "source": "pyth-hermes",
-  "bridge_timestamp": "2026-08-15T21:48:01.434962+00:00",
+  "bridge_timestamp": "2026-08-15T22:01:50.178231+00:00",
   "history_points": 21,
   "history_source": "live_incremental",
   "step_seconds": 300,
@@ -72,30 +72,6 @@
   "network": "solana-devnet",
   "analytics_status": "trusted",
   "history": [
-    {
-      "timestamp": 1786824300,
-      "spread_pct": 0.2953542847111817,
-      "asset_price": 97.77334141,
-      "msol_price": 97.77334141,
-      "sol_price": 75.48,
-      "peg_deviation": -0.0005507086886582524
-    },
-    {
-      "timestamp": 1786824600,
-      "spread_pct": 0.2954914497082613,
-      "asset_price": 97.74654401000001,
-      "msol_price": 97.74654401000001,
-      "sol_price": 75.45132315000001,
-      "peg_deviation": -0.00044487705576679026
-    },
-    {
-      "timestamp": 1786824900,
-      "spread_pct": 0.2954201926949071,
-      "asset_price": 97.72915079,
-      "msol_price": 97.72915079,
-      "sol_price": 75.44204679,
-      "peg_deviation": -0.0004998564327126642
-    },
     {
       "timestamp": 1786825200,
       "spread_pct": 0.29556834011422134,
@@ -239,15 +215,39 @@
       "msol_price": 97.99153651,
       "sol_price": 75.64867174,
       "peg_deviation": -0.0005537130095104592
+    },
+    {
+      "timestamp": 1786830600,
+      "spread_pct": 0.29592869933326277,
+      "asset_price": 97.96184224,
+      "msol_price": 97.96184224,
+      "sol_price": 75.592,
+      "peg_deviation": -0.00010751079775661587
+    },
+    {
+      "timestamp": 1786830900,
+      "spread_pct": 0.29532127863955315,
+      "asset_price": 97.92873111,
+      "msol_price": 97.92873111,
+      "sol_price": 75.60188559,
+      "peg_deviation": -0.0005761749995285559
+    },
+    {
+      "timestamp": 1786831200,
+      "spread_pct": 0.2954242924493521,
+      "asset_price": 97.87026887,
+      "msol_price": 97.87026887,
+      "sol_price": 75.55074383,
+      "peg_deviation": -0.0004966932080110453
     }
   ],
-  "mu": -0.000491,
-  "adf_pvalue": 0.0003,
-  "is_stationary": true,
-  "data_timestamp": 1786830300,
+  "mu": -0.000482,
+  "adf_pvalue": 0.3517,
+  "is_stationary": false,
+  "data_timestamp": 1786831200,
   "baseline": {
-    "theta_avg": 307.597013,
-    "sigma_avg": 0.001232,
+    "theta_avg": 360.151866,
+    "sigma_avg": 0.001894,
     "window_count": 1
   }
 }
