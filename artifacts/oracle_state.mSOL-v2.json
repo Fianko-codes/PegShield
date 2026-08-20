@@ -3,11 +3,11 @@
   "asset_symbol": "mSOL",
   "asset_display_name": "Marinade Staked SOL",
   "base_symbol": "SOL",
-  "theta": 407.826851,
-  "sigma": 0.006041,
+  "theta": 100.592847,
+  "sigma": 0.01096,
   "regime_flag": 0,
-  "statistical_ltv": 0.7841,
-  "suggested_ltv": 0.7616,
+  "statistical_ltv": 0.5875,
+  "suggested_ltv": 0.565,
   "liquidity_risk": {
     "status": "UNKNOWN",
     "score": 0.0,
@@ -39,30 +39,30 @@
       "missing_liquidity_depth": 1.0
     },
     "inputs": {
-      "asset_confidence_ratio": 0.002808,
-      "sol_confidence_ratio": 0.000511,
+      "asset_confidence_ratio": 0.002858,
+      "sol_confidence_ratio": 0.000549,
       "history_source": "live_incremental",
       "reference_rate_source": "marinade-api",
       "has_liquidity_metrics": false
     }
   },
-  "z_score": -1.0103,
-  "spread": 0.3964770973742013,
-  "spread_pct": 0.3964770973742013,
+  "z_score": -2.0422,
+  "spread": 0.39488879967430107,
+  "spread_pct": 0.39488879967430107,
   "spread_signal": "peg_deviation",
-  "peg_deviation_pct": -0.003262917150945066,
-  "asset_price": 118.51362345,
-  "reference_rate": 1.4010486028898783,
+  "peg_deviation_pct": -0.004396566408758407,
+  "asset_price": 119.64288399,
+  "reference_rate": 1.401048602898844,
   "reference_rate_source": "marinade-api",
-  "marinade_msol_sol_rate": 1.4010486028898783,
+  "marinade_msol_sol_rate": 1.401048602898844,
   "marinade_rate_source": "marinade-api",
-  "timestamp": 1787205672,
-  "updated_at_iso": "2026-08-20T06:01:12+00:00",
+  "timestamp": 1787209343,
+  "updated_at_iso": "2026-08-20T07:02:23+00:00",
   "status": "NORMAL",
-  "msol_price": 118.51362345,
-  "sol_price": 84.86614186,
+  "msol_price": 119.64288399,
+  "sol_price": 85.77234545,
   "source": "pyth-hermes",
-  "bridge_timestamp": "2026-08-20T06:01:11.432367+00:00",
+  "bridge_timestamp": "2026-08-20T07:02:22.608027+00:00",
   "history_points": 21,
   "history_source": "live_incremental",
   "step_seconds": 300,
@@ -72,102 +72,6 @@
   "network": "solana-devnet",
   "analytics_status": "trusted",
   "history": [
-    {
-      "timestamp": 1787199600,
-      "spread_pct": 0.3962117710598468,
-      "asset_price": 118.14185522,
-      "msol_price": 118.14185522,
-      "sol_price": 84.616,
-      "peg_deviation": -0.0034522941031844834
-    },
-    {
-      "timestamp": 1787199900,
-      "spread_pct": 0.39678195812982897,
-      "asset_price": 118.05475112,
-      "msol_price": 118.05475112,
-      "sol_price": 84.51909794000001,
-      "peg_deviation": -0.0030453224472362095
-    },
-    {
-      "timestamp": 1787200200,
-      "spread_pct": 0.39680946425553315,
-      "asset_price": 118.00595555,
-      "msol_price": 118.00595555,
-      "sol_price": 84.48249999000001,
-      "peg_deviation": -0.0030256899193942255
-    },
-    {
-      "timestamp": 1787200500,
-      "spread_pct": 0.3967438851245462,
-      "asset_price": 117.90914756000001,
-      "msol_price": 117.90914756000001,
-      "sol_price": 84.4171568,
-      "peg_deviation": -0.0030724970971406362
-    },
-    {
-      "timestamp": 1787200800,
-      "spread_pct": 0.39700550646021476,
-      "asset_price": 117.91296999000001,
-      "msol_price": 117.91296999000001,
-      "sol_price": 84.40408391,
-      "peg_deviation": -0.002885764577562955
-    },
-    {
-      "timestamp": 1787201100,
-      "spread_pct": 0.39531859046792334,
-      "asset_price": 117.94023716000001,
-      "msol_price": 117.94023716000001,
-      "sol_price": 84.52566888,
-      "peg_deviation": -0.00408980274498405
-    },
-    {
-      "timestamp": 1787201400,
-      "spread_pct": 0.3964844097793896,
-      "asset_price": 118.1915,
-      "msol_price": 118.1915,
-      "sol_price": 84.63503006,
-      "peg_deviation": -0.0032576979136015316
-    },
-    {
-      "timestamp": 1787201700,
-      "spread_pct": 0.3965381344779603,
-      "asset_price": 118.42922688,
-      "msol_price": 118.42922688,
-      "sol_price": 84.802,
-      "peg_deviation": -0.003219351850188734
-    },
-    {
-      "timestamp": 1787202000,
-      "spread_pct": 0.3970355841340269,
-      "asset_price": 118.43373357,
-      "msol_price": 118.43373357,
-      "sol_price": 84.77503001,
-      "peg_deviation": -0.0028642966043961327
-    },
-    {
-      "timestamp": 1787202300,
-      "spread_pct": 0.3966806395037871,
-      "asset_price": 118.41604582000001,
-      "msol_price": 118.41604582000001,
-      "sol_price": 84.78391013,
-      "peg_deviation": -0.003117638729364214
-    },
-    {
-      "timestamp": 1787202600,
-      "spread_pct": 0.39582877696376867,
-      "asset_price": 118.45131271,
-      "msol_price": 118.45131271,
-      "sol_price": 84.86091895,
-      "peg_deviation": -0.0037256565656201834
-    },
-    {
-      "timestamp": 1787202900,
-      "spread_pct": 0.39696443281634136,
-      "asset_price": 118.47304,
-      "msol_price": 118.47304,
-      "sol_price": 84.80748487,
-      "peg_deviation": -0.002915080936601866
-    },
     {
       "timestamp": 1787203200,
       "spread_pct": 0.39630786926475053,
@@ -239,15 +143,111 @@
       "msol_price": 118.51041026,
       "sol_price": 84.895,
       "peg_deviation": -0.0036287501943464973
+    },
+    {
+      "timestamp": 1787205900,
+      "spread_pct": 0.3970172895376554,
+      "asset_price": 118.38603915,
+      "msol_price": 118.38603915,
+      "sol_price": 84.742,
+      "peg_deviation": -0.0028773543993032558
+    },
+    {
+      "timestamp": 1787206200,
+      "spread_pct": 0.396929166691767,
+      "asset_price": 118.26406516,
+      "msol_price": 118.26406516,
+      "sol_price": 84.66003,
+      "peg_deviation": -0.002940252178656566
+    },
+    {
+      "timestamp": 1787206500,
+      "spread_pct": 0.396719369877923,
+      "asset_price": 118.38992,
+      "msol_price": 118.38992,
+      "sol_price": 84.76285398,
+      "peg_deviation": -0.0030899948880885875
+    },
+    {
+      "timestamp": 1787206800,
+      "spread_pct": 0.39523404242788307,
+      "asset_price": 118.4511845,
+      "msol_price": 118.4511845,
+      "sol_price": 84.897,
+      "peg_deviation": -0.004150149009056747
+    },
+    {
+      "timestamp": 1787207100,
+      "spread_pct": 0.3957403324452061,
+      "asset_price": 118.86060876,
+      "msol_price": 118.86060876,
+      "sol_price": 85.15954293,
+      "peg_deviation": -0.0037887839455781336
+    },
+    {
+      "timestamp": 1787207400,
+      "spread_pct": 0.39434072373451295,
+      "asset_price": 119.03734254,
+      "msol_price": 119.03734254,
+      "sol_price": 85.371775,
+      "peg_deviation": -0.004787756220913542
+    },
+    {
+      "timestamp": 1787207700,
+      "spread_pct": 0.39534341931433903,
+      "asset_price": 118.97399855,
+      "msol_price": 118.97399855,
+      "sol_price": 85.26503003,
+      "peg_deviation": -0.0040720811345877905
+    },
+    {
+      "timestamp": 1787208000,
+      "spread_pct": 0.3948738440034039,
+      "asset_price": 119.25090339,
+      "msol_price": 119.25090339,
+      "sol_price": 85.49225,
+      "peg_deviation": -0.004407241035510268
+    },
+    {
+      "timestamp": 1787208300,
+      "spread_pct": 0.394966638276027,
+      "asset_price": 119.5611956,
+      "msol_price": 119.5611956,
+      "sol_price": 85.709,
+      "peg_deviation": -0.0043410090201246865
+    },
+    {
+      "timestamp": 1787208600,
+      "spread_pct": 0.3940281728548364,
+      "asset_price": 119.53742288000001,
+      "msol_price": 119.53742288000001,
+      "sol_price": 85.74964639,
+      "peg_deviation": -0.005010839759221897
+    },
+    {
+      "timestamp": 1787208900,
+      "spread_pct": 0.3948416143628498,
+      "asset_price": 119.60627359,
+      "msol_price": 119.60627359,
+      "sol_price": 85.749,
+      "peg_deviation": -0.004430244977334685
+    },
+    {
+      "timestamp": 1787209200,
+      "spread_pct": 0.39358230325923466,
+      "asset_price": 119.64141997,
+      "msol_price": 119.64141997,
+      "sol_price": 85.85170728,
+      "peg_deviation": -0.005329079679435189
     }
   ],
-  "mu": -0.003229,
-  "adf_pvalue": 0.4848,
+  "mu": -0.003944,
+  "adf_pvalue": 0.9513,
   "is_stationary": false,
-  "data_timestamp": 1787205600,
+  "data_timestamp": 1787209200,
   "baseline": {
-    "theta_avg": 410.491557,
-    "sigma_avg": 0.00596,
+    "theta_avg": 128.798298,
+    "sigma_avg": 0.010305,
     "window_count": 1
   }
 }
